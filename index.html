@@ -1128,11 +1128,12 @@ const FIREBASE_CONFIG = {
 };
 let db = null;
 try {
-  if (FIREBASE_CONFIG.apiKey !== 'AIzaSyBn2Q4Zr1HynxdMlq3gF3DEUwvCt1si-NU' && typeof firebase !== 'undefined') {
+  if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
+    console.log('✅ Firebase OK — proyecto:', FIREBASE_CONFIG.projectId);
   }
-} catch(e) { console.warn('Firebase no inicializado:', e.message); }
+} catch(e) { console.error('❌ Firebase init error:', e.message); }
 
 const LS_MIS_SOLICITUDES = 'catt_mis_solicitudes';
 const MAY_RATE_LIMIT_MS = 5000;
@@ -1243,19 +1244,21 @@ async function submitMayForm() {
     respuesta: null
   };
 
-  if (db) {
-    try {
-      const ref = await db.collection('solicitudes_mayoristas').add(payload);
-      saveMySolicitudCode(code, ref.id);
-    } catch (e) {
-      btn.disabled = false;
-      btn.textContent = 'Enviar solicitud';
-      showMayErr('Error al enviar: ' + e.message);
-      return;
-    }
-  } else {
-    saveMySolicitudCode(code, null);
-    console.warn('Firebase no configurado. Solicitud no persistida remotamente.');
+  if (!db) {
+    btn.disabled = false;
+    btn.textContent = 'Enviar solicitud';
+    showMayErr('El sistema de solicitudes no está disponible en este momento. Recargá la página o escribinos por WhatsApp.');
+    return;
+  }
+  try {
+    const ref = await db.collection('solicitudes_mayoristas').add(payload);
+    saveMySolicitudCode(code, ref.id);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Enviar solicitud';
+    showMayErr('Error al enviar: ' + e.message);
+    console.error('Firestore write error:', e);
+    return;
   }
 
   mayLastSubmit = now;

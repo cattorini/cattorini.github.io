@@ -491,7 +491,7 @@ async function bootApp() {
   populateManualSelects();
 
   /* Firebase */
-  if (FIREBASE_CONFIG.apiKey !== 'AIzaSyBn2Q4Zr1HynxdMlq3gF3DEUwvCt1si-NU') {
+  if (typeof firebase !== 'undefined') {
     try {
       firebase.initializeApp(FIREBASE_CONFIG);
       db = firebase.firestore();

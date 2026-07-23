@@ -675,11 +675,12 @@ const FIREBASE_CONFIG = {
 
 let db = null;
 try {
-  if (FIREBASE_CONFIG.apiKey !== 'AIzaSyBn2Q4Zr1HynxdMlq3gF3DEUwvCt1si-NU' && firebase && firebase.initializeApp) {
+  if (typeof firebase !== 'undefined' && firebase.initializeApp) {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
+    console.log('✅ Firebase OK — proyecto:', FIREBASE_CONFIG.projectId);
   }
-} catch (e) { console.warn('Firebase not initialized:', e.message); }
+} catch (e) { console.error('❌ Firebase init error:', e.message); }
 
 /* =========== CONSTANTS =========== */
 const CART_KEY = 'catt_cart_v2';
@@ -1234,16 +1235,17 @@ async function sendOrder() {
   };
 
   let docId = null;
-  if (db) {
-    try {
-      const ref = await db.collection('pedidos').add(payload);
-      docId = ref.id;
-    } catch (e) {
-      showToast('Error al enviar: ' + e.message);
-      return;
-    }
-  } else {
-    console.warn('Firebase no configurado. Pedido no persistido remotamente.');
+  if (!db) {
+    showToast('Sistema de pedidos no disponible. Recargá la página.');
+    return;
+  }
+  try {
+    const ref = await db.collection('pedidos').add(payload);
+    docId = ref.id;
+  } catch (e) {
+    showToast('Error al enviar: ' + e.message);
+    console.error('Firestore write error:', e);
+    return;
   }
 
   lastSubmit = now;

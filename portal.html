@@ -1382,7 +1382,7 @@ const FIREBASE_CONFIG = {
 };
 let fbDb = null;
 try {
-  if (FIREBASE_CONFIG.apiKey !== 'AIzaSyBn2Q4Zr1HynxdMlq3gF3DEUwvCt1si-NU' && typeof firebase !== 'undefined') {
+  if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     fbDb = firebase.firestore();
   }
