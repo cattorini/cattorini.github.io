@@ -298,7 +298,7 @@
     <!-- Tab Mayoristas -->
     <div class="tab-panel" id="tab-mayoristas">
       <div class="card">
-        <h3 class="serif text-xl mb-4">Cuentas mayoristas</h3>
+        <h3 class="serif text-xl mb-4">Configuración general</h3>
         <div class="msg-info">El código se guarda solo como hash SHA-256 (no en texto plano) por seguridad. Al cambiarlo, escribí el nuevo código y clic en "Generar nuevo hash".</div>
         <div class="grid-2">
           <div>
@@ -313,6 +313,47 @@
           <div><label class="lbl">Mínimo de compra ($)</label><input type="number" class="inp" data-field="config.mayoristas.minimo_compra" /></div>
           <div style="grid-column:1/-1;"><label class="lbl">Mensaje de bienvenida</label><textarea class="inp" rows="2" data-field="config.mayoristas.mensaje_bienvenida"></textarea></div>
         </div>
+      </div>
+
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Alta manual de mayorista</h3>
+        <div class="msg-info">Usalo cuando registrás un mayorista personalmente (visita, WhatsApp, feria). Se guarda directo como "aceptada" en el tab Solicitudes. Después contactalo por WhatsApp con el código.</div>
+        <div class="grid-2">
+          <div><label class="lbl">Nombre y apellido *</label><input class="inp" id="am-nombre" maxlength="80" /></div>
+          <div><label class="lbl">Razón social o negocio *</label><input class="inp" id="am-negocio" maxlength="100" /></div>
+          <div><label class="lbl">CUIT / CUIL</label><input class="inp" id="am-cuit" maxlength="15" placeholder="20-12345678-9" /></div>
+          <div>
+            <label class="lbl">Tipo de comercio</label>
+            <select class="inp" id="am-tipo">
+              <option value="">Elegí...</option>
+              <option>Mercería / Cotillón</option>
+              <option>Tienda de ropa</option>
+              <option>Uniformes / Trabajo</option>
+              <option>Feria / Bazar</option>
+              <option>Online / Ecommerce</option>
+              <option>Otro</option>
+            </select>
+          </div>
+          <div><label class="lbl">Teléfono</label><input class="inp" id="am-tel" maxlength="30" /></div>
+          <div><label class="lbl">WhatsApp (549...)</label><input class="inp" id="am-wa" maxlength="30" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Email</label><input class="inp" id="am-email" type="email" maxlength="80" /></div>
+          <div><label class="lbl">Provincia</label><select class="inp" id="am-prov"></select></div>
+          <div>
+            <label class="lbl">Localidad</label>
+            <div class="loc-wrap">
+              <input class="inp" id="am-loc" maxlength="60" disabled placeholder="Elegí primero la provincia" style="margin-bottom:0;" />
+              <div id="am-loc-list" class="loc-list"></div>
+            </div>
+          </div>
+          <div style="grid-column:1/-1;"><label class="lbl">Notas internas</label><textarea class="inp" id="am-notas" rows="2" maxlength="500"></textarea></div>
+          <div style="grid-column:1/-1;">
+            <label class="lbl">Código mayorista a asignar</label>
+            <input class="inp" id="am-codigo" maxlength="30" placeholder='Ej: "CATT2024", "auto" para generar, o vacío para usar el master' />
+            <div style="font-size:0.75rem;color:#666;margin-top:4px;">Vacío = usar código master (avisale manualmente cuál es) · "auto" = genera CATT-XXXXXX aleatorio · o escribí uno custom</div>
+          </div>
+        </div>
+        <button class="btn mt-4" onclick="crearMayoristaManual()" id="am-btn">Registrar mayorista</button>
+        <div id="am-msg" style="display:none;margin-top:12px;padding:12px;font-size:0.9rem;"></div>
       </div>
     </div>
 
@@ -1381,12 +1422,28 @@ const FIREBASE_CONFIG = {
   appId: "1:33976113339:web:4a74d13ca8fb0d9e58b19e"
 };
 let fbDb = null;
+let fbAuth = null;
+let fbAuthReady = false;
 try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     fbDb = firebase.firestore();
+    fbAuth = firebase.auth();
+    fbAuth.signInAnonymously()
+      .then(() => { fbAuthReady = true; console.log('✅ Firebase auth OK'); })
+      .catch(e => console.error('❌ Firebase auth error:', e));
   }
-} catch(e) { console.warn('Firebase no inicializado en portal:', e.message); }
+} catch(e) { console.error('❌ Firebase init error en portal:', e.message); }
+
+/* Espera a que la auth esté lista antes de operaciones que requieren autenticación */
+async function esperarAuth() {
+  if (fbAuthReady) return true;
+  for (let i = 0; i < 30; i++) {
+    if (fbAuthReady) return true;
+    await new Promise(r => setTimeout(r, 200));
+  }
+  return false;
+}
 
 let solicitudes = [];
 let solUnsub = null;
@@ -1589,6 +1646,8 @@ async function aceptarSolicitud(sol) {
     codigoMayorista = v;
   }
 
+  const okAuth = await esperarAuth();
+  if (!okAuth) { alert('Firebase auth no listo. Recargá.'); return; }
   try {
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'aceptada',
@@ -1598,13 +1657,15 @@ async function aceptarSolicitud(sol) {
       }
     });
     alert('Aceptada. El solicitante verá el código "' + codigoMayorista + '" en su URL de seguimiento.\n\nRecordá contactarlo por WhatsApp/email para reforzar el aviso.');
-  } catch (e) { alert('Error: ' + e.message); }
+  } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
 
 async function rechazarSolicitud(sol) {
   const motivo = prompt('Motivo del rechazo (será visible para el solicitante):', '');
   if (motivo === null) return;
   if (!motivo.trim()) { alert('Ingresá un motivo.'); return; }
+  const okAuth = await esperarAuth();
+  if (!okAuth) { alert('Firebase auth no listo. Recargá.'); return; }
   try {
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'rechazada',
@@ -1614,8 +1675,116 @@ async function rechazarSolicitud(sol) {
       }
     });
     alert('Solicitud rechazada. El solicitante verá el motivo en su URL de seguimiento.');
-  } catch (e) { alert('Error: ' + e.message); }
+  } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
+
+/* ---- Alta manual mayorista ---- */
+let ubicacionesAM = null;
+async function initUbicacionesAM() {
+  if (ubicacionesAM || !window.Ubicaciones) return;
+  ubicacionesAM = await window.Ubicaciones.init({
+    provinciaSelect: document.getElementById('am-prov'),
+    localidadInput: document.getElementById('am-loc'),
+    localidadList: document.getElementById('am-loc-list')
+  });
+}
+
+function showAM(msg, kind) {
+  const el = document.getElementById('am-msg');
+  el.textContent = msg;
+  el.style.display = 'block';
+  el.style.background = kind === 'ok' ? '#E7F5E7' : (kind === 'err' ? '#FDECEC' : '#F0F0F0');
+  el.style.borderLeft = '3px solid ' + (kind === 'ok' ? '#060' : (kind === 'err' ? '#C00' : '#0A0A0A'));
+  el.style.color = kind === 'ok' ? '#060' : (kind === 'err' ? '#900' : '#333');
+}
+function clearAM() {
+  ['am-nombre','am-negocio','am-cuit','am-tel','am-wa','am-email','am-notas','am-codigo','am-loc'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('am-tipo').value = '';
+  document.getElementById('am-prov').value = '';
+  document.getElementById('am-loc').disabled = true;
+  document.getElementById('am-loc').placeholder = 'Elegí primero la provincia';
+}
+
+function sanAM(s, max) {
+  return String(s || '').slice(0, max).replace(/[<>]/g, '').trim();
+}
+
+async function crearMayoristaManual() {
+  if (!fbDb) { showAM('Firebase no disponible. Recargá.', 'err'); return; }
+  const btn = document.getElementById('am-btn');
+  document.getElementById('am-msg').style.display = 'none';
+
+  const nombre = sanAM(document.getElementById('am-nombre').value, 80);
+  const negocio = sanAM(document.getElementById('am-negocio').value, 100);
+  if (!nombre || !negocio) { showAM('Nombre y negocio son obligatorios.', 'err'); return; }
+
+  const codigoInput = sanAM(document.getElementById('am-codigo').value, 30);
+  let codigoMayorista;
+  if (!codigoInput) codigoMayorista = '(usar código master — avisar manualmente)';
+  else if (codigoInput.toLowerCase() === 'auto') codigoMayorista = genCodigoMayoristaCustom();
+  else if (codigoInput.length < 4) { showAM('El código debe tener al menos 4 caracteres.', 'err'); return; }
+  else codigoMayorista = codigoInput;
+
+  const okAuth = await esperarAuth();
+  if (!okAuth) { showAM('Auth de Firebase no lista. Recargá.', 'err'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+
+  const codigoSol = 'MAY-' + Array.from({length: 4}, () =>
+    'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]
+  ).join('');
+
+  const payload = {
+    codigo: codigoSol,
+    creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+    solicitante: {
+      nombre, negocio,
+      cuit: sanAM(document.getElementById('am-cuit').value, 15),
+      tipo: sanAM(document.getElementById('am-tipo').value, 50),
+      telefono: sanAM(document.getElementById('am-tel').value, 30),
+      whatsapp: sanAM(document.getElementById('am-wa').value, 30),
+      email: sanAM(document.getElementById('am-email').value, 80),
+      provincia: sanAM(document.getElementById('am-prov').value, 40),
+      localidad: sanAM(document.getElementById('am-loc').value, 60)
+    },
+    notas: sanAM(document.getElementById('am-notas').value, 500),
+    estado: 'pendiente',
+    respuesta: null
+  };
+
+  try {
+    /* 1) Create as pending (permitido por rules públicas con shape check) */
+    const ref = await fbDb.collection('solicitudes_mayoristas').add(payload);
+    /* 2) Update inmediato a aceptada (requiere auth) */
+    await fbDb.collection('solicitudes_mayoristas').doc(ref.id).update({
+      estado: 'aceptada',
+      respuesta: {
+        codigoMayorista,
+        resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
+      },
+      manual: true
+    });
+    showAM(`✓ Mayorista registrado. Código de acceso: ${codigoMayorista}. Verás el registro en el tab Solicitudes.`, 'ok');
+    clearAM();
+  } catch (e) {
+    showAM('Error: ' + e.message, 'err');
+    console.error(e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Registrar mayorista';
+  }
+}
+
+/* Inicializar dropdowns cuando se abre la tab Mayoristas */
+document.querySelectorAll('.tab-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    if (b.dataset.tab === 'mayoristas') setTimeout(initUbicacionesAM, 80);
+  });
+});
 
 /* Cuando se entra al app, cargar solicitudes también */
 const originalEnterApp = enterApp;

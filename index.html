@@ -596,6 +596,10 @@
       Trabajamos con comercios de todo el país. Precios especiales, envíos por Vía Cargo y catálogo exclusivo para mayoristas. Solicitá tu código de acceso.
     </p>
     <button id="mayoristas-cta" class="btn btn-light" onclick="openMayForm()">Solicitar cuenta mayorista</button>
+    <div style="margin-top: 20px; font-size: 0.88rem; color: rgba(255,255,255,0.55);">
+      ¿Ya enviaste una solicitud?
+      <a href="./seguimiento-mayorista.html" style="color: #FFF; text-decoration: underline; margin-left: 4px;">Consultá el estado</a>
+    </div>
   </div>
 </section>
 
@@ -1131,9 +1135,8 @@ try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    console.log('✅ Firebase OK — proyecto:', FIREBASE_CONFIG.projectId);
   }
-} catch(e) { console.error('❌ Firebase init error:', e.message); }
+} catch(e) { console.warn('Firebase no inicializado:', e.message); }
 
 const LS_MIS_SOLICITUDES = 'catt_mis_solicitudes';
 const MAY_RATE_LIMIT_MS = 5000;
@@ -1480,6 +1483,7 @@ async function init() {
       const btn = document.getElementById('mayoristas-cta');
       if (btn) {
         btn.classList.add('pulse-highlight');
+        /* removemos la clase después de la animación para poder reactivarla */
         setTimeout(() => btn.classList.remove('pulse-highlight'), 4500);
       }
     }, 800);
