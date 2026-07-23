@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Allow: /index.html
+Allow: /tienda.html
+Allow: /producto.html
+
+Disallow: /portal.html
+Disallow: /pedidos.html
+Disallow: /qr.html
+
+Sitemap: https://cattorini.github.io/sitemap.xml

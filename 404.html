@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>404 — Cattorini</title>
+  <link rel="icon" href="./img/logo.jpeg" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #FFFFFF; color: #0A0A0A;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      text-align: center; padding: 2rem; gap: 1.5rem;
+    }
+    img { height: 40px; width: auto; opacity: 0.9; }
+    h1 {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: clamp(6rem, 22vw, 10rem);
+      font-weight: 400; line-height: 1;
+      letter-spacing: -0.04em;
+    }
+    p { font-size: 1rem; color: #666; max-width: 400px; }
+    a {
+      display: inline-block; margin-top: 1rem;
+      background: #0A0A0A; color: #FFF;
+      padding: 14px 32px;
+      font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase;
+      font-weight: 500; text-decoration: none;
+      border: 1px solid #0A0A0A;
+      transition: all 0.2s;
+    }
+    a:hover { background: #FFF; color: #0A0A0A; }
+
+    body { animation: pageIn .55s ease-out .05s both; }
+    @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    img, h1, p, a { opacity: 0; animation: itemIn .5s ease forwards; }
+    img { animation-delay: .1s; }
+    h1 { animation-delay: .2s; }
+    p { animation-delay: .3s; }
+    a { animation-delay: .4s; }
+    @keyframes itemIn { to { opacity: 1; } }
+  </style>
+</head>
+<body>
+  <img src="./img/logo.jpeg" alt="Cattorini" />
+  <h1>404</h1>
+  <p>Esta página no existe. Volvé al inicio y seguí navegando.</p>
+  <a href="./index.html">Ir al inicio</a>
+</body>
+</html>

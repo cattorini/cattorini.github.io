@@ -1,0 +1,1632 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="no-referrer" />
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;" />
+  <title>Portal Cattorini</title>
+  <link rel="icon" href="./img/logo.jpeg" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="./ubicaciones.js" defer></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #FAFAFA;
+      color: #0A0A0A;
+      font-weight: 300;
+      margin: 0;
+    }
+    .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+    .eyebrow {
+      font-size: 0.7rem; letter-spacing: 0.15em; text-transform: uppercase;
+      color: #666; font-weight: 500;
+    }
+    input, select, textarea, button {
+      font-family: inherit;
+      color: #0A0A0A;
+    }
+    .inp {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #E5E5E5;
+      background: #FFF; font-size: 0.9rem;
+    }
+    .inp:focus { outline: none; border-color: #0A0A0A; }
+    .lbl {
+      display: block; font-size: 0.78rem; font-weight: 500;
+      margin-bottom: 6px; color: #333;
+    }
+    .btn {
+      padding: 10px 20px; background: #0A0A0A; color: #FFF;
+      border: 1px solid #0A0A0A; cursor: pointer;
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      font-weight: 500;
+    }
+    .btn:hover { background: #FFF; color: #0A0A0A; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-ghost {
+      padding: 8px 14px; background: transparent; border: 1px solid #E5E5E5;
+      color: #0A0A0A; cursor: pointer; font-size: 0.78rem;
+    }
+    .btn-ghost:hover { border-color: #0A0A0A; }
+    .btn-danger {
+      padding: 6px 12px; background: transparent; border: 1px solid #E0C0C0;
+      color: #900; cursor: pointer; font-size: 0.75rem;
+    }
+    .btn-danger:hover { background: #FEE; }
+    .card {
+      background: #FFF; padding: 24px;
+      border: 1px solid #E5E5E5;
+      margin-bottom: 16px;
+    }
+    .tab-btn {
+      padding: 10px 16px; background: transparent;
+      border: none; border-bottom: 2px solid transparent;
+      font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; color: #666;
+      white-space: nowrap;
+    }
+    .tab-btn.active { color: #0A0A0A; border-bottom-color: #0A0A0A; }
+    .tabs-nav {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid #E5E5E5;
+      overflow-x: auto;
+      background: #FFF;
+      padding: 0 24px;
+    }
+    .tabs-nav::-webkit-scrollbar { display: none; }
+    .tab-panel { display: none; padding: 24px; }
+    .tab-panel.active { display: block; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    @media (max-width: 700px) { .grid-3 { grid-template-columns: 1fr; } }
+    .item-row {
+      background: #FFF; border: 1px solid #E5E5E5;
+      padding: 16px; margin-bottom: 12px;
+    }
+    .msg-info {
+      padding: 10px 14px; margin-bottom: 12px;
+      font-size: 0.85rem;
+      background: #F0F0F0; border-left: 3px solid #0A0A0A;
+    }
+    .msg-info.ok { background: #E7F5E7; border-left-color: #060; color: #060; }
+    .msg-info.err { background: #FDECEC; border-left-color: #C00; color: #900; }
+    .switch { position: relative; display: inline-block; width: 40px; height: 22px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute; cursor: pointer; inset: 0;
+      background: #DDD; transition: .3s; border-radius: 22px;
+    }
+    .slider::before {
+      position: absolute; content: ""; height: 16px; width: 16px;
+      left: 3px; top: 3px; background: #FFF; transition: .3s; border-radius: 50%;
+    }
+    input:checked + .slider { background: #0A0A0A; }
+    input:checked + .slider::before { transform: translateX(18px); }
+    .talles-check-grid {
+      display: flex; flex-wrap: wrap; gap: 8px;
+    }
+    .talle-chip {
+      padding: 6px 12px; border: 1px solid #E5E5E5;
+      cursor: pointer; font-size: 0.82rem; user-select: none;
+      background: #FFF;
+    }
+    .talle-chip.on { background: #0A0A0A; color: #FFF; border-color: #0A0A0A; }
+    .img-thumb {
+      position: relative; aspect-ratio: 1;
+      background: #F5F5F5;
+      background-size: cover; background-position: center;
+      border: 1px solid #E5E5E5;
+    }
+    .img-thumb .del {
+      position: absolute; top: 4px; right: 4px;
+      background: rgba(0,0,0,0.7); color: #FFF;
+      border: none; width: 22px; height: 22px;
+      cursor: pointer; font-size: 0.85rem;
+      border-radius: 50%;
+    }
+    .img-drop {
+      border: 2px dashed #DDD; padding: 20px;
+      text-align: center; color: #666;
+      cursor: pointer; font-size: 0.85rem;
+      background: #FAFAFA;
+    }
+    .img-drop:hover { border-color: #0A0A0A; }
+    #login-screen {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .login-card {
+      max-width: 400px; width: 100%;
+      padding: 40px; background: #FFF;
+      border: 1px solid #E5E5E5;
+    }
+    #app-screen { display: none; }
+    .app-header {
+      background: #0A0A0A; color: #FFF;
+      padding: 16px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .app-header .brand { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; }
+    .app-header .actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .app-header button { background: #FFF; color: #0A0A0A; }
+    .app-header button:hover { background: transparent; color: #FFF; }
+    #save-status {
+      font-size: 0.75rem; padding: 4px 10px;
+      background: rgba(255,255,255,0.1);
+    }
+    .content-wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="text-center mb-6">
+      <img src="./img/logo.jpeg" alt="Cattorini" style="height:32px;width:auto;margin:0 auto 12px;display:block;" />
+      <div class="eyebrow">Panel de administración</div>
+    </div>
+
+    <div id="login-first" style="display:none;">
+      <div class="msg-info mb-4">Primera vez. Configurá el acceso con tu Personal Access Token de GitHub y una contraseña.</div>
+      <div class="mb-3">
+        <label class="lbl">GitHub PAT (con permisos repo)</label>
+        <input type="password" id="in-pat" class="inp" placeholder="ghp_..." autocomplete="off" />
+      </div>
+      <div class="mb-3">
+        <label class="lbl">Contraseña (para desbloquear el token)</label>
+        <input type="password" id="in-pass" class="inp" placeholder="Mínimo 8 caracteres" autocomplete="new-password" />
+      </div>
+      <div class="mb-3">
+        <label class="lbl">Repetir contraseña</label>
+        <input type="password" id="in-pass2" class="inp" autocomplete="new-password" />
+      </div>
+      <div id="err-setup" class="msg-info err" style="display:none;"></div>
+      <button class="btn w-full" onclick="setupAccess()">Guardar y entrar</button>
+    </div>
+
+    <div id="login-recurring" style="display:none;">
+      <div class="mb-3">
+        <label class="lbl">Contraseña</label>
+        <input type="password" id="in-pass-r" class="inp" placeholder="Tu contraseña" autocomplete="current-password" />
+      </div>
+      <div id="err-login" class="msg-info err" style="display:none;"></div>
+      <button class="btn w-full" onclick="doLogin()">Entrar</button>
+      <button class="btn-ghost w-full mt-2" onclick="resetAccess()">Reconfigurar acceso</button>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen">
+  <div class="app-header">
+    <div class="brand" style="display:flex;align-items:center;gap:12px;">
+      <img src="./img/logo.jpeg" alt="Cattorini" style="height:22px;width:auto;filter:invert(1);" />
+      <span style="font-size:0.85rem;letter-spacing:0.15em;text-transform:uppercase;opacity:0.7;">Portal</span>
+    </div>
+    <div class="actions">
+      <span id="save-status">···</span>
+      <button class="btn-ghost" onclick="loadRemote()">↻ Recargar</button>
+      <button class="btn-ghost" onclick="location.href='./pedidos.html'">📋 Pedidos</button>
+      <button class="btn-ghost" onclick="doLogout()">Salir</button>
+    </div>
+  </div>
+
+  <div class="tabs-nav">
+    <button class="tab-btn active" data-tab="solicitudes">Solicitudes <span id="badge-sol" style="background:#900;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;display:none;">0</span></button>
+    <button class="tab-btn" data-tab="negocio">Negocio</button>
+    <button class="tab-btn" data-tab="envio">Envío</button>
+    <button class="tab-btn" data-tab="mayoristas">Mayoristas</button>
+    <button class="tab-btn" data-tab="minoristas">Minoristas</button>
+    <button class="tab-btn" data-tab="zonas">Zonas</button>
+    <button class="tab-btn" data-tab="talles">Guía talles</button>
+    <button class="tab-btn" data-tab="horarios">Horarios</button>
+    <button class="tab-btn" data-tab="catalogo">Catálogo</button>
+    <button class="tab-btn" data-tab="textos">Textos</button>
+    <button class="tab-btn" data-tab="imagenes">Imágenes</button>
+  </div>
+
+  <div class="content-wrap">
+    <div id="save-bar" class="mb-4" style="display:none;">
+      <div class="card" style="background:#0A0A0A; color:#FFF; padding:16px; display:flex; justify-content:space-between; align-items:center;">
+        <span>Hay cambios sin publicar.</span>
+        <button class="btn" style="background:#FFF; color:#0A0A0A; border-color:#FFF;" onclick="publishChanges()">Publicar cambios</button>
+      </div>
+    </div>
+
+    <!-- Tab Solicitudes mayoristas -->
+    <div class="tab-panel active" id="tab-solicitudes">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="serif text-xl">Solicitudes de cuentas mayoristas</h3>
+          <div>
+            <button class="btn-ghost" onclick="loadSolicitudes()">↻ Recargar</button>
+            <select id="sol-filter" class="inp" style="width:auto;display:inline-block;margin-left:8px;padding:6px 10px;" onchange="renderSolicitudes()">
+              <option value="pendiente">Pendientes</option>
+              <option value="aceptada">Aceptadas</option>
+              <option value="rechazada">Rechazadas</option>
+              <option value="todas">Todas</option>
+            </select>
+          </div>
+        </div>
+        <div id="sol-status" class="msg-info">Cargando solicitudes...</div>
+        <div id="solicitudes-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Negocio -->
+    <div class="tab-panel" id="tab-negocio">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Datos del negocio</h3>
+        <div class="grid-2">
+          <div><label class="lbl">Nombre comercial</label><input class="inp" data-field="negocio.nombre" /></div>
+          <div><label class="lbl">Nombre completo</label><input class="inp" data-field="negocio.nombre_completo" /></div>
+          <div><label class="lbl">Tagline</label><input class="inp" data-field="negocio.tagline" /></div>
+          <div><label class="lbl">Descripción corta (SEO)</label><input class="inp" data-field="negocio.descripcion_corta" /></div>
+          <div class="col-span-full" style="grid-column:1/-1;"><label class="lbl">Descripción larga</label><textarea class="inp" rows="3" data-field="negocio.descripcion_larga"></textarea></div>
+          <div><label class="lbl">WhatsApp (549...)</label><input class="inp" data-field="negocio.whatsapp" /></div>
+          <div><label class="lbl">Teléfono</label><input class="inp" data-field="negocio.telefono" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Dirección completa</label><input class="inp" data-field="negocio.direccion" /></div>
+          <div><label class="lbl">Analytics ID (GA4)</label><input class="inp" data-field="negocio.analytics_id" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Envío -->
+    <div class="tab-panel" id="tab-envio">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Configuración de envío</h3>
+        <div class="grid-2">
+          <div><label class="lbl">Costo estándar ($)</label><input type="number" class="inp" data-field="config.envio.costo_estandar" /></div>
+          <div><label class="lbl">Envío gratis desde ($)</label><input type="number" class="inp" data-field="config.envio.gratis_desde" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Transportista</label><input class="inp" data-field="config.envio.transportista" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Leyenda pública</label><textarea class="inp" rows="2" data-field="config.envio.leyenda"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Mayoristas -->
+    <div class="tab-panel" id="tab-mayoristas">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Cuentas mayoristas</h3>
+        <div class="msg-info">El código se guarda solo como hash SHA-256 (no en texto plano) por seguridad. Al cambiarlo, escribí el nuevo código y clic en "Generar nuevo hash".</div>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Nuevo código de acceso</label>
+            <input type="text" id="new-may-code" class="inp" placeholder="Dejá vacío para no cambiar" autocomplete="off" />
+            <button class="btn-ghost mt-2" onclick="generateMayoHash()">Generar nuevo hash</button>
+          </div>
+          <div>
+            <label class="lbl">Hash actual (guardado)</label>
+            <input class="inp" data-field="config.mayoristas.codigo_hash" readonly style="font-family:monospace;font-size:0.72rem;background:#F5F5F5;" />
+          </div>
+          <div><label class="lbl">Mínimo de compra ($)</label><input type="number" class="inp" data-field="config.mayoristas.minimo_compra" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Mensaje de bienvenida</label><textarea class="inp" rows="2" data-field="config.mayoristas.mensaje_bienvenida"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Minoristas -->
+    <div class="tab-panel" id="tab-minoristas">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Configuración minoristas</h3>
+        <div class="grid-2">
+          <div><label class="lbl">Bonificación zonas libres (%)</label><input type="number" class="inp" data-field="config.minoristas.bonificacion_zonas_libres" min="0" max="99" /></div>
+          <div><label class="lbl">Mensaje del descuento</label><input class="inp" data-field="config.minoristas.mensaje_bonificacion" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Mensaje cuando la zona tiene mayorista</label><textarea class="inp" rows="2" data-field="config.minoristas.mensaje_zona_con_mayorista"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Zonas -->
+    <div class="tab-panel" id="tab-zonas">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="serif text-xl">Zonas con distribuidor mayorista</h3>
+          <button class="btn-ghost" onclick="addZona()">+ Agregar zona</button>
+        </div>
+        <div class="msg-info">Cuando un minorista intente comprar y su localidad coincida con alguna acá, se le muestra el contacto del distribuidor en vez de vender.</div>
+        <div id="zonas-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Talles -->
+    <div class="tab-panel" id="tab-talles">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="serif text-xl">Guía de talles por tipo de prenda</h3>
+          <button class="btn-ghost" onclick="addTipoTalle()">+ Nuevo tipo</button>
+        </div>
+        <div id="talles-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Horarios -->
+    <div class="tab-panel" id="tab-horarios">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Horarios de atención</h3>
+        <div class="msg-info">Cada día tiene turnos. Podés agregar dos turnos (mañana + tarde) o vaciar para marcar cerrado.</div>
+        <div id="horarios-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Catálogo -->
+    <div class="tab-panel" id="tab-catalogo">
+      <div class="card">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="serif text-xl">Categorías y productos</h3>
+          <button class="btn-ghost" onclick="addCategoria()">+ Nueva categoría</button>
+        </div>
+        <div id="cat-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Textos -->
+    <div class="tab-panel" id="tab-textos">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Textos de la landing</h3>
+        <div class="grid-2">
+          <div><label class="lbl">Hero · título</label><input class="inp" data-field="textos.hero.titulo" /></div>
+          <div><label class="lbl">Hero · CTA</label><input class="inp" data-field="textos.hero.cta" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Hero · subtítulo</label><textarea class="inp" rows="2" data-field="textos.hero.subtitulo"></textarea></div>
+
+          <div style="grid-column:1/-1;"><hr style="border:none;border-top:1px solid #E5E5E5;margin:8px 0;" /></div>
+
+          <div><label class="lbl">Fábrica · título</label><input class="inp" data-field="textos.fabrica.titulo" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Fábrica · texto</label><textarea class="inp" rows="3" data-field="textos.fabrica.texto"></textarea></div>
+
+          <div style="grid-column:1/-1;"><hr style="border:none;border-top:1px solid #E5E5E5;margin:8px 0;" /></div>
+
+          <div><label class="lbl">Local · título</label><input class="inp" data-field="textos.local.titulo" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Local · texto</label><textarea class="inp" rows="3" data-field="textos.local.texto"></textarea></div>
+
+          <div style="grid-column:1/-1;"><hr style="border:none;border-top:1px solid #E5E5E5;margin:8px 0;" /></div>
+
+          <div><label class="lbl">Mayoristas · título</label><input class="inp" data-field="textos.mayoristas.titulo" /></div>
+          <div><label class="lbl">Mayoristas · CTA</label><input class="inp" data-field="textos.mayoristas.cta" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Mayoristas · texto</label><textarea class="inp" rows="3" data-field="textos.mayoristas.texto"></textarea></div>
+
+          <div style="grid-column:1/-1;"><hr style="border:none;border-top:1px solid #E5E5E5;margin:8px 0;" /></div>
+
+          <div style="grid-column:1/-1;"><label class="lbl">Confianza · texto</label><textarea class="inp" rows="2" data-field="textos.confianza.texto"></textarea></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Footer · texto</label><textarea class="inp" rows="2" data-field="textos.footer.texto"></textarea></div>
+          <div><label class="lbl">Checkout saludo mayorista</label><input class="inp" data-field="textos.checkout.saludo_mayorista" /></div>
+          <div><label class="lbl">Checkout saludo minorista</label><input class="inp" data-field="textos.checkout.saludo_minorista" /></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab Imágenes -->
+    <div class="tab-panel" id="tab-imagenes">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">Imágenes generales</h3>
+        <div class="grid-2">
+          <div>
+            <label class="lbl">Logo</label>
+            <div id="img-logo-preview" style="aspect-ratio:1;max-width:150px;background:#F5F5F5;background-size:contain;background-repeat:no-repeat;background-position:center;margin-bottom:8px;"></div>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'logo.jpeg','logo')" />Subir nuevo logo</label>
+          </div>
+          <div>
+            <label class="lbl">Hero (foto local)</label>
+            <div id="img-hero-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'hero-local.jpg','hero')" />Subir imagen del local</label>
+          </div>
+          <div>
+            <label class="lbl">Fábrica</label>
+            <div id="img-fabrica-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'fabrica.jpg','fabrica')" />Subir foto de la fábrica</label>
+          </div>
+          <div>
+            <label class="lbl">Local (interior)</label>
+            <div id="img-local-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'local.jpg','local')" />Subir foto del local</label>
+          </div>
+        </div>
+        <div class="msg-info mt-4">Las imágenes se suben al repositorio de GitHub. Puede tardar unos segundos.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ============ Config ============ */
+const GH = { owner: 'cattorini', repo: 'cattorini.github.io', branch: 'main' };
+const FILE_PATH = 'productos.json';
+const SITEMAP_PATH = 'sitemap.xml';
+const IMG_PATH = 'img/';
+const URL_BASE = 'https://cattorini.github.io';
+
+const LS_EPAT = 'catt_epat';
+const LS_META = 'catt_epat_meta';
+const SESSION_PAT = 'catt_pat_session';
+const TTL_DAYS = 30;
+const PBKDF2_ITER = 300000;
+
+let raw = null;
+let data = null;
+let dataSha = null;
+let dirty = false;
+
+/* ============ XSS-safe ============ */
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+/* ============ Crypto ============ */
+async function sha256Hex(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+async function deriveKey(password, salt) {
+  const enc = new TextEncoder();
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false, ['encrypt', 'decrypt']
+  );
+}
+
+async function encryptToken(token, password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const key = await deriveKey(password, salt);
+  const enc = new TextEncoder();
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, enc.encode(token));
+  return {
+    salt: Array.from(salt),
+    iv: Array.from(iv),
+    ct: Array.from(new Uint8Array(ct))
+  };
+}
+
+async function decryptToken(payload, password) {
+  const salt = new Uint8Array(payload.salt);
+  const iv = new Uint8Array(payload.iv);
+  const ct = new Uint8Array(payload.ct);
+  const key = await deriveKey(password, salt);
+  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+  return new TextDecoder().decode(pt);
+}
+
+/* ============ Login flow ============ */
+function checkLoginState() {
+  const enc = localStorage.getItem(LS_EPAT);
+  const metaRaw = localStorage.getItem(LS_META);
+  if (!enc || !metaRaw) {
+    document.getElementById('login-first').style.display = 'block';
+    return;
+  }
+  try {
+    const meta = JSON.parse(metaRaw);
+    const now = Date.now();
+    if (meta.expiresAt && now > meta.expiresAt) {
+      localStorage.removeItem(LS_EPAT);
+      localStorage.removeItem(LS_META);
+      document.getElementById('login-first').style.display = 'block';
+      showErr('setup', 'La sesión expiró. Reingresá el PAT y contraseña.');
+      return;
+    }
+  } catch {}
+  document.getElementById('login-recurring').style.display = 'block';
+}
+
+function showErr(kind, msg) {
+  const el = document.getElementById('err-' + kind);
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+function hideErr(kind) {
+  const el = document.getElementById('err-' + kind);
+  el.style.display = 'none';
+}
+
+async function setupAccess() {
+  hideErr('setup');
+  const pat = document.getElementById('in-pat').value.trim();
+  const pass = document.getElementById('in-pass').value;
+  const pass2 = document.getElementById('in-pass2').value;
+  if (!pat.startsWith('ghp_') && !pat.startsWith('github_pat_')) {
+    showErr('setup', 'El PAT parece inválido.');
+    return;
+  }
+  if (pass.length < 8) { showErr('setup', 'La contraseña debe tener al menos 8 caracteres.'); return; }
+  if (pass !== pass2) { showErr('setup', 'Las contraseñas no coinciden.'); return; }
+
+  try {
+    const payload = await encryptToken(pat, pass);
+    localStorage.setItem(LS_EPAT, JSON.stringify(payload));
+    localStorage.setItem(LS_META, JSON.stringify({
+      expiresAt: Date.now() + TTL_DAYS * 24 * 60 * 60 * 1000
+    }));
+    sessionStorage.setItem(SESSION_PAT, pat);
+    await enterApp();
+  } catch (e) {
+    showErr('setup', 'Error al guardar: ' + e.message);
+  }
+}
+
+async function doLogin() {
+  hideErr('login');
+  const pass = document.getElementById('in-pass-r').value;
+  if (!pass) return;
+  try {
+    const enc = JSON.parse(localStorage.getItem(LS_EPAT));
+    const pat = await decryptToken(enc, pass);
+    sessionStorage.setItem(SESSION_PAT, pat);
+    /* Refresh TTL */
+    localStorage.setItem(LS_META, JSON.stringify({
+      expiresAt: Date.now() + TTL_DAYS * 24 * 60 * 60 * 1000
+    }));
+    await enterApp();
+  } catch (e) {
+    showErr('login', 'Contraseña incorrecta.');
+  }
+}
+
+function resetAccess() {
+  if (!confirm('Reconfigurar acceso? Vas a tener que ingresar el PAT nuevamente.')) return;
+  localStorage.removeItem(LS_EPAT);
+  localStorage.removeItem(LS_META);
+  sessionStorage.removeItem(SESSION_PAT);
+  location.reload();
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_PAT);
+  location.reload();
+}
+
+async function enterApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  try {
+    await loadRemote();
+  } catch (e) {
+    alert('Error al cargar datos: ' + e.message);
+  }
+}
+
+/* ============ GH API ============ */
+function ghHeaders() {
+  const pat = sessionStorage.getItem(SESSION_PAT);
+  return {
+    'Authorization': `Bearer ${pat}`,
+    'Accept': 'application/vnd.github+json',
+    'X-GitHub-Api-Version': '2022-11-28'
+  };
+}
+
+async function ghGet(path) {
+  const url = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}?ref=${GH.branch}`;
+  const res = await fetch(url, { headers: ghHeaders() });
+  if (!res.ok) throw new Error(`GH GET ${path}: ${res.status}`);
+  return res.json();
+}
+
+async function ghPut(path, contentBase64, sha, message) {
+  const url = `https://api.github.com/repos/${GH.owner}/${GH.repo}/contents/${path}`;
+  const body = { message, content: contentBase64, branch: GH.branch };
+  if (sha) body.sha = sha;
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: { ...ghHeaders(), 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const err = await res.text();
+    throw new Error(`GH PUT ${path}: ${res.status} — ${err}`);
+  }
+  return res.json();
+}
+
+function base64UnicodeEncode(str) {
+  return btoa(unescape(encodeURIComponent(str)));
+}
+function base64UnicodeDecode(b64) {
+  return decodeURIComponent(escape(atob(b64)));
+}
+
+/* ============ Load / save ============ */
+async function loadRemote() {
+  setStatus('Cargando...');
+  const meta = await ghGet(FILE_PATH);
+  raw = base64UnicodeDecode(meta.content);
+  data = JSON.parse(raw);
+  dataSha = meta.sha;
+  bindAll();
+  renderAll();
+  dirty = false;
+  document.getElementById('save-bar').style.display = 'none';
+  setStatus('Sincronizado', 'ok');
+}
+
+function setStatus(txt, kind) {
+  const el = document.getElementById('save-status');
+  el.textContent = txt;
+  el.style.background = kind === 'ok' ? 'rgba(0,200,0,0.2)' : (kind === 'err' ? 'rgba(200,0,0,0.3)' : 'rgba(255,255,255,0.1)');
+}
+
+function markDirty() {
+  dirty = true;
+  document.getElementById('save-bar').style.display = 'block';
+  setStatus('Cambios sin publicar');
+}
+
+async function publishChanges() {
+  try {
+    setStatus('Publicando...');
+    const content = JSON.stringify(data, null, 2);
+    const b64 = base64UnicodeEncode(content);
+    const res = await ghPut(FILE_PATH, b64, dataSha, 'chore: actualizar productos.json desde portal');
+    dataSha = res.content.sha;
+    dirty = false;
+    document.getElementById('save-bar').style.display = 'none';
+    setStatus('Publicado ✓', 'ok');
+
+    /* Update sitemap */
+    await updateSitemap();
+  } catch (e) {
+    setStatus('Error', 'err');
+    alert('Error al publicar: ' + e.message);
+  }
+}
+
+async function updateSitemap() {
+  try {
+    const existing = await ghGet(SITEMAP_PATH).catch(() => null);
+    const now = new Date().toISOString().split('T')[0];
+    let urls = [
+      { loc: `${URL_BASE}/index.html`, priority: '1.0', changefreq: 'weekly' },
+      { loc: `${URL_BASE}/tienda.html`, priority: '0.9', changefreq: 'weekly' }
+    ];
+    data.categorias.forEach(cat => {
+      urls.push({ loc: `${URL_BASE}/tienda.html?cat=${cat.id}`, priority: '0.7', changefreq: 'weekly' });
+      (cat.productos || []).forEach(p => {
+        if (p.disponible) {
+          urls.push({ loc: `${URL_BASE}/producto.html?id=${p.id}`, priority: '0.8', changefreq: 'monthly' });
+        }
+      });
+    });
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.map(u => `  <url>
+    <loc>${u.loc}</loc>
+    <lastmod>${now}</lastmod>
+    <changefreq>${u.changefreq}</changefreq>
+    <priority>${u.priority}</priority>
+  </url>`).join('\n')}
+</urlset>
+`;
+    const b64 = base64UnicodeEncode(xml);
+    await ghPut(SITEMAP_PATH, b64, existing ? existing.sha : null, 'chore: actualizar sitemap.xml');
+  } catch (e) {
+    console.warn('sitemap update failed:', e.message);
+  }
+}
+
+/* ============ Binding fields ============ */
+function getPath(obj, path) {
+  return path.split('.').reduce((o, k) => (o ? o[k] : undefined), obj);
+}
+function setPath(obj, path, value) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (!cur[parts[i]] || typeof cur[parts[i]] !== 'object') cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+}
+
+function bindAll() {
+  document.querySelectorAll('[data-field]').forEach(el => {
+    const path = el.dataset.field;
+    const val = getPath(data, path);
+    if (val !== undefined) el.value = val;
+    el.oninput = () => {
+      const v = el.type === 'number' ? (parseFloat(el.value) || 0) : el.value;
+      setPath(data, path, v);
+      markDirty();
+    };
+  });
+}
+
+/* ============ Render dynamic tabs ============ */
+function renderAll() {
+  renderZonas();
+  renderTalles();
+  renderHorarios();
+  renderCategorias();
+  renderImagenes();
+}
+
+/* ---- Zonas ---- */
+function renderZonas() {
+  const cont = document.getElementById('zonas-list');
+  cont.innerHTML = '';
+  const zonas = data.zonas_mayoristas || (data.zonas_mayoristas = []);
+  if (!zonas.length) {
+    const empty = document.createElement('div');
+    empty.className = 'msg-info';
+    empty.textContent = 'No hay zonas cargadas. Agregá una para bloquear ventas minoristas en localidades donde ya tenés distribuidor.';
+    cont.appendChild(empty);
+  }
+  zonas.forEach((z, i) => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;';
+    const title = document.createElement('div');
+    title.style.fontWeight = '500';
+    title.textContent = `Zona ${i + 1}`;
+    const del = document.createElement('button');
+    del.className = 'btn-danger';
+    del.textContent = 'Eliminar zona';
+    del.onclick = () => {
+      if (!confirm('Eliminar esta zona?')) return;
+      zonas.splice(i, 1); markDirty(); renderZonas();
+    };
+    head.appendChild(title); head.appendChild(del);
+    row.appendChild(head);
+
+    const g = document.createElement('div');
+    g.className = 'grid-2';
+
+    const provWrap = document.createElement('div');
+    provWrap.innerHTML = '<label class="lbl">Provincia</label>';
+    const provInp = document.createElement('input');
+    provInp.className = 'inp';
+    provInp.value = z.provincia || '';
+    provInp.oninput = () => { z.provincia = provInp.value; markDirty(); };
+    provWrap.appendChild(provInp);
+    g.appendChild(provWrap);
+
+    const locWrap = document.createElement('div');
+    locWrap.innerHTML = '<label class="lbl">Localidades (separadas por coma)</label>';
+    const locInp = document.createElement('input');
+    locInp.className = 'inp';
+    locInp.value = (z.localidades || []).join(', ');
+    locInp.oninput = () => {
+      z.localidades = locInp.value.split(',').map(s => s.trim()).filter(Boolean);
+      markDirty();
+    };
+    locWrap.appendChild(locInp);
+    g.appendChild(locWrap);
+
+    row.appendChild(g);
+
+    const g2 = document.createElement('div');
+    g2.className = 'grid-2';
+    g2.style.marginTop = '12px';
+
+    const mayNombre = document.createElement('div');
+    mayNombre.innerHTML = '<label class="lbl">Nombre distribuidor</label>';
+    const mnI = document.createElement('input'); mnI.className = 'inp';
+    mnI.value = (z.mayorista && z.mayorista.nombre) || '';
+    mnI.oninput = () => { z.mayorista = z.mayorista || {}; z.mayorista.nombre = mnI.value; markDirty(); };
+    mayNombre.appendChild(mnI); g2.appendChild(mayNombre);
+
+    const mayDir = document.createElement('div');
+    mayDir.innerHTML = '<label class="lbl">Dirección</label>';
+    const mdI = document.createElement('input'); mdI.className = 'inp';
+    mdI.value = (z.mayorista && z.mayorista.direccion) || '';
+    mdI.oninput = () => { z.mayorista = z.mayorista || {}; z.mayorista.direccion = mdI.value; markDirty(); };
+    mayDir.appendChild(mdI); g2.appendChild(mayDir);
+
+    const mayTel = document.createElement('div');
+    mayTel.innerHTML = '<label class="lbl">Teléfono</label>';
+    const mtI = document.createElement('input'); mtI.className = 'inp';
+    mtI.value = (z.mayorista && z.mayorista.telefono) || '';
+    mtI.oninput = () => { z.mayorista = z.mayorista || {}; z.mayorista.telefono = mtI.value; markDirty(); };
+    mayTel.appendChild(mtI); g2.appendChild(mayTel);
+
+    const mayWa = document.createElement('div');
+    mayWa.innerHTML = '<label class="lbl">WhatsApp (549...)</label>';
+    const mwI = document.createElement('input'); mwI.className = 'inp';
+    mwI.value = (z.mayorista && z.mayorista.whatsapp) || '';
+    mwI.oninput = () => { z.mayorista = z.mayorista || {}; z.mayorista.whatsapp = mwI.value; markDirty(); };
+    mayWa.appendChild(mwI); g2.appendChild(mayWa);
+
+    row.appendChild(g2);
+    cont.appendChild(row);
+  });
+}
+
+function addZona() {
+  data.zonas_mayoristas = data.zonas_mayoristas || [];
+  data.zonas_mayoristas.push({
+    provincia: '', localidades: [],
+    mayorista: { nombre: '', direccion: '', telefono: '', whatsapp: '' }
+  });
+  markDirty();
+  renderZonas();
+}
+
+/* ---- Talles ---- */
+function renderTalles() {
+  const cont = document.getElementById('talles-list');
+  cont.innerHTML = '';
+  const guia = data.guia_talles || (data.guia_talles = {});
+  Object.keys(guia).forEach(tipo => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;';
+    const title = document.createElement('div');
+    title.style.fontWeight = '500';
+    title.textContent = tipo;
+    const actions = document.createElement('div');
+    const del = document.createElement('button');
+    del.className = 'btn-danger';
+    del.textContent = 'Eliminar tipo';
+    del.onclick = () => {
+      if (!confirm(`Eliminar tipo "${tipo}"? Se pierden todas sus filas.`)) return;
+      delete guia[tipo]; markDirty(); renderTalles();
+    };
+    actions.appendChild(del);
+    head.appendChild(title); head.appendChild(actions);
+    row.appendChild(head);
+
+    const g = document.createElement('div');
+    g.className = 'grid-2';
+    const uni = document.createElement('div');
+    uni.innerHTML = '<label class="lbl">Unidad</label>';
+    const uniI = document.createElement('input'); uniI.className = 'inp';
+    uniI.value = guia[tipo].unidad || 'cm';
+    uniI.oninput = () => { guia[tipo].unidad = uniI.value; markDirty(); };
+    uni.appendChild(uniI); g.appendChild(uni);
+
+    const meds = document.createElement('div');
+    meds.innerHTML = '<label class="lbl">Nombres de columnas (separados por coma)</label>';
+    const medI = document.createElement('input'); medI.className = 'inp';
+    medI.value = (guia[tipo].medidas || []).join(', ');
+    medI.oninput = () => {
+      guia[tipo].medidas = medI.value.split(',').map(s => s.trim()).filter(Boolean);
+      markDirty();
+      renderTalles();
+    };
+    meds.appendChild(medI); g.appendChild(meds);
+    row.appendChild(g);
+
+    /* Tabla */
+    const tabla = document.createElement('table');
+    tabla.style.cssText = 'width:100%;border-collapse:collapse;margin-top:16px;font-size:0.85rem;';
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    const th0 = document.createElement('th');
+    th0.textContent = 'Talle';
+    th0.style.cssText = 'text-align:left;padding:8px;background:#F5F5F5;';
+    trh.appendChild(th0);
+    (guia[tipo].medidas || []).forEach(m => {
+      const th = document.createElement('th');
+      th.textContent = m;
+      th.style.cssText = 'text-align:left;padding:8px;background:#F5F5F5;';
+      trh.appendChild(th);
+    });
+    const thAct = document.createElement('th');
+    thAct.style.cssText = 'background:#F5F5F5;';
+    trh.appendChild(thAct);
+    thead.appendChild(trh);
+    tabla.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    guia[tipo].tabla = guia[tipo].tabla || {};
+    Object.entries(guia[tipo].tabla).forEach(([talle, valores]) => {
+      const tr = document.createElement('tr');
+      const tdT = document.createElement('td'); tdT.style.padding = '4px;';
+      const tI = document.createElement('input'); tI.className = 'inp';
+      tI.value = talle;
+      tI.onchange = () => {
+        const nuevo = tI.value.trim();
+        if (nuevo && nuevo !== talle) {
+          const tmp = { ...guia[tipo].tabla };
+          delete tmp[talle]; tmp[nuevo] = valores;
+          guia[tipo].tabla = tmp;
+          markDirty(); renderTalles();
+        }
+      };
+      tdT.appendChild(tI); tr.appendChild(tdT);
+      (guia[tipo].medidas || []).forEach((m, mi) => {
+        const td = document.createElement('td'); td.style.padding = '4px;';
+        const vI = document.createElement('input'); vI.className = 'inp';
+        vI.value = valores[mi] || '';
+        vI.oninput = () => {
+          while (valores.length < (guia[tipo].medidas || []).length) valores.push('');
+          valores[mi] = vI.value; markDirty();
+        };
+        td.appendChild(vI); tr.appendChild(td);
+      });
+      const tdA = document.createElement('td');
+      const del2 = document.createElement('button');
+      del2.className = 'btn-danger'; del2.textContent = '×';
+      del2.onclick = () => { delete guia[tipo].tabla[talle]; markDirty(); renderTalles(); };
+      tdA.appendChild(del2); tr.appendChild(tdA);
+      tbody.appendChild(tr);
+    });
+    tabla.appendChild(tbody);
+    row.appendChild(tabla);
+
+    const addFila = document.createElement('button');
+    addFila.className = 'btn-ghost mt-2';
+    addFila.textContent = '+ Agregar talle';
+    addFila.onclick = () => {
+      const t = prompt('Nombre del nuevo talle:');
+      if (!t) return;
+      guia[tipo].tabla[t] = new Array((guia[tipo].medidas || []).length).fill('');
+      markDirty(); renderTalles();
+    };
+    row.appendChild(addFila);
+
+    cont.appendChild(row);
+  });
+}
+
+function addTipoTalle() {
+  const t = prompt('ID del nuevo tipo (ej: sacos, remeras):');
+  if (!t) return;
+  data.guia_talles = data.guia_talles || {};
+  if (data.guia_talles[t]) { alert('Ya existe.'); return; }
+  data.guia_talles[t] = { unidad: 'cm', medidas: ['Pecho', 'Largo'], tabla: {} };
+  markDirty(); renderTalles();
+}
+
+/* ---- Horarios ---- */
+function renderHorarios() {
+  const cont = document.getElementById('horarios-list');
+  cont.innerHTML = '';
+  const dias = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+  dias.forEach(dia => {
+    if (!data.horarios[dia]) data.horarios[dia] = [];
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.style.cssText = 'padding:12px;';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;';
+    const label = document.createElement('div');
+    label.style.cssText = 'font-weight:500;text-transform:capitalize;';
+    label.textContent = dia;
+    const actions = document.createElement('div');
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn-ghost';
+    addBtn.textContent = '+ Turno';
+    addBtn.onclick = () => {
+      data.horarios[dia].push({ abre: '08:30', cierra: '12:00' });
+      markDirty(); renderHorarios();
+    };
+    actions.appendChild(addBtn);
+    head.appendChild(label); head.appendChild(actions);
+    row.appendChild(head);
+
+    const turnos = data.horarios[dia];
+    turnos.forEach((t, ti) => {
+      const tr = document.createElement('div');
+      tr.style.cssText = 'display:flex;gap:8px;align-items:center;margin-top:8px;';
+      const a = document.createElement('input'); a.type = 'time'; a.className = 'inp'; a.style.width='auto';
+      a.value = t.abre; a.oninput = () => { t.abre = a.value; markDirty(); };
+      const sep = document.createElement('span'); sep.textContent = '—';
+      const c = document.createElement('input'); c.type = 'time'; c.className = 'inp'; c.style.width='auto';
+      c.value = t.cierra; c.oninput = () => { t.cierra = c.value; markDirty(); };
+      const del = document.createElement('button'); del.className='btn-danger'; del.textContent='×';
+      del.onclick = () => { turnos.splice(ti, 1); markDirty(); renderHorarios(); };
+      tr.appendChild(a); tr.appendChild(sep); tr.appendChild(c); tr.appendChild(del);
+      row.appendChild(tr);
+    });
+    if (!turnos.length) {
+      const cerrado = document.createElement('div');
+      cerrado.style.cssText = 'font-size:0.82rem;color:#999;margin-top:6px;';
+      cerrado.textContent = 'Cerrado';
+      row.appendChild(cerrado);
+    }
+    cont.appendChild(row);
+  });
+}
+
+/* ---- Categorías + productos ---- */
+function renderCategorias() {
+  const cont = document.getElementById('cat-list');
+  cont.innerHTML = '';
+  data.categorias = data.categorias || [];
+
+  data.categorias.forEach((cat, ci) => {
+    const catBox = document.createElement('div');
+    catBox.className = 'item-row';
+
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;';
+    const title = document.createElement('div');
+    title.className = 'serif';
+    title.style.fontSize = '1.25rem';
+    title.textContent = cat.nombre || '(sin nombre)';
+    const acts = document.createElement('div');
+    acts.style.display = 'flex'; acts.style.gap = '8px';
+    const addP = document.createElement('button');
+    addP.className = 'btn-ghost'; addP.textContent = '+ Producto';
+    addP.onclick = () => addProducto(ci);
+    const delC = document.createElement('button');
+    delC.className = 'btn-danger'; delC.textContent = 'Eliminar categoría';
+    delC.onclick = () => {
+      if (!confirm('Eliminar categoría y todos sus productos?')) return;
+      data.categorias.splice(ci, 1); markDirty(); renderCategorias();
+    };
+    acts.appendChild(addP); acts.appendChild(delC);
+    head.appendChild(title); head.appendChild(acts);
+    catBox.appendChild(head);
+
+    const g = document.createElement('div');
+    g.className = 'grid-3';
+    ['id', 'nombre', 'tipo_talle'].forEach(campo => {
+      const w = document.createElement('div');
+      const lbl = document.createElement('label'); lbl.className='lbl'; lbl.textContent = campo;
+      const inp = document.createElement('input'); inp.className = 'inp';
+      inp.value = cat[campo] || '';
+      inp.oninput = () => { cat[campo] = inp.value; markDirty(); title.textContent = cat.nombre || '(sin nombre)'; };
+      w.appendChild(lbl); w.appendChild(inp); g.appendChild(w);
+    });
+    catBox.appendChild(g);
+
+    const descW = document.createElement('div');
+    descW.style.marginTop = '10px';
+    const dLbl = document.createElement('label'); dLbl.className='lbl'; dLbl.textContent='Descripción';
+    const dInp = document.createElement('textarea'); dInp.className='inp'; dInp.rows=2;
+    dInp.value = cat.descripcion || '';
+    dInp.oninput = () => { cat.descripcion = dInp.value; markDirty(); };
+    descW.appendChild(dLbl); descW.appendChild(dInp);
+    catBox.appendChild(descW);
+
+    /* Productos */
+    const prodsWrap = document.createElement('div');
+    prodsWrap.style.marginTop = '16px';
+    (cat.productos || []).forEach((p, pi) => {
+      prodsWrap.appendChild(renderProductRow(cat, ci, p, pi));
+    });
+    catBox.appendChild(prodsWrap);
+
+    cont.appendChild(catBox);
+  });
+}
+
+function renderProductRow(cat, ci, p, pi) {
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#FAFAFA;border:1px solid #E5E5E5;padding:16px;margin-top:12px;';
+
+  const head = document.createElement('div');
+  head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
+  const title = document.createElement('div');
+  title.style.fontWeight = '500';
+  title.textContent = `#${p.id} · ${p.nombre || '(sin nombre)'}`;
+  const acts = document.createElement('div');
+  acts.style.display = 'flex'; acts.style.gap = '6px'; acts.style.alignItems = 'center';
+
+  const dispLbl = document.createElement('label');
+  dispLbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.78rem;';
+  const dispSw = document.createElement('label');
+  dispSw.className = 'switch';
+  const dispIn = document.createElement('input'); dispIn.type = 'checkbox';
+  dispIn.checked = p.disponible !== false;
+  dispIn.onchange = () => { p.disponible = dispIn.checked; markDirty(); };
+  const dispSp = document.createElement('span'); dispSp.className = 'slider';
+  dispSw.appendChild(dispIn); dispSw.appendChild(dispSp);
+  dispLbl.appendChild(dispSw); dispLbl.appendChild(document.createTextNode('Disp.'));
+  acts.appendChild(dispLbl);
+
+  const destLbl = document.createElement('label');
+  destLbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.78rem;';
+  const destSw = document.createElement('label');
+  destSw.className = 'switch';
+  const destIn = document.createElement('input'); destIn.type = 'checkbox';
+  destIn.checked = !!p.destacado;
+  destIn.onchange = () => { p.destacado = destIn.checked; markDirty(); };
+  const destSp = document.createElement('span'); destSp.className = 'slider';
+  destSw.appendChild(destIn); destSw.appendChild(destSp);
+  destLbl.appendChild(destSw); destLbl.appendChild(document.createTextNode('Dest.'));
+  acts.appendChild(destLbl);
+
+  const del = document.createElement('button');
+  del.className = 'btn-danger'; del.textContent = 'Eliminar';
+  del.onclick = () => {
+    if (!confirm('Eliminar producto?')) return;
+    cat.productos.splice(pi, 1); markDirty(); renderCategorias();
+  };
+  acts.appendChild(del);
+  head.appendChild(title); head.appendChild(acts);
+  box.appendChild(head);
+
+  const g = document.createElement('div');
+  g.className = 'grid-2';
+
+  const fieldsRow = [
+    ['nombre', 'Nombre', 'text'],
+    ['precio_minorista', 'Precio minorista', 'number'],
+    ['precio_mayorista', 'Precio mayorista', 'number']
+  ];
+  fieldsRow.forEach(([f, l, t]) => {
+    const w = document.createElement('div');
+    const lb = document.createElement('label'); lb.className='lbl'; lb.textContent = l;
+    const inp = document.createElement('input'); inp.className='inp'; inp.type = t;
+    inp.value = p[f] || (t === 'number' ? 0 : '');
+    inp.oninput = () => {
+      p[f] = t === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
+      markDirty();
+      if (f === 'nombre') title.textContent = `#${p.id} · ${p.nombre}`;
+    };
+    w.appendChild(lb); w.appendChild(inp); g.appendChild(w);
+  });
+  box.appendChild(g);
+
+  const descW = document.createElement('div');
+  descW.style.marginTop = '8px';
+  const dLbl = document.createElement('label'); dLbl.className='lbl'; dLbl.textContent='Descripción';
+  const dInp = document.createElement('textarea'); dInp.className='inp'; dInp.rows=3;
+  dInp.value = p.descripcion || '';
+  dInp.oninput = () => { p.descripcion = dInp.value; markDirty(); };
+  descW.appendChild(dLbl); descW.appendChild(dInp);
+  box.appendChild(descW);
+
+  /* Talles disponibles */
+  const tallesW = document.createElement('div');
+  tallesW.style.marginTop = '10px';
+  const tLbl = document.createElement('label'); tLbl.className='lbl'; tLbl.textContent = 'Talles disponibles';
+  tallesW.appendChild(tLbl);
+  const chips = document.createElement('div');
+  chips.className = 'talles-check-grid';
+  const tipoTalles = cat.tipo_talle && data.guia_talles[cat.tipo_talle]
+    ? Object.keys(data.guia_talles[cat.tipo_talle].tabla)
+    : [];
+  p.talles_disponibles = p.talles_disponibles || [];
+  tipoTalles.forEach(t => {
+    const chip = document.createElement('span');
+    chip.className = 'talle-chip' + (p.talles_disponibles.includes(t) ? ' on' : '');
+    chip.textContent = t;
+    chip.onclick = () => {
+      const idx = p.talles_disponibles.indexOf(t);
+      if (idx >= 0) p.talles_disponibles.splice(idx, 1);
+      else p.talles_disponibles.push(t);
+      chip.classList.toggle('on');
+      markDirty();
+    };
+    chips.appendChild(chip);
+  });
+  if (!tipoTalles.length) {
+    const w = document.createElement('div');
+    w.style.cssText = 'font-size:0.8rem;color:#900;';
+    w.textContent = 'No hay talles definidos para el tipo "' + (cat.tipo_talle || '?') + '". Configurá la guía de talles primero.';
+    tallesW.appendChild(w);
+  }
+  tallesW.appendChild(chips);
+  box.appendChild(tallesW);
+
+  /* Imágenes */
+  const imgsW = document.createElement('div');
+  imgsW.style.marginTop = '12px';
+  const iLbl = document.createElement('label'); iLbl.className='lbl'; iLbl.textContent = 'Imágenes';
+  imgsW.appendChild(iLbl);
+
+  const imgsGrid = document.createElement('div');
+  imgsGrid.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:8px;margin-bottom:8px;';
+  p.imagenes = p.imagenes || [];
+  p.imagenes.forEach((img, ii) => {
+    const th = document.createElement('div');
+    th.className = 'img-thumb';
+    th.style.backgroundImage = `url('./img/${img}')`;
+    const delI = document.createElement('button');
+    delI.className = 'del'; delI.textContent = '×';
+    delI.onclick = () => { p.imagenes.splice(ii, 1); markDirty(); renderCategorias(); };
+    th.appendChild(delI);
+    imgsGrid.appendChild(th);
+  });
+  imgsW.appendChild(imgsGrid);
+
+  const up = document.createElement('label');
+  up.className = 'img-drop';
+  const upIn = document.createElement('input');
+  upIn.type = 'file'; upIn.accept = 'image/*'; upIn.multiple = true; upIn.style.display = 'none';
+  upIn.onchange = () => uploadProductImages(upIn.files, p);
+  up.appendChild(upIn);
+  up.appendChild(document.createTextNode('+ Subir imágenes'));
+  imgsW.appendChild(up);
+
+  box.appendChild(imgsW);
+
+  return box;
+}
+
+function addCategoria() {
+  const id = prompt('ID de la categoría (ej: sacos):');
+  if (!id) return;
+  data.categorias = data.categorias || [];
+  data.categorias.push({
+    id, nombre: id, descripcion: '', tipo_talle: '', productos: []
+  });
+  markDirty(); renderCategorias();
+}
+
+function addProducto(ci) {
+  const cat = data.categorias[ci];
+  const allIds = [];
+  data.categorias.forEach(c => (c.productos || []).forEach(p => allIds.push(p.id)));
+  const nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
+  cat.productos = cat.productos || [];
+  cat.productos.push({
+    id: nextId,
+    nombre: 'Producto nuevo',
+    descripcion: '',
+    precio_minorista: 0,
+    precio_mayorista: 0,
+    talles_disponibles: [],
+    disponible: true,
+    destacado: false,
+    imagenes: []
+  });
+  markDirty(); renderCategorias();
+}
+
+/* ---- Imágenes generales ---- */
+function renderImagenes() {
+  const map = { logo: 'logo.jpeg', hero: 'hero-local.jpg', fabrica: 'fabrica.jpg', local: 'local.jpg' };
+  Object.entries(map).forEach(([k, filename]) => {
+    const el = document.getElementById(`img-${k}-preview`);
+    if (el) el.style.backgroundImage = `url('./img/${filename}?v=${Date.now()}')`;
+  });
+}
+
+/* ---- Upload imágenes ---- */
+async function uploadImagen(input, filename, key) {
+  const file = input.files[0];
+  if (!file) return;
+  try {
+    setStatus('Subiendo imagen...');
+    const b64 = await fileToBase64(file);
+    let existing = null;
+    try { existing = await ghGet(IMG_PATH + filename); } catch {}
+    await ghPut(IMG_PATH + filename, b64, existing ? existing.sha : null, `chore: actualizar ${filename}`);
+    setStatus('Imagen subida ✓', 'ok');
+    renderImagenes();
+  } catch (e) {
+    setStatus('Error', 'err');
+    alert('Error al subir: ' + e.message);
+  }
+  input.value = '';
+}
+
+async function uploadProductImages(files, p) {
+  for (const file of files) {
+    try {
+      const ext = file.name.split('.').pop().toLowerCase();
+      const safeName = `p${p.id}-${Date.now()}-${Math.random().toString(36).slice(2,6)}.${ext}`;
+      setStatus('Subiendo ' + safeName + '...');
+      const b64 = await fileToBase64(file);
+      await ghPut(IMG_PATH + safeName, b64, null, `chore: agregar ${safeName}`);
+      p.imagenes = p.imagenes || [];
+      p.imagenes.push(safeName);
+      markDirty();
+    } catch (e) {
+      alert('Error al subir ' + file.name + ': ' + e.message);
+    }
+  }
+  setStatus('Imágenes agregadas', 'ok');
+  renderCategorias();
+}
+
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const s = reader.result;
+      const comma = s.indexOf(',');
+      resolve(s.slice(comma + 1));
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---- Hash mayorista ---- */
+async function generateMayoHash() {
+  const nuevo = document.getElementById('new-may-code').value.trim();
+  if (!nuevo) return;
+  if (nuevo.length < 4) { alert('El código debe tener al menos 4 caracteres.'); return; }
+  const hash = await sha256Hex(nuevo);
+  data.config.mayoristas.codigo_hash = hash;
+  document.querySelector('[data-field="config.mayoristas.codigo_hash"]').value = hash;
+  document.getElementById('new-may-code').value = '';
+  markDirty();
+  alert('Hash generado. Recordá guardar el código real ("' + nuevo + '") en algún lugar seguro — el sistema no lo puede recuperar.');
+}
+
+/* ============ Tabs ============ */
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* Warn on leave with dirty */
+window.addEventListener('beforeunload', (e) => {
+  if (dirty) { e.preventDefault(); e.returnValue = ''; }
+});
+
+/* ============ Solicitudes mayoristas ============ */
+const FIREBASE_CONFIG = {
+  apiKey: "PLACEHOLDER_API_KEY",
+  authDomain: "PLACEHOLDER.firebaseapp.com",
+  projectId: "PLACEHOLDER",
+  storageBucket: "PLACEHOLDER.appspot.com",
+  messagingSenderId: "PLACEHOLDER",
+  appId: "PLACEHOLDER"
+};
+let fbDb = null;
+try {
+  if (FIREBASE_CONFIG.apiKey !== 'PLACEHOLDER_API_KEY' && typeof firebase !== 'undefined') {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    fbDb = firebase.firestore();
+  }
+} catch(e) { console.warn('Firebase no inicializado en portal:', e.message); }
+
+let solicitudes = [];
+let solUnsub = null;
+
+function genCodigoMayoristaCustom() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return 'CATT-' + s;
+}
+
+async function loadSolicitudes() {
+  const statusEl = document.getElementById('sol-status');
+  if (!fbDb) {
+    statusEl.className = 'msg-info';
+    statusEl.textContent = 'Firebase no configurado. Las solicitudes se verán cuando conectes el proyecto.';
+    return;
+  }
+  statusEl.textContent = 'Cargando...';
+  try {
+    if (solUnsub) solUnsub();
+    solUnsub = fbDb.collection('solicitudes_mayoristas')
+      .orderBy('creadoEn', 'desc')
+      .limit(200)
+      .onSnapshot(snap => {
+        solicitudes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
+        const badge = document.getElementById('badge-sol');
+        badge.textContent = pendientes;
+        badge.style.display = pendientes > 0 ? 'inline-block' : 'none';
+        renderSolicitudes();
+      });
+  } catch (e) {
+    statusEl.className = 'msg-info err';
+    statusEl.textContent = 'Error al cargar: ' + e.message;
+  }
+}
+
+function renderSolicitudes() {
+  const cont = document.getElementById('solicitudes-list');
+  const statusEl = document.getElementById('sol-status');
+  const filter = document.getElementById('sol-filter').value;
+  cont.innerHTML = '';
+
+  let list = solicitudes;
+  if (filter !== 'todas') list = list.filter(s => s.estado === filter);
+
+  if (!list.length) {
+    statusEl.className = 'msg-info';
+    statusEl.textContent = `Sin solicitudes ${filter === 'todas' ? '' : filter + 's'}.`;
+    return;
+  }
+
+  statusEl.style.display = 'none';
+
+  list.forEach(sol => {
+    const s = sol.solicitante || {};
+    const box = document.createElement('div');
+    box.className = 'item-row';
+
+    /* Header */
+    const head = document.createElement('div');
+    head.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:8px;';
+    const left = document.createElement('div');
+    const cod = document.createElement('div');
+    cod.style.cssText = 'font-family:"Cormorant Garamond",serif;font-size:1.2rem;';
+    cod.textContent = sol.codigo || '?';
+    left.appendChild(cod);
+    const cli = document.createElement('div');
+    cli.style.cssText = 'font-size:0.9rem;font-weight:500;';
+    cli.textContent = s.nombre + ' — ' + s.negocio;
+    left.appendChild(cli);
+    head.appendChild(left);
+    const estado = document.createElement('span');
+    estado.style.cssText = 'padding:4px 10px;font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;';
+    if (sol.estado === 'aceptada') { estado.style.background = '#0A0A0A'; estado.style.color = '#FFF'; }
+    else if (sol.estado === 'rechazada') { estado.style.background = '#FDECEC'; estado.style.color = '#900'; }
+    else { estado.style.background = '#FFF7E0'; estado.style.color = '#7A5000'; }
+    estado.textContent = sol.estado || 'pendiente';
+    head.appendChild(estado);
+    box.appendChild(head);
+
+    /* Info grid */
+    const info = document.createElement('div');
+    info.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;font-size:0.85rem;color:#444;margin-bottom:12px;';
+    const add = (l, v) => {
+      if (!v) return;
+      const item = document.createElement('div');
+      const ll = document.createElement('div'); ll.style.cssText='font-size:0.7rem;color:#999;text-transform:uppercase;letter-spacing:0.08em;'; ll.textContent = l;
+      const rr = document.createElement('div'); rr.textContent = v;
+      item.appendChild(ll); item.appendChild(rr);
+      info.appendChild(item);
+    };
+    add('CUIT', s.cuit);
+    add('Tipo', s.tipo);
+    add('Teléfono', s.telefono);
+    add('WhatsApp', s.whatsapp);
+    add('Email', s.email);
+    add('Localidad', (s.localidad || '') + (s.provincia ? ', ' + s.provincia : ''));
+    if (sol.creadoEn && sol.creadoEn.toDate) {
+      add('Recibida', sol.creadoEn.toDate().toLocaleString('es-AR'));
+    }
+    box.appendChild(info);
+
+    if (sol.notas) {
+      const nota = document.createElement('div');
+      nota.style.cssText = 'padding:10px;background:#F5F5F5;font-size:0.85rem;margin-bottom:12px;';
+      nota.textContent = 'Notas: ' + sol.notas;
+      box.appendChild(nota);
+    }
+
+    if (sol.respuesta) {
+      const resp = document.createElement('div');
+      resp.style.cssText = 'padding:10px;background:' + (sol.estado === 'aceptada' ? '#E7F5E7' : '#FDECEC') + ';font-size:0.85rem;margin-bottom:12px;';
+      if (sol.estado === 'aceptada') {
+        resp.innerHTML = '';
+        const p = document.createElement('div'); p.textContent = 'Código mayorista entregado:';
+        const c = document.createElement('div'); c.style.cssText = 'font-family:"Cormorant Garamond",serif;font-size:1.2rem;margin-top:4px;letter-spacing:0.1em;';
+        c.textContent = sol.respuesta.codigoMayorista || '?';
+        resp.appendChild(p); resp.appendChild(c);
+      } else {
+        resp.textContent = 'Motivo: ' + (sol.respuesta.motivo || '');
+      }
+      box.appendChild(resp);
+    }
+
+    /* Actions */
+    if (sol.estado === 'pendiente') {
+      const acts = document.createElement('div');
+      acts.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+      const btnA = document.createElement('button');
+      btnA.className = 'btn';
+      btnA.textContent = '✓ Aceptar';
+      btnA.onclick = () => aceptarSolicitud(sol);
+      const btnR = document.createElement('button');
+      btnR.className = 'btn-danger';
+      btnR.textContent = '✗ Rechazar';
+      btnR.onclick = () => rechazarSolicitud(sol);
+      acts.appendChild(btnA); acts.appendChild(btnR);
+
+      if (s.whatsapp) {
+        const btnW = document.createElement('a');
+        btnW.className = 'btn-ghost';
+        btnW.textContent = 'WhatsApp';
+        btnW.target = '_blank';
+        btnW.rel = 'noopener noreferrer';
+        const msg = encodeURIComponent(`Hola ${s.nombre}, te contacto de Cattorini por tu solicitud de cuenta mayorista (${sol.codigo}).`);
+        btnW.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
+        acts.appendChild(btnW);
+      }
+      box.appendChild(acts);
+    } else {
+      const acts = document.createElement('div');
+      acts.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+      if (s.whatsapp) {
+        const btnW = document.createElement('a');
+        btnW.className = 'btn-ghost';
+        btnW.textContent = 'WhatsApp';
+        btnW.target = '_blank';
+        btnW.rel = 'noopener noreferrer';
+        const msg = encodeURIComponent(`Hola ${s.nombre}, te contacto de Cattorini por tu solicitud ${sol.codigo}.`);
+        btnW.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
+        acts.appendChild(btnW);
+      }
+      const btnDel = document.createElement('button');
+      btnDel.className = 'btn-danger';
+      btnDel.textContent = 'Eliminar registro';
+      btnDel.onclick = async () => {
+        if (!confirm('Eliminar el registro definitivamente?')) return;
+        try { await fbDb.collection('solicitudes_mayoristas').doc(sol.id).delete(); }
+        catch (e) { alert('Error: ' + e.message); }
+      };
+      acts.appendChild(btnDel);
+      box.appendChild(acts);
+    }
+
+    cont.appendChild(box);
+  });
+}
+
+async function aceptarSolicitud(sol) {
+  const opt = prompt(
+    'Elegí una opción:\n\n' +
+    '1) Enter directo — usa el código master actual (' + (data.config.mayoristas.codigo_hash ? 'hasheado, no visible' : 'sin definir') + ')\n' +
+    '2) Escribí un código custom nuevo (mínimo 4 caracteres) — se usa solo para este cliente\n' +
+    '3) Escribí "auto" para generar uno aleatorio\n\n' +
+    'Nota: si elegís opción 1, avisale por WhatsApp el código real que tenés guardado — no lo podemos recuperar del hash.',
+    ''
+  );
+  if (opt === null) return;
+
+  let codigoMayorista;
+  const v = opt.trim();
+  if (!v) {
+    codigoMayorista = '(usar código master actual — avisalo manualmente)';
+  } else if (v.toLowerCase() === 'auto') {
+    codigoMayorista = genCodigoMayoristaCustom();
+  } else {
+    if (v.length < 4) { alert('Mínimo 4 caracteres.'); return; }
+    codigoMayorista = v;
+  }
+
+  try {
+    await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
+      estado: 'aceptada',
+      respuesta: {
+        codigoMayorista,
+        resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
+      }
+    });
+    alert('Aceptada. El solicitante verá el código "' + codigoMayorista + '" en su URL de seguimiento.\n\nRecordá contactarlo por WhatsApp/email para reforzar el aviso.');
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function rechazarSolicitud(sol) {
+  const motivo = prompt('Motivo del rechazo (será visible para el solicitante):', '');
+  if (motivo === null) return;
+  if (!motivo.trim()) { alert('Ingresá un motivo.'); return; }
+  try {
+    await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
+      estado: 'rechazada',
+      respuesta: {
+        motivo: motivo.trim(),
+        resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
+      }
+    });
+    alert('Solicitud rechazada. El solicitante verá el motivo en su URL de seguimiento.');
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+/* Cuando se entra al app, cargar solicitudes también */
+const originalEnterApp = enterApp;
+enterApp = async function() {
+  await originalEnterApp();
+  loadSolicitudes();
+};
+
+/* ============ Init ============ */
+checkLoginState();
+</script>
+
+</body>
+</html>

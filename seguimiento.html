@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;" />
+
+  <title>Seguimiento de pedido — Cattorini</title>
+  <meta name="description" content="Consultá el estado de tu pedido en Cattorini." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="icon" href="./img/logo.jpeg" type="image/png" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0A0A0A" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #FAFAFA; color: #0A0A0A;
+      font-weight: 300; margin: 0; min-height: 100vh;
+      animation: pageIn .5s ease-out both;
+    }
+    @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    .serif { font-family: 'Cormorant Garamond', Georgia, serif; }
+    header {
+      background: #FFF; border-bottom: 1px solid #E5E5E5;
+      padding: 16px 24px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    header img { height: 26px; width: auto; display: block; }
+    header a { text-decoration: none; color: #0A0A0A; }
+    main { max-width: 720px; margin: 0 auto; padding: 48px 24px; }
+    .card { background: #FFF; padding: 32px; border: 1px solid #E5E5E5; margin-bottom: 20px; }
+    .eyebrow { font-size: 0.72rem; letter-spacing: 0.15em; text-transform: uppercase; color: #666; font-weight: 500; }
+    h1 { font-family: 'Cormorant Garamond', serif; font-size: 2rem; letter-spacing: -0.02em; margin: 8px 0 24px; }
+    h2 { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; margin-bottom: 12px; }
+    .inp {
+      width: 100%; padding: 12px 14px;
+      border: 1px solid #E5E5E5; background: #FFF; font-size: 0.95rem;
+      font-family: inherit; letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .inp:focus { outline: none; border-color: #0A0A0A; }
+    .btn {
+      padding: 12px 24px; background: #0A0A0A; color: #FFF;
+      border: 1px solid #0A0A0A; cursor: pointer;
+      font-size: 0.78rem; letter-spacing: 0.15em; text-transform: uppercase;
+      font-family: inherit;
+    }
+    .btn:hover { background: #FFF; color: #0A0A0A; }
+
+    .code-display {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 2rem; letter-spacing: 0.15em;
+      background: #F5F5F5; padding: 12px 20px;
+      text-align: center; margin-bottom: 20px;
+    }
+
+    /* Timeline */
+    .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin: 24px 0; }
+    .step {
+      padding: 16px 12px; text-align: center;
+      background: #F5F5F5; border: 1px solid #E5E5E5;
+      font-size: 0.78rem;
+    }
+    .step.done { background: #0A0A0A; color: #FFF; border-color: #0A0A0A; }
+    .step.current { background: #FFF; border-color: #0A0A0A; border-width: 2px; }
+    .step-num { font-family: 'Cormorant Garamond', serif; font-size: 1.4rem; display: block; margin-bottom: 2px; }
+    .step-label { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+    @media (max-width: 600px) {
+      .timeline { grid-template-columns: 1fr 1fr; }
+    }
+
+    .item-line {
+      padding: 12px 0; border-bottom: 1px solid #F0F0F0;
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 0.9rem;
+    }
+    .totals-line {
+      padding: 6px 0; display: flex; justify-content: space-between;
+      font-size: 0.9rem;
+    }
+    .totals-line.total {
+      font-weight: 500; font-size: 1.05rem;
+      padding-top: 12px; margin-top: 8px;
+      border-top: 1px solid #E5E5E5;
+    }
+
+    .mis-pedidos-lista { display: grid; gap: 8px; }
+    .mp-item {
+      padding: 12px 16px; background: #FAFAFA;
+      border: 1px solid #E5E5E5;
+      display: flex; justify-content: space-between; align-items: center;
+      text-decoration: none; color: #0A0A0A;
+      font-size: 0.88rem;
+    }
+    .mp-item:hover { border-color: #0A0A0A; }
+
+    .status-msg {
+      padding: 16px; background: #F5F5F5;
+      border-left: 3px solid #0A0A0A;
+      font-size: 0.9rem; line-height: 1.5;
+      margin-bottom: 20px;
+    }
+    .rt-badge {
+      display: inline-block; font-size: 0.7rem;
+      padding: 2px 8px; background: #F5F5F5;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      margin-left: 10px; color: #666;
+    }
+    .rt-badge.live { background: #0A0A0A; color: #FFF; }
+
+    .not-found {
+      text-align: center; padding: 40px 20px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="./index.html" aria-label="Cattorini — Inicio">
+    <img src="./img/logo.jpeg" alt="Cattorini" />
+  </a>
+  <a href="./tienda.html" style="font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;">Volver a la tienda</a>
+</header>
+
+<main>
+  <div class="eyebrow">Seguimiento</div>
+  <h1>Estado de tu pedido</h1>
+
+  <!-- Búsqueda -->
+  <div class="card" id="search-card">
+    <h2>Ingresá el código</h2>
+    <p style="color:#666;font-size:0.88rem;margin-bottom:16px;">Al confirmar tu pedido te dimos un código de 5 caracteres. Ingresálo para ver el estado en tiempo real.</p>
+    <form onsubmit="event.preventDefault();buscar()">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <input type="text" id="in-code" class="inp" placeholder="A3F7B" maxlength="6" style="flex:1;min-width:180px;" />
+        <button type="submit" class="btn">Consultar</button>
+      </div>
+    </form>
+    <div id="search-err" style="display:none;color:#900;font-size:0.85rem;margin-top:10px;"></div>
+  </div>
+
+  <!-- Historial de pedidos del usuario -->
+  <div class="card" id="mis-pedidos-card" style="display:none;">
+    <h2>Tus últimos pedidos</h2>
+    <div class="mis-pedidos-lista" id="mis-pedidos-lista"></div>
+  </div>
+
+  <!-- Detalle del pedido -->
+  <div id="pedido-card" style="display:none;">
+    <div class="card">
+      <div class="eyebrow">Código de pedido <span class="rt-badge" id="rt-badge">···</span></div>
+      <div class="code-display" id="code-display">···</div>
+
+      <div class="status-msg" id="status-msg">···</div>
+
+      <h2>Progreso</h2>
+      <div class="timeline">
+        <div class="step" data-step="pendiente">
+          <span class="step-num">1</span>
+          <span class="step-label">Encolado</span>
+        </div>
+        <div class="step" data-step="preparando">
+          <span class="step-num">2</span>
+          <span class="step-label">Preparación</span>
+        </div>
+        <div class="step" data-step="listo">
+          <span class="step-num">3</span>
+          <span class="step-label">Listo</span>
+        </div>
+        <div class="step" data-step="entregado">
+          <span class="step-num">4</span>
+          <span class="step-label">Entregado</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Detalle</h2>
+      <div id="detalle-cliente" style="margin-bottom:16px;font-size:0.9rem;line-height:1.6;color:#444;"></div>
+      <div id="detalle-items"></div>
+      <div id="detalle-totales" style="margin-top:16px;"></div>
+      <div id="detalle-nota" style="margin-top:16px;padding:12px;background:#F5F5F5;font-size:0.88rem;display:none;"></div>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <p style="color:#666;font-size:0.88rem;margin-bottom:12px;">¿Tenés alguna consulta sobre tu pedido?</p>
+      <a id="wa-consulta" target="_blank" rel="noopener noreferrer" class="btn">Consultar por WhatsApp</a>
+    </div>
+  </div>
+
+  <!-- No encontrado -->
+  <div id="not-found-card" style="display:none;">
+    <div class="card not-found">
+      <h2>No encontramos ese pedido</h2>
+      <p>Revisá que el código sea correcto. Los códigos tienen 5 caracteres alfanuméricos.</p>
+      <button class="btn" style="margin-top:16px;" onclick="volverBusqueda()">Volver a intentar</button>
+    </div>
+  </div>
+</main>
+
+<script>
+'use strict';
+
+/* =========== FIREBASE PLACEHOLDER =========== */
+const FIREBASE_CONFIG = {
+  apiKey: "PLACEHOLDER_API_KEY",
+  authDomain: "PLACEHOLDER.firebaseapp.com",
+  projectId: "PLACEHOLDER",
+  storageBucket: "PLACEHOLDER.appspot.com",
+  messagingSenderId: "PLACEHOLDER",
+  appId: "PLACEHOLDER"
+};
+let db = null;
+try {
+  if (FIREBASE_CONFIG.apiKey !== 'PLACEHOLDER_API_KEY' && typeof firebase !== 'undefined') {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }
+} catch(e) { console.warn('Firebase no inicializado:', e.message); }
+
+const LS_MIS_PEDIDOS = 'catt_mis_pedidos';
+let DATA = null;
+let unsubscribe = null;
+
+async function loadData() {
+  try {
+    const res = await fetch('./productos.json', { cache: 'no-cache' });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch { return null; }
+}
+
+function esc(s) {
+  if (s === null || s === undefined) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function renderMisPedidos() {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_MIS_PEDIDOS) || '[]');
+    if (!arr.length) return;
+    const card = document.getElementById('mis-pedidos-card');
+    const lista = document.getElementById('mis-pedidos-lista');
+    lista.innerHTML = '';
+    arr.slice(0, 10).forEach(p => {
+      const item = document.createElement('a');
+      item.href = `?code=${encodeURIComponent(p.code)}`;
+      item.className = 'mp-item';
+      const left = document.createElement('span');
+      left.textContent = '#' + p.code;
+      left.style.fontFamily = "'Cormorant Garamond', serif";
+      left.style.fontSize = '1.1rem';
+      const right = document.createElement('span');
+      const d = new Date(p.ts);
+      right.textContent = d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+      right.style.color = '#666';
+      right.style.fontSize = '0.78rem';
+      item.appendChild(left);
+      item.appendChild(right);
+      lista.appendChild(item);
+    });
+    card.style.display = 'block';
+  } catch {}
+}
+
+async function buscar() {
+  const raw = document.getElementById('in-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('search-err');
+  errEl.style.display = 'none';
+  if (!/^[A-Z0-9]{4,6}$/.test(raw)) {
+    errEl.textContent = 'El código no tiene el formato correcto.';
+    errEl.style.display = 'block';
+    return;
+  }
+  window.location.href = `?code=${encodeURIComponent(raw)}`;
+}
+
+function volverBusqueda() {
+  window.location.href = './seguimiento.html';
+}
+
+function renderTimeline(estado) {
+  const orden = ['pendiente','preparando','listo','entregado'];
+  const idx = orden.indexOf(estado);
+  document.querySelectorAll('.step').forEach((el, i) => {
+    el.classList.remove('done', 'current');
+    if (i < idx) el.classList.add('done');
+    else if (i === idx) el.classList.add('current');
+  });
+}
+
+const STATUS_MESSAGES = {
+  pendiente: 'Tu pedido fue recibido y está en cola. Vamos a comenzar a prepararlo pronto.',
+  preparando: 'Estamos preparando tu pedido. En breve estará listo.',
+  listo: 'Tu pedido está listo. Si es retiro, ya podés pasar a buscarlo. Si es envío, lo despachamos por Vía Cargo pronto.',
+  entregado: 'Tu pedido fue entregado. ¡Gracias por elegirnos!',
+  cancelado: 'Tu pedido fue cancelado. Si tenés dudas, escribinos.'
+};
+
+function renderPedido(doc) {
+  document.getElementById('search-card').style.display = 'none';
+  document.getElementById('mis-pedidos-card').style.display = 'none';
+  document.getElementById('not-found-card').style.display = 'none';
+  document.getElementById('pedido-card').style.display = 'block';
+
+  const d = doc.data ? doc.data() : doc;
+  const code = d.codigo || (doc.id ? doc.id.slice(-5).toUpperCase() : '?');
+
+  document.getElementById('code-display').textContent = '#' + code;
+  document.getElementById('status-msg').textContent = STATUS_MESSAGES[d.estado] || 'Estado desconocido.';
+  renderTimeline(d.estado);
+
+  /* Cliente */
+  const cliBox = document.getElementById('detalle-cliente');
+  cliBox.innerHTML = '';
+  const cli = d.cliente || {};
+  const addRow = (label, val) => {
+    if (!val) return;
+    const row = document.createElement('div');
+    const l = document.createElement('span'); l.style.color = '#666'; l.textContent = label + ': ';
+    const v = document.createElement('span'); v.textContent = val;
+    row.appendChild(l); row.appendChild(v);
+    cliBox.appendChild(row);
+  };
+  addRow('Nombre', cli.nombre);
+  addRow('Modalidad', d.modalidad === 'envio' ? 'Envío a domicilio' : 'Retiro en local');
+  if (d.modalidad === 'envio') {
+    addRow('Dirección', cli.direccion);
+    addRow('Localidad', (cli.localidad ? cli.localidad : '') + (cli.provincia ? ', ' + cli.provincia : ''));
+    addRow('Código postal', cli.codigoPostal);
+  }
+  if (cli.perfil === 'mayorista') addRow('Perfil', 'Cliente mayorista');
+
+  /* Items */
+  const iBox = document.getElementById('detalle-items');
+  iBox.innerHTML = '';
+  (d.items || []).forEach(it => {
+    const row = document.createElement('div');
+    row.className = 'item-line';
+    const left = document.createElement('span');
+    left.textContent = `${it.nombre} · Talle ${it.talle} · x${it.qty}`;
+    const right = document.createElement('span');
+    right.textContent = '$' + ((it.precio || 0) * (it.qty || 0)).toLocaleString('es-AR');
+    row.appendChild(left); row.appendChild(right);
+    iBox.appendChild(row);
+  });
+
+  /* Totales */
+  const tBox = document.getElementById('detalle-totales');
+  tBox.innerHTML = '';
+  const addT = (l, v, cls) => {
+    const row = document.createElement('div');
+    row.className = 'totals-line ' + (cls || '');
+    const ll = document.createElement('span'); ll.textContent = l;
+    const rr = document.createElement('span'); rr.textContent = '$' + (v || 0).toLocaleString('es-AR');
+    row.appendChild(ll); row.appendChild(rr);
+    tBox.appendChild(row);
+  };
+  addT('Subtotal', d.subtotal);
+  if (d.modalidad === 'envio') addT('Envío', d.envio);
+  addT('Total', d.total, 'total');
+
+  /* Nota */
+  if (d.nota) {
+    const n = document.getElementById('detalle-nota');
+    n.style.display = 'block';
+    n.textContent = 'Nota: ' + d.nota;
+  }
+
+  /* WhatsApp de consulta */
+  if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
+    const wa = DATA.negocio.whatsapp;
+    const msg = encodeURIComponent(`Hola! Quería consultar sobre mi pedido #${code}.`);
+    document.getElementById('wa-consulta').href = `https://wa.me/${wa}?text=${msg}`;
+  }
+}
+
+async function cargarPedido(code) {
+  if (!db) {
+    document.getElementById('search-err').textContent = 'Sistema de seguimiento no disponible en este momento.';
+    document.getElementById('search-err').style.display = 'block';
+    return;
+  }
+
+  const rtBadge = document.getElementById('rt-badge');
+
+  try {
+    /* Buscar por campo codigo */
+    const snap = await db.collection('pedidos').where('codigo', '==', code).limit(1).get();
+    if (snap.empty) {
+      document.getElementById('search-card').style.display = 'none';
+      document.getElementById('not-found-card').style.display = 'block';
+      return;
+    }
+    const doc = snap.docs[0];
+    renderPedido(doc);
+
+    /* Suscribirse a cambios en vivo */
+    rtBadge.textContent = 'En vivo';
+    rtBadge.classList.add('live');
+    unsubscribe = db.collection('pedidos').doc(doc.id).onSnapshot(snap => {
+      if (snap.exists) renderPedido(snap);
+    }, err => {
+      rtBadge.textContent = 'Sin conexión';
+      rtBadge.classList.remove('live');
+    });
+  } catch (e) {
+    document.getElementById('search-err').textContent = 'Error al consultar. Reintentá.';
+    document.getElementById('search-err').style.display = 'block';
+    console.error(e);
+  }
+}
+
+async function init() {
+  DATA = await loadData();
+  renderMisPedidos();
+
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    document.getElementById('in-code').value = code;
+    await cargarPedido(code.toUpperCase());
+  }
+}
+
+init();
+
+/* Page transitions on link click */
+document.addEventListener('click', (e) => {
+  const link = e.target.closest('a[href]');
+  if (!link) return;
+  const href = link.getAttribute('href');
+  if (!href || href.startsWith('#') || href.startsWith('?')) return;
+  if (link.target === '_blank') return;
+  const url = new URL(href, window.location.href);
+  if (url.origin !== window.location.origin) return;
+  e.preventDefault();
+  document.body.style.animation = 'pageIn 0.3s ease-in reverse forwards';
+  setTimeout(() => { window.location.href = href; }, 300);
+});
+
+/* Reset al restaurar desde bfcache */
+window.addEventListener('pageshow', () => {
+  document.body.style.animation = '';
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>QR — Cattorini</title>
+  <link rel="icon" href="./img/logo.jpeg" type="image/png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: #FAFAFA;
+      color: #0A0A0A;
+      font-weight: 300;
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 30px 20px;
+    }
+    .serif { font-family: 'Cormorant Garamond', serif; }
+    .card {
+      background: #FFF;
+      max-width: 400px; width: 100%;
+      padding: 48px 32px;
+      border: 1px solid #E5E5E5;
+      text-align: center;
+    }
+    .logo { height: 48px; width: auto; margin: 0 auto 12px; display: block; }
+    .brand { display: none; }
+    .tagline {
+      font-size: 0.72rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: #666;
+      margin-top: 4px; margin-bottom: 32px;
+    }
+    #qr-box {
+      display: inline-block;
+      padding: 12px;
+      background: #FFF;
+      border: 1px solid #E5E5E5;
+    }
+    .divider {
+      height: 1px; background: #E5E5E5;
+      margin: 32px 0;
+    }
+    .cta {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.3rem; margin-bottom: 6px;
+    }
+    .url {
+      font-size: 0.75rem; color: #666;
+      word-break: break-all;
+      margin-bottom: 24px;
+      font-family: monospace;
+    }
+    .addr {
+      font-size: 0.85rem; color: #444;
+      margin-bottom: 24px;
+      line-height: 1.5;
+    }
+    .powered {
+      font-size: 0.65rem; letter-spacing: 0.15em;
+      text-transform: uppercase; color: #999;
+    }
+    @media print {
+      body { background: #FFF; padding: 20px; }
+      .card { border: none; box-shadow: none; padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <img src="./img/logo.jpeg" alt="Cattorini" class="logo" />
+    <div class="tagline">Camisas · Pantalones · Jeans</div>
+
+    <div id="qr-box"></div>
+
+    <div class="divider"></div>
+
+    <div class="cta">Escaneá para comprar online</div>
+    <div class="url">cattorini.github.io/tienda.html</div>
+
+    <div class="addr">
+      Sarmiento y 25 de Mayo · Las Flores<br />
+      02244 45-4040
+    </div>
+
+    <div class="powered">Powered by PushCommerce</div>
+  </div>
+
+  <script>
+    new QRCode(document.getElementById('qr-box'), {
+      text: 'https://cattorini.github.io/tienda.html',
+      width: 220, height: 220,
+      colorDark: '#0A0A0A', colorLight: '#FFFFFF',
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  </script>
+</body>
+</html>

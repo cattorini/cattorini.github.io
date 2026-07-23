@@ -1,0 +1,259 @@
+{
+  "negocio": {
+    "nombre": "Cattorini",
+    "nombre_completo": "Cattorini — Camisas y Pantalones",
+    "tagline": "Fábrica textil en Las Flores desde 1978",
+    "descripcion_corta": "Fábrica de camisas, pantalones y jeans. Venta mayorista a todo el país y minorista en local de Las Flores.",
+    "descripcion_larga": "Somos una fábrica textil familiar ubicada en Las Flores, provincia de Buenos Aires. Producimos camisas, pantalones y jeans con estándares de calidad industrial y atención al detalle artesanal. Vendemos por mayor a comercios de todo el país y al público en nuestro local propio.",
+    "whatsapp": "5492244454040",
+    "telefono": "02244 45-4040",
+    "direccion": "Sarmiento esquina 25 de Mayo, Las Flores, B7200, Buenos Aires",
+    "direccion_corta": "Sarmiento y 25 de Mayo, Las Flores",
+    "provincia": "Buenos Aires",
+    "codigo_postal": "B7200",
+    "pais": "AR",
+    "latitud": "-36.0111",
+    "longitud": "-59.0928",
+    "maps_embed": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3244.5!2d-59.0928!3d-36.0111!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sSarmiento%20y%2025%20de%20Mayo%2C%20Las%20Flores!5e0!3m2!1ses!2sar!4v1700000000000",
+    "rating": 4.3,
+    "resenas_count": 23,
+    "fundacion": 1978,
+    "analytics_id": ""
+  },
+  "config": {
+    "envio": {
+      "gratis_desde": 80000,
+      "costo_estandar": 4500,
+      "transportista": "Vía Cargo",
+      "leyenda": "Enviamos a todo el país por Vía Cargo. Envío gratis en compras superiores a $80.000."
+    },
+    "mayoristas": {
+      "codigo_hash": "280cfbb74b55fca4baa3631bb025bd0c2b7edf87f000827e026569cbad7ccbfe",
+      "minimo_compra": 100000,
+      "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo."
+    },
+    "minoristas": {
+      "bonificacion_zonas_libres": 5,
+      "mensaje_bonificacion": "En tu zona no tenemos distribuidor. Aplicamos 5% de descuento en tu compra.",
+      "mensaje_zona_con_mayorista": "En tu zona contamos con un distribuidor autorizado. Te dejamos sus datos para que compres directamente con él y aproveches precios mejores."
+    }
+  },
+  "zonas_mayoristas": [],
+  "guia_talles": {
+    "camisas": {
+      "unidad": "cm",
+      "medidas": ["Pecho", "Hombro", "Largo", "Manga"],
+      "tabla": {
+        "S":   ["92", "42", "70", "62"],
+        "M":   ["96", "44", "72", "63"],
+        "L":   ["100", "46", "74", "64"],
+        "XL":  ["104", "48", "76", "65"],
+        "XXL": ["108", "50", "78", "66"]
+      }
+    },
+    "pantalones": {
+      "unidad": "cm",
+      "medidas": ["Cintura", "Cadera", "Entrepierna", "Largo total"],
+      "tabla": {
+        "38": ["76", "96", "78", "102"],
+        "40": ["80", "100", "78", "103"],
+        "42": ["84", "104", "79", "104"],
+        "44": ["88", "108", "79", "105"],
+        "46": ["92", "112", "80", "106"],
+        "48": ["96", "116", "80", "107"]
+      }
+    },
+    "jeans": {
+      "unidad": "cm",
+      "medidas": ["Cintura", "Cadera", "Entrepierna"],
+      "tabla": {
+        "28": ["71", "92", "79"],
+        "30": ["76", "96", "80"],
+        "32": ["81", "100", "80"],
+        "34": ["86", "104", "81"],
+        "36": ["91", "108", "81"],
+        "38": ["96", "112", "82"]
+      }
+    }
+  },
+  "horarios": {
+    "lunes":     [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
+    "martes":    [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
+    "miércoles": [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
+    "jueves":    [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
+    "viernes":   [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
+    "sábado":    [{"abre": "08:30", "cierra": "13:00"}, {"abre": "16:30", "cierra": "20:30"}],
+    "domingo":   []
+  },
+  "categorias": [
+    {
+      "id": "camisas",
+      "nombre": "Camisas",
+      "descripcion": "Camisas de vestir e industriales, algodón y mezclas.",
+      "tipo_talle": "camisas",
+      "imagen": "cat-camisas.jpg",
+      "productos": [
+        {
+          "id": 1,
+          "nombre": "Camisa Oxford Blanca",
+          "descripcion": "Camisa de vestir en algodón Oxford 100%. Corte regular fit, cuello con botones, puños ajustables. Ideal para uniforme corporativo o uso diario.",
+          "precio_minorista": 22000,
+          "precio_mayorista": 14500,
+          "talles_disponibles": ["S", "M", "L", "XL", "XXL"],
+          "disponible": true,
+          "destacado": true,
+          "imagenes": ["camisa-oxford-blanca-1.jpg", "camisa-oxford-blanca-2.jpg"]
+        },
+        {
+          "id": 2,
+          "nombre": "Camisa Oxford Celeste",
+          "descripcion": "Versión celeste de nuestra clásica Oxford. Algodón 100%, corte regular, ideal para look formal.",
+          "precio_minorista": 22000,
+          "precio_mayorista": 14500,
+          "talles_disponibles": ["S", "M", "L", "XL"],
+          "disponible": true,
+          "destacado": false,
+          "imagenes": ["camisa-oxford-celeste-1.jpg", "camisa-oxford-celeste-2.jpg"]
+        },
+        {
+          "id": 3,
+          "nombre": "Camisa Trabajo Grafa",
+          "descripcion": "Camisa industrial en grafa reforzada. Diseñada para uso intensivo, cuello camisero, bolsillos con solapa.",
+          "precio_minorista": 18500,
+          "precio_mayorista": 12000,
+          "talles_disponibles": ["M", "L", "XL", "XXL"],
+          "disponible": true,
+          "destacado": true,
+          "imagenes": ["camisa-grafa-1.jpg", "camisa-grafa-2.jpg"]
+        }
+      ]
+    },
+    {
+      "id": "pantalones",
+      "nombre": "Pantalones",
+      "descripcion": "Pantalones de vestir, de trabajo y sport en distintas telas y colores.",
+      "tipo_talle": "pantalones",
+      "imagen": "cat-pantalones.jpg",
+      "productos": [
+        {
+          "id": 4,
+          "nombre": "Pantalón de Vestir Negro",
+          "descripcion": "Pantalón clásico de vestir en gabardina de poliéster y viscosa. Corte recto, pinzas, dos bolsillos laterales y uno trasero.",
+          "precio_minorista": 28000,
+          "precio_mayorista": 18500,
+          "talles_disponibles": ["38", "40", "42", "44", "46", "48"],
+          "disponible": true,
+          "destacado": true,
+          "imagenes": ["pantalon-vestir-negro-1.jpg", "pantalon-vestir-negro-2.jpg"]
+        },
+        {
+          "id": 5,
+          "nombre": "Pantalón de Vestir Gris",
+          "descripcion": "Mismo modelo clásico en gris antracita. Gabardina de poliéster y viscosa, corte recto con pinzas.",
+          "precio_minorista": 28000,
+          "precio_mayorista": 18500,
+          "talles_disponibles": ["38", "40", "42", "44", "46"],
+          "disponible": true,
+          "destacado": false,
+          "imagenes": ["pantalon-vestir-gris-1.jpg", "pantalon-vestir-gris-2.jpg"]
+        },
+        {
+          "id": 6,
+          "nombre": "Pantalón Trabajo Grafa",
+          "descripcion": "Pantalón de trabajo en grafa reforzada. Bolsillos amplios, cintura con elástico lateral y presillas anchas.",
+          "precio_minorista": 24000,
+          "precio_mayorista": 15500,
+          "talles_disponibles": ["40", "42", "44", "46", "48"],
+          "disponible": true,
+          "destacado": true,
+          "imagenes": ["pantalon-grafa-1.jpg", "pantalon-grafa-2.jpg"]
+        }
+      ]
+    },
+    {
+      "id": "jeans",
+      "nombre": "Jeans",
+      "descripcion": "Jeans clásicos, corte recto y slim, denim de calidad.",
+      "tipo_talle": "jeans",
+      "imagen": "cat-jeans.jpg",
+      "productos": [
+        {
+          "id": 7,
+          "nombre": "Jean Clásico Recto Azul",
+          "descripcion": "Jean de corte recto en denim de 12 onzas. Cinco bolsillos, tiro medio, remaches metálicos. El clásico que nunca falla.",
+          "precio_minorista": 32000,
+          "precio_mayorista": 21000,
+          "talles_disponibles": ["28", "30", "32", "34", "36", "38"],
+          "disponible": true,
+          "destacado": true,
+          "imagenes": ["jean-clasico-azul-1.jpg", "jean-clasico-azul-2.jpg"]
+        },
+        {
+          "id": 8,
+          "nombre": "Jean Slim Fit Negro",
+          "descripcion": "Jean de corte slim en denim elastizado. Confort para todo el día, cinco bolsillos, tiro medio.",
+          "precio_minorista": 34000,
+          "precio_mayorista": 22500,
+          "talles_disponibles": ["28", "30", "32", "34"],
+          "disponible": true,
+          "destacado": false,
+          "imagenes": ["jean-slim-negro-1.jpg", "jean-slim-negro-2.jpg"]
+        },
+        {
+          "id": 9,
+          "nombre": "Jean Trabajo Reforzado",
+          "descripcion": "Jean pensado para uso industrial. Denim de 14 onzas, costuras dobles, bolsillos reforzados. Larga duración.",
+          "precio_minorista": 36000,
+          "precio_mayorista": 23500,
+          "talles_disponibles": ["30", "32", "34", "36", "38"],
+          "disponible": true,
+          "destacado": true,
+          "imagenes": ["jean-trabajo-1.jpg", "jean-trabajo-2.jpg"]
+        }
+      ]
+    }
+  ],
+  "textos": {
+    "hero": {
+      "titulo": "Camisas, pantalones y jeans",
+      "subtitulo": "Fabricamos desde 1978 en Las Flores. Venta mayorista a todo el país y minorista en nuestro local.",
+      "cta": "Ver catálogo"
+    },
+    "fabrica": {
+      "titulo": "Nuestra fábrica",
+      "texto": "Más de cuatro décadas produciendo indumentaria en Las Flores. Un equipo estable, máquinas propias y el orgullo de fabricar cada prenda en Argentina. Cada corte, cada costura y cada terminación pasa por nuestras manos."
+    },
+    "local": {
+      "titulo": "Visitá el local",
+      "texto": "Nuestro showroom queda en Sarmiento y 25 de Mayo, Las Flores. Vení a ver, tocar y probarte cada prenda. Atendemos de lunes a sábado."
+    },
+    "mayoristas": {
+      "titulo": "¿Sos comerciante?",
+      "texto": "Trabajamos con comercios de todo el país. Precios especiales, envíos por Vía Cargo y catálogo exclusivo para mayoristas. Solicitá tu código de acceso.",
+      "cta": "Solicitar cuenta mayorista"
+    },
+    "confianza": {
+      "titulo": "Fábrica con historia",
+      "texto": "Trabajamos hace más de 45 años. Nuestros clientes nos eligen por la calidad de la confección y el respeto por los plazos de entrega."
+    },
+    "footer": {
+      "texto": "Cattorini · Fabricación textil argentina · Las Flores, provincia de Buenos Aires."
+    },
+    "checkout": {
+      "saludo_mayorista": "Hola! Soy cliente mayorista, quiero hacer un pedido.",
+      "saludo_minorista": "Hola! Quiero hacer un pedido."
+    }
+  },
+  "imagenes": {
+    "logo": "logo.jpeg",
+    "hero_carousel": ["Historia1.jpeg", "Historia2.jpeg", "Historia3.jpeg", "Historia4.jpeg", "Historia5.jpeg"],
+    "fabrica_carousel": ["Fabrica1.jpeg", "Fabrica2.jpeg", "Fabrica3.jpeg"],
+    "local_carousel": ["Local1.jpeg", "Local2.jpeg", "Local3.jpeg"],
+    "og": "Historia1.jpeg"
+  },
+  "seo": {
+    "keywords": "Cattorini, camisas Las Flores, pantalones Las Flores, jeans Las Flores, fábrica textil Argentina, mayorista textil, camisas mayorista, pantalones mayorista, jeans mayorista, indumentaria Las Flores, Buenos Aires",
+    "author": "Cattorini",
+    "url_base": "https://cattorini.github.io"
+  }
+}

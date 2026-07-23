@@ -1,0 +1,13 @@
+{
+  "name": "Cattorini — Camisas y Pantalones",
+  "short_name": "Cattorini",
+  "description": "Fábrica textil en Las Flores. Camisas, pantalones y jeans.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0A0A0A",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "./img/logo.jpeg", "sizes": "any", "type": "image/jpeg" }
+  ]
+}

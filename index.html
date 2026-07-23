@@ -1,0 +1,1456 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://firestore.googleapis.com https://firebase.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; frame-src https://www.google.com https://maps.google.com;" />
+
+  <title>Cattorini — Fábrica de camisas, pantalones y jeans en Las Flores</title>
+  <meta name="description" content="Cattorini · Fabricamos camisas, pantalones y jeans desde 1978 en Las Flores, Buenos Aires. Venta mayorista a todo el país y minorista en local propio. Envíos por Vía Cargo." />
+  <meta name="keywords" content="Cattorini, camisas Las Flores, pantalones Las Flores, jeans Las Flores, fábrica textil Argentina, mayorista textil, indumentaria mayorista Buenos Aires" />
+  <meta name="author" content="Cattorini" />
+  <meta name="robots" content="index, follow, max-image-preview:large" />
+  <meta name="geo.region" content="AR-B" />
+  <meta name="geo.placename" content="Las Flores, Buenos Aires" />
+  <meta name="geo.position" content="-36.0111;-59.0928" />
+  <meta name="ICBM" content="-36.0111, -59.0928" />
+  <link rel="canonical" href="https://cattorini.github.io/index.html" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Cattorini" />
+  <meta property="og:title" content="Cattorini — Fábrica de camisas, pantalones y jeans" />
+  <meta property="og:description" content="Fabricamos desde 1978 en Las Flores. Venta mayorista y minorista. Envíos a todo el país." />
+  <meta property="og:url" content="https://cattorini.github.io/index.html" />
+  <meta property="og:image" content="https://cattorini.github.io/img/og-image.jpg" />
+  <meta property="og:locale" content="es_AR" />
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Cattorini — Fábrica textil Las Flores" />
+  <meta name="twitter:description" content="Camisas, pantalones y jeans. Mayorista y minorista." />
+  <meta name="twitter:image" content="https://cattorini.github.io/img/og-image.jpg" />
+
+  <link rel="icon" href="./img/logo.jpeg" type="image/png" />
+  <link rel="apple-touch-icon" href="./img/logo.jpeg" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0A0A0A" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha512-B1lby8cGcAUU3GR+Fd809/ZxgHbfwJMp0jLTVfHiArTuUt++VqSlJpaJvhNtRf3NERaxDNmmxkdx2o+aHd4bvw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha512-AY2+JxnBETJ0wcXnLPCcZJIJx0eA3PaeFAAQiC/YBBMY6MdgOqafygJgX7iX9MHNeH3f6CFwc7aRHmH8XiqTVg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="./ubicaciones.js" defer></script>
+
+  <style>
+    :root {
+      --bg: #FFFFFF;
+      --fg: #0A0A0A;
+      --muted: #666666;
+      --line: #E5E5E5;
+      --hover: #1A1A1A;
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      -webkit-font-smoothing: antialiased;
+      font-weight: 300;
+      line-height: 1.6;
+    }
+    .serif { font-family: 'Cormorant Garamond', Georgia, serif; font-weight: 400; }
+    .tracking-tight-2 { letter-spacing: -0.02em; }
+    .tracking-wide-2 { letter-spacing: 0.15em; }
+
+    /* Scroll progress */
+    #scroll-progress {
+      position: fixed; top: 0; left: 0; height: 2px; width: 0%;
+      background: var(--fg); z-index: 100; transition: width .1s;
+    }
+
+    /* Nav */
+    #navbar {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+    }
+    .nav-link {
+      font-size: 0.82rem; letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--fg); transition: opacity .2s;
+    }
+    .nav-link:hover { opacity: 0.55; }
+    #nav-estado {
+      font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+      padding: 4px 10px; border: 1px solid var(--line);
+    }
+    #nav-estado.abierto { border-color: var(--fg); }
+
+    /* Hero — split: texto izquierda, carrusel derecha */
+    .hero {
+      min-height: 90vh;
+      background: #0A0A0A;
+      color: #FFFFFF;
+      position: relative;
+      overflow: hidden;
+      padding: 60px 24px;
+      display: flex;
+      align-items: center;
+    }
+    .hero-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+    }
+    .hero-text { text-align: left; }
+    .hero-text h1 { text-align: left; }
+    .hero-media {
+      position: relative;
+      aspect-ratio: 4/5;
+      background: linear-gradient(135deg, #141414 0%, #0a0a0a 100%);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    @media (max-width: 900px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 32px; }
+      .hero-text { text-align: center; }
+      .hero-text h1 { text-align: center; }
+      .hero-media { aspect-ratio: 4/3; max-width: 500px; margin: 0 auto; width: 100%; }
+    }
+    @media (max-width: 500px) {
+      .hero { padding: 40px 20px; min-height: auto; }
+      .hero-media { aspect-ratio: 1/1; }
+    }
+
+    /* Carousel genérico */
+    .carousel {
+      position: relative; width: 100%; height: 100%;
+      overflow: hidden;
+      background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%);
+    }
+    .carousel-slide {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      object-position: center;
+      opacity: 0;
+      transition: opacity 1.4s ease-in-out;
+      will-change: opacity;
+    }
+    .carousel-slide.active { opacity: 1; }
+
+    /* En el hero: object-fit contain para respetar la orientación de cada foto
+       (horizontales y verticales se ven completas con letterbox oscuro sutil) */
+    .hero .carousel-slide {
+      object-fit: cover;
+    }
+    /* Slides marcados como verticales se muestran con contain para no cortarlos */
+    .hero .carousel-slide.vertical {
+      object-fit: contain;
+      background: #0a0a0a;
+    }
+    /* Efecto Ken Burns leve para dar vida al carrusel */
+    .hero .carousel-slide.active {
+      animation: kenBurns 8s ease-out both;
+    }
+    @keyframes kenBurns {
+      from { transform: scale(1); }
+      to { transform: scale(1.06); }
+    }
+
+    /* Dots indicator (split sections) */
+    .carousel-dots {
+      position: absolute; bottom: 12px; left: 50%;
+      transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 2;
+    }
+    .carousel-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.5);
+      border: 1px solid rgba(0,0,0,0.2);
+      cursor: pointer; padding: 0;
+      transition: background .2s, transform .2s;
+    }
+    .carousel-dot.active { background: #FFF; transform: scale(1.3); }
+
+    /* Section headers */
+    .eyebrow {
+      font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--muted); font-weight: 500;
+    }
+    h2.section {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 400;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      line-height: 1.1;
+      letter-spacing: -0.02em;
+    }
+
+    /* Category cards */
+    .cat-card {
+      aspect-ratio: 3/4;
+      position: relative;
+      overflow: hidden;
+      background: #F5F5F5;
+      cursor: pointer;
+    }
+    .cat-card-img {
+      position: absolute; inset: 0;
+      background-size: cover; background-position: center;
+      transition: transform .6s;
+    }
+    .cat-card:hover .cat-card-img { transform: scale(1.04); }
+    .cat-card-img.placeholder {
+      background: linear-gradient(135deg, #EEE 0%, #DDD 100%);
+    }
+    .cat-card-img.placeholder::after {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .cat-overlay {
+      position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6) 100%);
+    }
+
+    /* Product cards */
+    .pcard {
+      background: #FFF;
+      transition: transform .3s;
+    }
+    .pcard:hover { transform: translateY(-4px); }
+    .pcard-img {
+      aspect-ratio: 3/4;
+      background: #F5F5F5;
+      background-size: cover; background-position: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .pcard-img.placeholder {
+      background: linear-gradient(135deg, #F0F0F0 0%, #E0E0E0 100%);
+    }
+    .pcard-img.placeholder::after {
+      content: ''; position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      font-size: 0.8rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      font-weight: 500;
+      border: 1px solid var(--fg);
+      cursor: pointer;
+      transition: all .25s;
+      text-decoration: none;
+      background: var(--fg);
+      color: var(--bg);
+    }
+    .btn:hover { background: var(--bg); color: var(--fg); }
+    .btn-outline {
+      background: transparent;
+      color: var(--fg);
+    }
+    .btn-outline:hover { background: var(--fg); color: var(--bg); }
+    .btn-light {
+      background: #FFF; color: #0A0A0A; border-color: #FFF;
+    }
+    .btn-light:hover { background: transparent; color: #FFF; border-color: #FFF; }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--line); }
+
+    /* Split section */
+    .split-img {
+      position: relative; overflow: hidden;
+      background: linear-gradient(135deg, #EEE 0%, #DDD 100%);
+    }
+
+    /* Rating stars */
+    .stars { color: #0A0A0A; letter-spacing: 3px; font-size: 1rem; }
+
+    /* Horarios grid */
+    .day-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 12px 0; border-bottom: 1px solid var(--line);
+      font-size: 0.9rem;
+    }
+    .day-row.today { font-weight: 500; }
+    .day-name { text-transform: capitalize; }
+    .day-hours { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+    /* WA float */
+    #wa-float {
+      position: fixed; bottom: 24px; right: 24px;
+      width: 56px; height: 56px;
+      background: #0A0A0A; color: #FFF;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 40;
+      transition: transform .3s, opacity .3s;
+      opacity: 0; transform: translateY(20px); pointer-events: none;
+      text-decoration: none;
+    }
+    #wa-float.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+    #wa-float:hover { background: #1a1a1a; }
+
+    footer {
+      background: #0A0A0A; color: #999;
+      padding: 60px 0 40px;
+    }
+    footer a { color: #FFF; text-decoration: none; }
+    footer a:hover { opacity: 0.7; }
+
+    /* Logo (wordmark CATTORINI) */
+    .logo-brand {
+      display: block;
+      width: auto;
+    }
+    .logo-nav { height: 26px; }
+    .logo-footer { height: 34px; filter: invert(1) brightness(1.2); opacity: 0.95; }
+    .logo-invert { filter: invert(1); }
+
+    /* Page transitions — CSS-driven fade-in (no depende de JS) */
+    body { animation: pageIn .55s ease-out .05s both; }
+    body.leaving { animation: pageOut .35s ease-in forwards; }
+    @keyframes pageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pageOut { from { opacity: 1; } to { opacity: 0; } }
+
+    /* Curtain overlay for extra polish */
+    .curtain {
+      position: fixed; inset: 0;
+      background: #0A0A0A;
+      z-index: 200;
+      transform: translateY(-100%);
+      pointer-events: none;
+    }
+    .curtain.enter { animation: curtainIn .6s cubic-bezier(.7,0,.3,1) forwards; }
+    .curtain.leave { animation: curtainOut .5s cubic-bezier(.7,0,.3,1) forwards; }
+    @keyframes curtainIn {
+      0% { transform: translateY(100%); }
+      50% { transform: translateY(0); }
+      100% { transform: translateY(-100%); }
+    }
+    @keyframes curtainOut {
+      0% { transform: translateY(-100%); }
+      100% { transform: translateY(0); }
+    }
+
+    @media (max-width: 768px) {
+      .hero { min-height: 80vh; }
+    }
+
+    /* Modal mayorista */
+    .may-back {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      z-index: 80;
+      display: none; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .may-back.open { display: flex; }
+    .may-content {
+      background: #FFF; max-width: 560px; width: 100%;
+      padding: 32px; max-height: 92vh; overflow-y: auto;
+      position: relative;
+    }
+    .may-close {
+      position: absolute; top: 14px; right: 20px;
+      background: none; border: none; font-size: 1.5rem; cursor: pointer;
+      color: #999;
+    }
+    .may-inp, .may-sel, .may-txt {
+      width: 100%; padding: 10px 12px;
+      border: 1px solid #E5E5E5; background: #FFF;
+      font-family: 'Inter', sans-serif; font-size: 0.9rem;
+      color: #0A0A0A; margin-bottom: 10px;
+    }
+    .may-inp:focus, .may-sel:focus, .may-txt:focus { outline: none; border-color: #0A0A0A; }
+    .may-lbl { display: block; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #666; margin-bottom: 4px; font-weight: 500; }
+    .may-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    @media (max-width: 500px) { .may-row { grid-template-columns: 1fr; } }
+    .may-err { color: #900; font-size: 0.82rem; margin-bottom: 10px; display: none; }
+    .may-err.show { display: block; }
+    .may-btn {
+      width: 100%; padding: 14px; background: #0A0A0A; color: #FFF;
+      border: 1px solid #0A0A0A; cursor: pointer;
+      font-family: 'Inter', sans-serif; font-size: 0.8rem;
+      letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500;
+      margin-top: 10px;
+    }
+    .may-btn:hover { background: #FFF; color: #0A0A0A; }
+    .may-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .may-btn-ghost {
+      width: 100%; padding: 10px; background: transparent;
+      border: none; cursor: pointer;
+      color: #666; font-family: 'Inter', sans-serif; font-size: 0.78rem;
+      letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px;
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ClothingStore",
+    "@id": "https://cattorini.github.io/#store",
+    "name": "Cattorini",
+    "alternateName": "Cattorini — Camisas y Pantalones",
+    "description": "Fábrica textil de camisas, pantalones y jeans. Venta mayorista y minorista en Las Flores, Buenos Aires.",
+    "url": "https://cattorini.github.io/index.html",
+    "telephone": "+54-2244-45-4040",
+    "priceRange": "$$",
+    "image": "https://cattorini.github.io/img/logo.jpeg",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Sarmiento esquina 25 de Mayo",
+      "addressLocality": "Las Flores",
+      "addressRegion": "Buenos Aires",
+      "postalCode": "B7200",
+      "addressCountry": "AR"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": -36.0111,
+      "longitude": -59.0928
+    },
+    "openingHoursSpecification": [
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "08:30", "closes": "12:00" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"], "opens": "16:30", "closes": "20:30" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "08:30", "closes": "13:00" },
+      { "@type": "OpeningHoursSpecification", "dayOfWeek": "Saturday", "opens": "16:30", "closes": "20:30" }
+    ],
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.3",
+      "reviewCount": "23"
+    },
+    "founder": { "@type": "Organization", "name": "Familia Cattorini" },
+    "foundingDate": "1978",
+    "sameAs": []
+  }
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "url": "https://cattorini.github.io/",
+    "name": "Cattorini",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": "https://cattorini.github.io/tienda.html?q={search_term_string}",
+      "query-input": "required name=search_term_string"
+    }
+  }
+  </script>
+</head>
+<body>
+
+<div id="scroll-progress"></div>
+
+<nav id="navbar">
+  <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+    <a href="./index.html" aria-label="Cattorini — Ir al inicio">
+      <img src="./img/logo.jpeg" alt="Cattorini" class="logo-brand logo-nav" />
+    </a>
+    <div class="hidden md:flex items-center gap-8">
+      <a href="#historia" class="nav-link">Historia</a>
+      <a href="#categorias" class="nav-link">Catálogo</a>
+      <a href="#mayoristas" class="nav-link">Mayoristas</a>
+      <a href="#contacto" class="nav-link">Contacto</a>
+      <span id="nav-estado">···</span>
+      <a href="./tienda.html" class="btn" style="padding: 10px 24px; font-size: 0.75rem;">Tienda</a>
+    </div>
+    <a href="./tienda.html" class="btn md:hidden" style="padding: 8px 18px; font-size: 0.7rem;">Tienda</a>
+  </div>
+</nav>
+
+<section id="inicio" class="hero">
+  <div class="hero-inner">
+    <div class="hero-text">
+      <div class="eyebrow mb-6" style="color: rgba(255,255,255,0.6);">Fábrica textil · Las Flores · desde 1978</div>
+      <h1 class="serif tracking-tight-2" style="font-size: clamp(2.2rem, 5vw, 4.5rem); line-height: 1.05; margin-bottom: 24px;" id="hero-titulo">
+        Camisas, pantalones y jeans
+      </h1>
+      <p class="text-lg mb-10" style="color: rgba(255,255,255,0.7); font-weight: 300; max-width: 500px;" id="hero-subtitulo">
+        Fabricamos desde 1978 en Las Flores. Venta mayorista a todo el país y minorista en nuestro local.
+      </p>
+      <div class="flex flex-col sm:flex-row gap-4" style="justify-content: flex-start;">
+        <a href="./tienda.html" class="btn btn-light" id="hero-cta">Ver catálogo</a>
+        <a href="#historia" class="btn btn-light" style="background: transparent; color: #FFF; border-color: rgba(255,255,255,0.4);">Conocer la fábrica</a>
+      </div>
+    </div>
+    <div class="hero-media">
+      <div class="carousel" id="carousel-hero"></div>
+    </div>
+  </div>
+</section>
+
+<section id="historia" class="py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+    <div class="split-img" style="aspect-ratio: 4/5;">
+      <div class="carousel" id="carousel-fabrica"></div>
+    </div>
+    <div>
+      <div class="eyebrow mb-4">01 — La fábrica</div>
+      <h2 class="section mb-6" id="fabrica-titulo">Nuestra fábrica</h2>
+      <p class="text-lg leading-relaxed mb-6" id="fabrica-texto">
+        Más de cuatro décadas produciendo indumentaria en Las Flores. Un equipo estable, máquinas propias y el orgullo de fabricar cada prenda en Argentina. Cada corte, cada costura y cada terminación pasa por nuestras manos.
+      </p>
+      <p class="text-base" style="color: var(--muted);">
+        Sarmiento esquina 25 de Mayo · Las Flores · Buenos Aires
+      </p>
+    </div>
+  </div>
+</section>
+
+<div class="divider max-w-7xl mx-auto"></div>
+
+<section id="categorias" class="py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-16 max-w-2xl">
+      <div class="eyebrow mb-4">02 — Catálogo</div>
+      <h2 class="section">Tres líneas, un mismo estándar</h2>
+    </div>
+    <div class="grid md:grid-cols-3 gap-6" id="categorias-grid"></div>
+  </div>
+</section>
+
+<div class="divider max-w-7xl mx-auto"></div>
+
+<section id="destacados" class="py-24 md:py-32 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+      <div>
+        <div class="eyebrow mb-4">03 — Destacados</div>
+        <h2 class="section">Selección de temporada</h2>
+      </div>
+      <a href="./tienda.html" class="btn btn-outline">Ver todo el catálogo</a>
+    </div>
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="destacados-grid"></div>
+  </div>
+</section>
+
+<div class="divider max-w-7xl mx-auto"></div>
+
+<section id="confianza" class="py-24 md:py-32">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <div class="eyebrow mb-4">04 — Confianza</div>
+    <div class="stars mb-4" aria-label="4.3 estrellas de 5">★★★★★</div>
+    <div class="text-4xl serif mb-2">4,3 / 5</div>
+    <p style="color: var(--muted);" class="mb-8">Basado en 23 reseñas de Google</p>
+    <p class="text-lg md:text-xl leading-relaxed" id="confianza-texto">
+      Trabajamos hace más de 45 años. Nuestros clientes nos eligen por la calidad de la confección y el respeto por los plazos de entrega.
+    </p>
+  </div>
+</section>
+
+<div class="divider max-w-7xl mx-auto"></div>
+
+<section id="mayoristas" class="py-24 md:py-32 bg-black text-white">
+  <div class="max-w-4xl mx-auto px-6 text-center">
+    <div class="eyebrow mb-4" style="color: rgba(255,255,255,0.5);">05 — Mayoristas</div>
+    <h2 class="section mb-8" id="mayoristas-titulo">¿Sos comerciante?</h2>
+    <p class="text-lg leading-relaxed mb-10 max-w-2xl mx-auto" style="color: rgba(255,255,255,0.7);" id="mayoristas-texto">
+      Trabajamos con comercios de todo el país. Precios especiales, envíos por Vía Cargo y catálogo exclusivo para mayoristas. Solicitá tu código de acceso.
+    </p>
+    <button id="mayoristas-cta" class="btn btn-light" onclick="openMayForm()">Solicitar cuenta mayorista</button>
+  </div>
+</section>
+
+<section id="local" class="py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+    <div>
+      <div class="eyebrow mb-4">06 — El local</div>
+      <h2 class="section mb-6" id="local-titulo">Visitá el local</h2>
+      <p class="text-lg leading-relaxed mb-6" id="local-texto">
+        Nuestro showroom queda en Sarmiento y 25 de Mayo, Las Flores. Vení a ver, tocar y probarte cada prenda.
+      </p>
+      <div class="space-y-2 text-base" style="color: var(--muted);">
+        <div>Sarmiento y 25 de Mayo, Las Flores</div>
+        <div>02244 45-4040</div>
+      </div>
+    </div>
+    <div class="split-img" style="aspect-ratio: 4/5; order: -1;">
+      <div class="carousel" id="carousel-local"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider max-w-7xl mx-auto"></div>
+
+<section id="contacto" class="py-24 md:py-32 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12">
+    <div>
+      <div class="eyebrow mb-4">07 — Contacto</div>
+      <h2 class="section mb-8">Estamos acá</h2>
+      <div class="space-y-6">
+        <div>
+          <div class="eyebrow mb-2">Dirección</div>
+          <div>Sarmiento esquina 25 de Mayo</div>
+          <div>Las Flores, B7200, Buenos Aires</div>
+        </div>
+        <div>
+          <div class="eyebrow mb-2">Teléfono</div>
+          <a href="tel:+542244454040" class="underline">02244 45-4040</a>
+        </div>
+        <div>
+          <div class="eyebrow mb-2">WhatsApp</div>
+          <a id="wa-link" target="_blank" rel="noopener noreferrer" class="underline">Escribir por WhatsApp</a>
+        </div>
+        <div>
+          <div class="eyebrow mb-3">Horarios</div>
+          <div id="horarios-grid"></div>
+          <p id="estado-local" class="mt-4 text-sm font-medium"></p>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div class="w-full h-full min-h-[400px]" style="background: #E5E5E5;">
+        <iframe
+          id="maps-iframe"
+          src=""
+          width="100%"
+          height="100%"
+          style="border:0; min-height: 400px;"
+          allowfullscreen=""
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+          title="Ubicación de Cattorini en Google Maps">
+        </iframe>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="max-w-7xl mx-auto px-6">
+    <div class="grid md:grid-cols-3 gap-8 mb-12">
+      <div>
+        <img src="./img/logo.jpeg" alt="Cattorini" class="logo-brand logo-footer mb-4" />
+        <p class="text-sm leading-relaxed" id="footer-texto">
+          Cattorini · Fabricación textil argentina · Las Flores, provincia de Buenos Aires.
+        </p>
+      </div>
+      <div>
+        <div class="eyebrow mb-4" style="color: rgba(255,255,255,0.4);">Navegar</div>
+        <ul class="space-y-2 text-sm">
+          <li><a href="./index.html">Inicio</a></li>
+          <li><a href="./tienda.html">Tienda</a></li>
+          <li><a href="#mayoristas">Mayoristas</a></li>
+          <li><a href="#contacto">Contacto</a></li>
+        </ul>
+      </div>
+      <div>
+        <div class="eyebrow mb-4" style="color: rgba(255,255,255,0.4);">Contacto</div>
+        <div class="text-sm space-y-1">
+          <div>Sarmiento y 25 de Mayo</div>
+          <div>Las Flores, B7200</div>
+          <div>Buenos Aires, Argentina</div>
+          <div class="mt-2">02244 45-4040</div>
+        </div>
+      </div>
+    </div>
+    <div class="pt-8 border-t border-gray-800 text-xs text-center" style="color: rgba(255,255,255,0.3);">
+      © <span id="year"></span> Cattorini · Sitio por <a href="https://github.com/juliancarroccio" target="_blank" rel="noopener noreferrer">PushCommerce</a>
+    </div>
+  </div>
+</footer>
+
+<div class="curtain" id="curtain"></div>
+
+<!-- Modal solicitud mayorista -->
+<div class="may-back" id="may-modal" onclick="closeMayForm(event)">
+  <div class="may-content" onclick="event.stopPropagation()">
+    <button class="may-close" onclick="closeMayForm()" aria-label="Cerrar">×</button>
+
+    <div id="may-form-step">
+      <div class="eyebrow" style="margin-bottom:8px;">Cuenta mayorista</div>
+      <h2 class="serif" style="font-size:1.6rem;margin-bottom:8px;letter-spacing:-0.02em;">Solicitud de acceso</h2>
+      <p style="color:#666;font-size:0.88rem;margin-bottom:20px;line-height:1.5;">
+        Contanos de tu comercio y vamos a evaluar tu solicitud. Te vamos a dar un código de seguimiento para consultar el estado.
+      </p>
+
+      <div class="may-row">
+        <div>
+          <label class="may-lbl">Nombre y apellido</label>
+          <input class="may-inp" id="may-nombre" maxlength="80" />
+        </div>
+        <div>
+          <label class="may-lbl">Razón social o negocio</label>
+          <input class="may-inp" id="may-negocio" maxlength="100" />
+        </div>
+      </div>
+
+      <div class="may-row">
+        <div>
+          <label class="may-lbl">CUIT / CUIL</label>
+          <input class="may-inp" id="may-cuit" maxlength="15" placeholder="20-12345678-9" />
+        </div>
+        <div>
+          <label class="may-lbl">Tipo de comercio</label>
+          <select class="may-sel" id="may-tipo">
+            <option value="">Elegí una opción</option>
+            <option>Mercería / Cotillón</option>
+            <option>Tienda de ropa</option>
+            <option>Uniformes / Trabajo</option>
+            <option>Feria / Bazar</option>
+            <option>Online / Ecommerce</option>
+            <option>Otro</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="may-row">
+        <div>
+          <label class="may-lbl">Teléfono</label>
+          <input class="may-inp" id="may-tel" maxlength="30" />
+        </div>
+        <div>
+          <label class="may-lbl">WhatsApp</label>
+          <input class="may-inp" id="may-wa" maxlength="30" placeholder="Con código país" />
+        </div>
+      </div>
+
+      <label class="may-lbl">Email</label>
+      <input class="may-inp" id="may-email" type="email" maxlength="80" />
+
+      <div class="may-row">
+        <div>
+          <label class="may-lbl">Provincia</label>
+          <select class="may-sel" id="may-provincia"></select>
+        </div>
+        <div>
+          <label class="may-lbl">Localidad</label>
+          <div class="loc-wrap">
+            <input class="may-inp" id="may-localidad" maxlength="60" disabled placeholder="Elegí primero la provincia" style="margin-bottom:0;" />
+            <div id="loc-list-may" class="loc-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <label class="may-lbl">Notas (opcional)</label>
+      <textarea class="may-txt" id="may-notas" rows="3" maxlength="500" placeholder="Volumen estimado de compra, referencias, etc."></textarea>
+
+      <!-- Honeypot -->
+      <input type="text" id="may-hp" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
+
+      <div class="may-err" id="may-err"></div>
+
+      <button class="may-btn" onclick="submitMayForm()" id="may-submit-btn">Enviar solicitud</button>
+      <button class="may-btn-ghost" onclick="closeMayForm()">Cancelar</button>
+    </div>
+
+    <div id="may-confirm-step" style="display:none;text-align:center;">
+      <div style="width:60px;height:60px;border-radius:50%;background:#0A0A0A;color:#FFF;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:16px;">✓</div>
+      <h2 class="serif" style="font-size:1.6rem;margin-bottom:8px;letter-spacing:-0.02em;">Solicitud enviada</h2>
+      <p style="color:#666;font-size:0.88rem;margin-bottom:8px;">Guardá este código para consultar el estado de tu solicitud:</p>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;letter-spacing:0.15em;background:#F5F5F5;padding:14px 20px;margin:16px 0;" id="may-confirm-code">···</div>
+      <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;">
+        Vamos a revisar tu solicitud. Te avisamos por WhatsApp o email cuando esté procesada. Podés consultar el estado cuando quieras.
+      </p>
+      <a id="may-track-link" class="may-btn" style="display:block;text-decoration:none;text-align:center;">Ver estado de mi solicitud</a>
+      <button class="may-btn-ghost" onclick="closeMayForm()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<a id="wa-float" target="_blank" rel="noopener noreferrer" aria-label="Contactar por WhatsApp">
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+</a>
+
+<script>
+'use strict';
+
+const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+
+/* Escape helpers — XSS-safe rendering */
+function esc(str) {
+  if (str === null || str === undefined) return '';
+  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+/* Data load with SW fallback */
+async function loadData() {
+  try {
+    const res = await fetch('./productos.json', { cache: 'no-cache' });
+    if (!res.ok) throw new Error('fetch failed');
+    return await res.json();
+  } catch (err) {
+    console.error('No se pudo cargar productos.json', err);
+    return null;
+  }
+}
+
+/* Horarios */
+function buildHorarios(data) {
+  const now = new Date();
+  const hoyIdx = now.getDay() === 0 ? 6 : now.getDay() - 1;
+  const hoy = DIAS[hoyIdx];
+  const minAhora = now.getHours() * 60 + now.getMinutes();
+
+  const turnos = data.horarios[hoy] || [];
+  const abierto = turnos.some(t => {
+    const [ah, am] = t.abre.split(':').map(Number);
+    const [ch, cm] = t.cierra.split(':').map(Number);
+    return minAhora >= ah * 60 + am && minAhora < ch * 60 + cm;
+  });
+
+  const navEstado = document.getElementById('nav-estado');
+  if (navEstado) {
+    navEstado.textContent = abierto ? 'Abierto' : 'Cerrado';
+    if (abierto) navEstado.classList.add('abierto');
+  }
+
+  const estadoEl = document.getElementById('estado-local');
+  if (estadoEl) {
+    if (abierto) {
+      const proxCierre = turnos.find(t => {
+        const [ch, cm] = t.cierra.split(':').map(Number);
+        return minAhora < ch * 60 + cm;
+      });
+      estadoEl.textContent = proxCierre ? `Abierto hasta las ${proxCierre.cierra}` : 'Abierto';
+      estadoEl.style.color = '#0A0A0A';
+    } else {
+      estadoEl.textContent = 'Cerrado en este momento';
+      estadoEl.style.color = '#999';
+    }
+  }
+
+  const grid = document.getElementById('horarios-grid');
+  if (grid) {
+    grid.innerHTML = '';
+    DIAS.forEach((dia, i) => {
+      const turnos = data.horarios[dia] || [];
+      const label = turnos.length
+        ? turnos.map(t => `${t.abre}—${t.cierra}`).join(' · ')
+        : 'Cerrado';
+      const row = document.createElement('div');
+      row.className = 'day-row' + (i === hoyIdx ? ' today' : '');
+      const nombre = document.createElement('span');
+      nombre.className = 'day-name';
+      nombre.textContent = dia;
+      const horas = document.createElement('span');
+      horas.className = 'day-hours';
+      horas.textContent = label;
+      row.appendChild(nombre);
+      row.appendChild(horas);
+      grid.appendChild(row);
+    });
+  }
+}
+
+/* Categorías */
+function buildCategorias(data) {
+  const grid = document.getElementById('categorias-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  data.categorias.forEach(cat => {
+    const link = document.createElement('a');
+    link.href = `./tienda.html?cat=${encodeURIComponent(cat.id)}`;
+    link.className = 'cat-card block';
+
+    const img = document.createElement('div');
+    img.className = 'cat-card-img placeholder';
+    if (cat.imagen) {
+      const testImg = new Image();
+      testImg.onload = () => {
+        img.classList.remove('placeholder');
+        img.style.backgroundImage = `url('./img/${cat.imagen}')`;
+      };
+      testImg.src = `./img/${cat.imagen}`;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'cat-overlay';
+
+    const content = document.createElement('div');
+    content.className = 'absolute bottom-0 left-0 right-0 p-6 text-white z-10';
+    const eyebrow = document.createElement('div');
+    eyebrow.className = 'eyebrow mb-2';
+    eyebrow.style.color = 'rgba(255,255,255,0.7)';
+    eyebrow.textContent = `Línea ${String(data.categorias.indexOf(cat) + 1).padStart(2, '0')}`;
+    const title = document.createElement('div');
+    title.className = 'serif text-3xl';
+    title.textContent = cat.nombre;
+    const desc = document.createElement('div');
+    desc.className = 'text-sm mt-2';
+    desc.style.color = 'rgba(255,255,255,0.8)';
+    desc.textContent = cat.descripcion || '';
+
+    content.appendChild(eyebrow);
+    content.appendChild(title);
+    content.appendChild(desc);
+
+    link.appendChild(img);
+    link.appendChild(overlay);
+    link.appendChild(content);
+    grid.appendChild(link);
+  });
+}
+
+/* Destacados */
+function buildDestacados(data) {
+  const grid = document.getElementById('destacados-grid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  const destacados = [];
+  data.categorias.forEach(cat => {
+    cat.productos.forEach(p => {
+      if (p.destacado && p.disponible) destacados.push({ ...p, catId: cat.id });
+    });
+  });
+  destacados.slice(0, 8).forEach(p => {
+    const link = document.createElement('a');
+    link.href = `./producto.html?id=${p.id}`;
+    link.className = 'pcard block';
+
+    const img = document.createElement('div');
+    img.className = 'pcard-img placeholder';
+    if (p.imagenes && p.imagenes.length) {
+      const testImg = new Image();
+      testImg.onload = () => {
+        img.classList.remove('placeholder');
+        img.style.backgroundImage = `url('./img/${p.imagenes[0]}')`;
+      };
+      testImg.src = `./img/${p.imagenes[0]}`;
+    }
+
+    const info = document.createElement('div');
+    info.className = 'pt-4 pb-2';
+    const name = document.createElement('div');
+    name.className = 'text-sm font-medium mb-1';
+    name.textContent = p.nombre;
+    const price = document.createElement('div');
+    price.className = 'text-sm';
+    price.style.color = 'var(--muted)';
+    price.textContent = `$${p.precio_minorista.toLocaleString('es-AR')}`;
+    info.appendChild(name);
+    info.appendChild(price);
+
+    link.appendChild(img);
+    link.appendChild(info);
+    grid.appendChild(link);
+  });
+}
+
+/* Textos configurables */
+function applyTextos(data) {
+  const t = data.textos || {};
+
+  if (t.hero) {
+    const tit = document.getElementById('hero-titulo');
+    const sub = document.getElementById('hero-subtitulo');
+    const cta = document.getElementById('hero-cta');
+    if (tit && t.hero.titulo) tit.textContent = t.hero.titulo;
+    if (sub && t.hero.subtitulo) sub.textContent = t.hero.subtitulo;
+    if (cta && t.hero.cta) cta.textContent = t.hero.cta;
+  }
+  if (t.fabrica) {
+    const tit = document.getElementById('fabrica-titulo');
+    const txt = document.getElementById('fabrica-texto');
+    if (tit && t.fabrica.titulo) tit.textContent = t.fabrica.titulo;
+    if (txt && t.fabrica.texto) txt.textContent = t.fabrica.texto;
+  }
+  if (t.local) {
+    const tit = document.getElementById('local-titulo');
+    const txt = document.getElementById('local-texto');
+    if (tit && t.local.titulo) tit.textContent = t.local.titulo;
+    if (txt && t.local.texto) txt.textContent = t.local.texto;
+  }
+  if (t.mayoristas) {
+    const tit = document.getElementById('mayoristas-titulo');
+    const txt = document.getElementById('mayoristas-texto');
+    const cta = document.getElementById('mayoristas-cta');
+    if (tit && t.mayoristas.titulo) tit.textContent = t.mayoristas.titulo;
+    if (txt && t.mayoristas.texto) txt.textContent = t.mayoristas.texto;
+    if (cta && t.mayoristas.cta) cta.textContent = t.mayoristas.cta;
+  }
+  if (t.confianza) {
+    const txt = document.getElementById('confianza-texto');
+    if (txt && t.confianza.texto) txt.textContent = t.confianza.texto;
+  }
+  if (t.footer) {
+    const txt = document.getElementById('footer-texto');
+    if (txt && t.footer.texto) txt.textContent = t.footer.texto;
+  }
+}
+
+/* WhatsApp links (solo consultas generales, no mayoristas) */
+function applyWA(data) {
+  const wa = data.negocio.whatsapp;
+  const msgGeneral = encodeURIComponent('Hola Cattorini! Quería consultar...');
+
+  const linkGen = document.getElementById('wa-link');
+  if (linkGen) linkGen.href = `https://wa.me/${wa}?text=${msgGeneral}`;
+
+  const linkFloat = document.getElementById('wa-float');
+  if (linkFloat) linkFloat.href = `https://wa.me/${wa}?text=${msgGeneral}`;
+}
+
+/* Carousel — cross-fade automático + dots opcionales */
+function initCarousel(containerId, images, options = {}) {
+  const cont = document.getElementById(containerId);
+  if (!cont || !images || !images.length) return;
+  const alt = options.alt || 'Cattorini';
+  const showDots = options.dots !== false;
+  const interval = options.interval || 5000;
+
+  cont.innerHTML = '';
+
+  images.forEach((src, i) => {
+    const img = document.createElement('img');
+    img.className = 'carousel-slide' + (i === 0 ? ' active' : '');
+    img.src = './img/' + src;
+    img.alt = alt + ' — foto ' + (i + 1);
+    img.loading = i === 0 ? 'eager' : 'lazy';
+    /* Detección de orientación para aplicar object-fit adecuado */
+    img.onload = function() {
+      if (this.naturalHeight > this.naturalWidth) {
+        this.classList.add('vertical');
+      } else {
+        this.classList.add('horizontal');
+      }
+    };
+    cont.appendChild(img);
+  });
+
+  let dotsWrap = null;
+  if (showDots && images.length > 1) {
+    dotsWrap = document.createElement('div');
+    dotsWrap.className = 'carousel-dots';
+    images.forEach((_, i) => {
+      const d = document.createElement('button');
+      d.className = 'carousel-dot' + (i === 0 ? ' active' : '');
+      d.setAttribute('aria-label', 'Ir a foto ' + (i + 1));
+      d.onclick = () => goTo(i);
+      dotsWrap.appendChild(d);
+    });
+    cont.appendChild(dotsWrap);
+  }
+
+  let current = 0;
+  let timer = null;
+
+  function goTo(idx) {
+    if (idx === current) return;
+    const slides = cont.querySelectorAll('.carousel-slide');
+    slides[current].classList.remove('active');
+    slides[idx].classList.add('active');
+    if (dotsWrap) {
+      dotsWrap.children[current].classList.remove('active');
+      dotsWrap.children[idx].classList.add('active');
+    }
+    current = idx;
+    resetTimer();
+  }
+
+  function next() {
+    goTo((current + 1) % images.length);
+  }
+
+  function resetTimer() {
+    if (timer) clearInterval(timer);
+    if (images.length > 1) timer = setInterval(next, interval);
+  }
+
+  resetTimer();
+
+  /* Pausar cuando la pestaña no está visible */
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (timer) clearInterval(timer); }
+    else resetTimer();
+  });
+
+  return { next, goTo };
+}
+
+/* Maps — Google Maps embed que muestra pin + info del negocio */
+function applyMaps(data) {
+  const iframe = document.getElementById('maps-iframe');
+  if (!iframe) return;
+  const query = encodeURIComponent(`${data.negocio.nombre} ${data.negocio.direccion}`);
+  const lat = data.negocio.latitud;
+  const lng = data.negocio.longitud;
+  /* URL que centra en las coordenadas y muestra un pin buscable por nombre */
+  iframe.src = `https://www.google.com/maps?q=${query}&ll=${lat},${lng}&z=16&output=embed&hl=es`;
+}
+
+/* =========== FIREBASE PLACEHOLDER =========== */
+const FIREBASE_CONFIG = {
+  apiKey: "PLACEHOLDER_API_KEY",
+  authDomain: "PLACEHOLDER.firebaseapp.com",
+  projectId: "PLACEHOLDER",
+  storageBucket: "PLACEHOLDER.appspot.com",
+  messagingSenderId: "PLACEHOLDER",
+  appId: "PLACEHOLDER"
+};
+let db = null;
+try {
+  if (FIREBASE_CONFIG.apiKey !== 'PLACEHOLDER_API_KEY' && typeof firebase !== 'undefined') {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+  }
+} catch(e) { console.warn('Firebase no inicializado:', e.message); }
+
+const LS_MIS_SOLICITUDES = 'catt_mis_solicitudes';
+const MAY_RATE_LIMIT_MS = 5000;
+let mayLastSubmit = 0;
+let ubicacionMay = null;
+
+function sanInp(s, max = 200) {
+  if (!s) return '';
+  return String(s).slice(0, max).replace(/[<>]/g, '').trim();
+}
+
+function genMayCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return 'MAY-' + s;
+}
+
+async function openMayForm() {
+  document.getElementById('may-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  document.getElementById('may-form-step').style.display = 'block';
+  document.getElementById('may-confirm-step').style.display = 'none';
+  if (!ubicacionMay && window.Ubicaciones) {
+    ubicacionMay = await window.Ubicaciones.init({
+      provinciaSelect: document.getElementById('may-provincia'),
+      localidadInput: document.getElementById('may-localidad'),
+      localidadList: document.getElementById('loc-list-may')
+    });
+  }
+}
+
+function closeMayForm(e) {
+  if (e && e.target && !e.target.classList.contains('may-back') && e.currentTarget !== e.target) {
+    if (e.target.className && String(e.target.className).includes('may-back')) {
+      // click en backdrop
+    } else if (e.type === 'click') {
+      // llamado desde botón
+    } else {
+      return;
+    }
+  }
+  document.getElementById('may-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function saveMySolicitudCode(code, docId) {
+  try {
+    const arr = JSON.parse(localStorage.getItem(LS_MIS_SOLICITUDES) || '[]');
+    arr.unshift({ code, docId, ts: Date.now() });
+    localStorage.setItem(LS_MIS_SOLICITUDES, JSON.stringify(arr.slice(0, 10)));
+  } catch {}
+}
+
+function showMayErr(msg) {
+  const err = document.getElementById('may-err');
+  err.textContent = msg;
+  err.classList.add('show');
+}
+function hideMayErr() {
+  document.getElementById('may-err').classList.remove('show');
+}
+
+async function submitMayForm() {
+  hideMayErr();
+
+  const now = Date.now();
+  if (now - mayLastSubmit < MAY_RATE_LIMIT_MS) {
+    showMayErr('Esperá unos segundos antes de reintentar.');
+    return;
+  }
+  if (document.getElementById('may-hp').value) return;
+
+  const nombre = sanInp(document.getElementById('may-nombre').value, 80);
+  const negocio = sanInp(document.getElementById('may-negocio').value, 100);
+  const cuit = sanInp(document.getElementById('may-cuit').value, 15);
+  const tipo = sanInp(document.getElementById('may-tipo').value, 50);
+  const tel = sanInp(document.getElementById('may-tel').value, 30);
+  const wa = sanInp(document.getElementById('may-wa').value, 30);
+  const email = sanInp(document.getElementById('may-email').value, 80);
+  const provincia = sanInp(document.getElementById('may-provincia').value, 40);
+  const localidad = sanInp(document.getElementById('may-localidad').value, 60);
+  const notas = sanInp(document.getElementById('may-notas').value, 500);
+
+  if (!nombre || !negocio) { showMayErr('Nombre y negocio son obligatorios.'); return; }
+  if (!wa && !email) { showMayErr('Necesitamos WhatsApp o email para contactarte.'); return; }
+  if (!provincia || !localidad) { showMayErr('Elegí provincia y localidad.'); return; }
+  if (window.Ubicaciones) {
+    const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
+    if (!valida) { showMayErr('Elegí una localidad de la lista sugerida.'); return; }
+  }
+
+  const btn = document.getElementById('may-submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  const code = genMayCode();
+  const payload = {
+    codigo: code,
+    creadoEn: (db && firebase.firestore.FieldValue.serverTimestamp()) || new Date().toISOString(),
+    solicitante: {
+      nombre, negocio, cuit, tipo,
+      telefono: tel, whatsapp: wa, email,
+      provincia, localidad
+    },
+    notas,
+    estado: 'pendiente',
+    respuesta: null
+  };
+
+  if (db) {
+    try {
+      const ref = await db.collection('solicitudes_mayoristas').add(payload);
+      saveMySolicitudCode(code, ref.id);
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Enviar solicitud';
+      showMayErr('Error al enviar: ' + e.message);
+      return;
+    }
+  } else {
+    saveMySolicitudCode(code, null);
+    console.warn('Firebase no configurado. Solicitud no persistida remotamente.');
+  }
+
+  mayLastSubmit = now;
+
+  document.getElementById('may-confirm-code').textContent = code;
+  document.getElementById('may-track-link').href = `./seguimiento-mayorista.html?code=${code}`;
+  document.getElementById('may-form-step').style.display = 'none';
+  document.getElementById('may-confirm-step').style.display = 'block';
+
+  btn.disabled = false;
+  btn.textContent = 'Enviar solicitud';
+}
+
+/* Page transitions — fade out + curtain on internal link click */
+function initPageTransitions() {
+  document.addEventListener('click', (e) => {
+    const link = e.target.closest('a[href]');
+    if (!link) return;
+    const href = link.getAttribute('href');
+    if (!href || href.startsWith('#')) return;
+    if (link.target === '_blank') return;
+    if (link.hasAttribute('download')) return;
+    const url = new URL(href, window.location.href);
+    if (url.origin !== window.location.origin) return;
+    if (url.pathname === window.location.pathname && url.hash) return;
+
+    e.preventDefault();
+    const curtain = document.getElementById('curtain');
+    document.body.classList.add('leaving');
+    if (curtain) curtain.classList.add('leave');
+    setTimeout(() => { window.location.href = href; }, 450);
+  });
+
+  /* Reset del estado de transición al restaurar desde bfcache (botón "atrás" de Chrome) */
+  window.addEventListener('pageshow', (e) => {
+    document.body.classList.remove('leaving');
+    const curtain = document.getElementById('curtain');
+    if (curtain) curtain.classList.remove('leave', 'enter');
+  });
+}
+
+/* Init */
+async function init() {
+  const data = await loadData();
+  if (!data) return;
+
+  applyTextos(data);
+  buildHorarios(data);
+  buildCategorias(data);
+  buildDestacados(data);
+  applyWA(data);
+  applyMaps(data);
+
+  /* Carruseles */
+  const imgs = data.imagenes || {};
+  initCarousel('carousel-hero', imgs.hero_carousel || [], {
+    alt: 'Fábrica Cattorini', dots: false, interval: 5500
+  });
+  initCarousel('carousel-fabrica', imgs.fabrica_carousel || [], {
+    alt: 'Fábrica Cattorini', interval: 4500
+  });
+  initCarousel('carousel-local', imgs.local_carousel || [], {
+    alt: 'Local Cattorini Las Flores', interval: 4500
+  });
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* Animations */
+  const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (window.gsap && window.ScrollTrigger && !prefersReduced) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    /* --- HERO --- */
+    const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+    heroTl
+      .from('.hero .eyebrow', { y: 20, opacity: 0, duration: 0.8 })
+      .from('.hero h1', { y: 40, opacity: 0, duration: 1.1 }, '-=0.5')
+      .from('.hero p', { y: 20, opacity: 0, duration: 0.9 }, '-=0.7')
+      .from('.hero .btn', { y: 20, opacity: 0, duration: 0.7, stagger: 0.12 }, '-=0.5')
+      .from('.hero-media', { x: 40, opacity: 0, duration: 1.2, ease: 'power3.out' }, '-=1');
+
+    /* --- Utilitario para animar el contenido interno de una sección --- */
+    function animarSeccion(sel, config = {}) {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const eyebrow = el.querySelector('.eyebrow');
+      const heading = el.querySelector('h2.section, h2');
+      const paras = el.querySelectorAll('p');
+      const other = el.querySelectorAll('.split-img, .stars, .btn, .metric-card, iframe, .day-row');
+      const tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: el,
+          start: config.start || 'top 78%',
+          toggleActions: 'play none none none'
+        },
+        defaults: { ease: 'power2.out', duration: 0.9 }
+      });
+      if (eyebrow) tl.from(eyebrow, { x: -30, opacity: 0, duration: 0.6 });
+      if (heading) tl.from(heading, { y: 40, opacity: 0 }, eyebrow ? '-=0.35' : 0);
+      if (paras.length) tl.from(paras, { y: 25, opacity: 0, stagger: 0.1 }, '-=0.55');
+      if (other.length) tl.from(other, { y: 20, opacity: 0, stagger: 0.08 }, '-=0.5');
+    }
+
+    /* --- Split sections: imagen entra desde un costado, texto desde el otro --- */
+    function animarSplit(sel, imgFromRight = false) {
+      const el = document.querySelector(sel);
+      if (!el) return;
+      const img = el.querySelector('.split-img');
+      const eyebrow = el.querySelector('.eyebrow');
+      const heading = el.querySelector('h2');
+      const paras = el.querySelectorAll('p');
+
+      const tl = gsap.timeline({
+        scrollTrigger: { trigger: el, start: 'top 75%', toggleActions: 'play none none none' },
+        defaults: { ease: 'power3.out', duration: 1.1 }
+      });
+      if (img) {
+        tl.from(img, {
+          x: imgFromRight ? 80 : -80,
+          opacity: 0,
+          scale: 0.96,
+          duration: 1.2
+        }, 0);
+      }
+      if (eyebrow) tl.from(eyebrow, { x: -20, opacity: 0, duration: 0.6 }, 0.15);
+      if (heading) tl.from(heading, { y: 30, opacity: 0, duration: 0.9 }, 0.25);
+      if (paras.length) tl.from(paras, { y: 20, opacity: 0, stagger: 0.12, duration: 0.7 }, 0.4);
+    }
+
+    /* --- Aplicar animaciones a cada sección --- */
+    animarSplit('#historia', true);
+    animarSeccion('#categorias', { start: 'top 80%' });
+    animarSeccion('#destacados');
+    animarSeccion('#confianza');
+    animarSeccion('#mayoristas');
+    animarSplit('#local', false);
+    animarSeccion('#contacto');
+
+    /* --- Grids con stagger (categorías + destacados) --- */
+    ScrollTrigger.batch('.cat-card', {
+      start: 'top 85%',
+      onEnter: batch => gsap.from(batch, {
+        y: 40, opacity: 0, scale: 0.97,
+        duration: 0.9, stagger: 0.12, ease: 'power2.out', overwrite: 'auto'
+      })
+    });
+    ScrollTrigger.batch('.pcard', {
+      start: 'top 88%',
+      onEnter: batch => gsap.from(batch, {
+        y: 30, opacity: 0,
+        duration: 0.7, stagger: 0.08, ease: 'power2.out', overwrite: 'auto'
+      })
+    });
+
+    /* --- Dividers como líneas que se dibujan --- */
+    gsap.utils.toArray('.divider').forEach(d => {
+      gsap.from(d, {
+        scaleX: 0, transformOrigin: 'left center',
+        duration: 1.1, ease: 'power2.inOut',
+        scrollTrigger: { trigger: d, start: 'top 90%', toggleActions: 'play none none none' }
+      });
+    });
+
+    /* --- Rating stars: aparecen con un pop --- */
+    const stars = document.querySelector('.stars');
+    if (stars) {
+      gsap.from(stars, {
+        scale: 0.7, opacity: 0,
+        duration: 0.9, ease: 'back.out(1.8)',
+        scrollTrigger: { trigger: stars, start: 'top 85%', toggleActions: 'play none none none' }
+      });
+    }
+
+    /* --- Horarios: filas aparecen en cascada --- */
+    ScrollTrigger.batch('.day-row', {
+      start: 'top 92%',
+      onEnter: batch => gsap.from(batch, {
+        x: -15, opacity: 0,
+        duration: 0.5, stagger: 0.06, ease: 'power1.out', overwrite: 'auto'
+      })
+    });
+
+    /* --- Sección mayoristas dark: efecto de escalado sutil --- */
+    const mayEl = document.querySelector('#mayoristas');
+    if (mayEl) {
+      gsap.to(mayEl, {
+        backgroundColor: '#000',
+        scrollTrigger: { trigger: mayEl, start: 'top 60%', end: 'bottom top', scrub: 0.5 }
+      });
+    }
+
+    /* --- Nav: sombra al scrollear --- */
+    const nav = document.getElementById('navbar');
+    ScrollTrigger.create({
+      start: 'top -50',
+      onEnter: () => nav.style.boxShadow = '0 4px 20px rgba(0,0,0,0.05)',
+      onLeaveBack: () => nav.style.boxShadow = ''
+    });
+  }
+
+  /* Scroll progress + WA float */
+  window.addEventListener('scroll', () => {
+    const h = document.documentElement.scrollHeight - window.innerHeight;
+    const p = (window.scrollY / h) * 100;
+    document.getElementById('scroll-progress').style.width = `${p}%`;
+    const wa = document.getElementById('wa-float');
+    if (window.scrollY > 800) wa.classList.add('visible');
+    else wa.classList.remove('visible');
+  });
+
+  /* Service worker */
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+}
+
+initPageTransitions();
+init();
+</script>
+
+</body>
+</html>
