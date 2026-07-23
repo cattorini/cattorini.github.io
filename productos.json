@@ -42,48 +42,195 @@
   "guia_talles": {
     "camisas": {
       "unidad": "cm",
-      "medidas": ["Pecho", "Hombro", "Largo", "Manga"],
+      "medidas": [
+        "Pecho",
+        "Hombro",
+        "Largo",
+        "Manga"
+      ],
       "tabla": {
-        "S":   ["92", "42", "70", "62"],
-        "M":   ["96", "44", "72", "63"],
-        "L":   ["100", "46", "74", "64"],
-        "XL":  ["104", "48", "76", "65"],
-        "XXL": ["108", "50", "78", "66"]
+        "S": [
+          "92",
+          "42",
+          "70",
+          "62"
+        ],
+        "M": [
+          "96",
+          "44",
+          "72",
+          "63"
+        ],
+        "L": [
+          "100",
+          "46",
+          "74",
+          "64"
+        ],
+        "XL": [
+          "104",
+          "48",
+          "76",
+          "65"
+        ],
+        "XXL": [
+          "108",
+          "50",
+          "78",
+          "66"
+        ]
       }
     },
     "pantalones": {
       "unidad": "cm",
-      "medidas": ["Cintura", "Cadera", "Entrepierna", "Largo total"],
+      "medidas": [
+        "Cintura",
+        "Cadera",
+        "Entrepierna",
+        "Largo total"
+      ],
       "tabla": {
-        "38": ["76", "96", "78", "102"],
-        "40": ["80", "100", "78", "103"],
-        "42": ["84", "104", "79", "104"],
-        "44": ["88", "108", "79", "105"],
-        "46": ["92", "112", "80", "106"],
-        "48": ["96", "116", "80", "107"]
+        "38": [
+          "76",
+          "96",
+          "78",
+          "102"
+        ],
+        "40": [
+          "80",
+          "100",
+          "78",
+          "103"
+        ],
+        "42": [
+          "84",
+          "104",
+          "79",
+          "104"
+        ],
+        "44": [
+          "88",
+          "108",
+          "79",
+          "105"
+        ],
+        "46": [
+          "92",
+          "112",
+          "80",
+          "106"
+        ],
+        "48": [
+          "96",
+          "116",
+          "80",
+          "107"
+        ]
       }
     },
     "jeans": {
       "unidad": "cm",
-      "medidas": ["Cintura", "Cadera", "Entrepierna"],
+      "medidas": [
+        "Cintura",
+        "Cadera",
+        "Entrepierna"
+      ],
       "tabla": {
-        "28": ["71", "92", "79"],
-        "30": ["76", "96", "80"],
-        "32": ["81", "100", "80"],
-        "34": ["86", "104", "81"],
-        "36": ["91", "108", "81"],
-        "38": ["96", "112", "82"]
+        "28": [
+          "71",
+          "92",
+          "79"
+        ],
+        "30": [
+          "76",
+          "96",
+          "80"
+        ],
+        "32": [
+          "81",
+          "100",
+          "80"
+        ],
+        "34": [
+          "86",
+          "104",
+          "81"
+        ],
+        "36": [
+          "91",
+          "108",
+          "81"
+        ],
+        "38": [
+          "96",
+          "112",
+          "82"
+        ]
       }
     }
   },
   "horarios": {
-    "lunes":     [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
-    "martes":    [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
-    "miércoles": [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
-    "jueves":    [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
-    "viernes":   [{"abre": "08:30", "cierra": "12:00"}, {"abre": "16:30", "cierra": "20:30"}],
-    "sábado":    [{"abre": "08:30", "cierra": "13:00"}, {"abre": "16:30", "cierra": "20:30"}],
-    "domingo":   []
+    "lunes": [
+      {
+        "abre": "08:30",
+        "cierra": "12:00"
+      },
+      {
+        "abre": "16:30",
+        "cierra": "20:30"
+      }
+    ],
+    "martes": [
+      {
+        "abre": "08:30",
+        "cierra": "12:00"
+      },
+      {
+        "abre": "16:30",
+        "cierra": "20:30"
+      }
+    ],
+    "miércoles": [
+      {
+        "abre": "08:30",
+        "cierra": "12:00"
+      },
+      {
+        "abre": "16:30",
+        "cierra": "20:30"
+      }
+    ],
+    "jueves": [
+      {
+        "abre": "08:30",
+        "cierra": "12:00"
+      },
+      {
+        "abre": "16:30",
+        "cierra": "20:30"
+      }
+    ],
+    "viernes": [
+      {
+        "abre": "08:30",
+        "cierra": "12:00"
+      },
+      {
+        "abre": "16:30",
+        "cierra": "20:30"
+      }
+    ],
+    "sábado": [
+      {
+        "abre": "08:30",
+        "cierra": "13:00"
+      },
+      {
+        "abre": "16:30",
+        "cierra": "20:30"
+      }
+    ],
+    "domingo": []
   },
   "categorias": [
     {
@@ -99,10 +246,19 @@
           "descripcion": "Camisa de vestir en algodón Oxford 100%. Corte regular fit, cuello con botones, puños ajustables. Ideal para uniforme corporativo o uso diario.",
           "precio_minorista": 22000,
           "precio_mayorista": 14500,
-          "talles_disponibles": ["S", "M", "L", "XL", "XXL"],
+          "talles_disponibles": [
+            "S",
+            "M",
+            "L",
+            "XL",
+            "XXL"
+          ],
           "disponible": true,
           "destacado": true,
-          "imagenes": ["camisa-oxford-blanca-1.jpg", "camisa-oxford-blanca-2.jpg"]
+          "imagenes": [
+            "camisa-oxford-blanca-1.jpg",
+            "camisa-oxford-blanca-2.jpg"
+          ]
         },
         {
           "id": 2,
@@ -110,10 +266,18 @@
           "descripcion": "Versión celeste de nuestra clásica Oxford. Algodón 100%, corte regular, ideal para look formal.",
           "precio_minorista": 22000,
           "precio_mayorista": 14500,
-          "talles_disponibles": ["S", "M", "L", "XL"],
+          "talles_disponibles": [
+            "S",
+            "M",
+            "L",
+            "XL"
+          ],
           "disponible": true,
           "destacado": false,
-          "imagenes": ["camisa-oxford-celeste-1.jpg", "camisa-oxford-celeste-2.jpg"]
+          "imagenes": [
+            "camisa-oxford-celeste-1.jpg",
+            "camisa-oxford-celeste-2.jpg"
+          ]
         },
         {
           "id": 3,
@@ -121,10 +285,40 @@
           "descripcion": "Camisa industrial en grafa reforzada. Diseñada para uso intensivo, cuello camisero, bolsillos con solapa.",
           "precio_minorista": 18500,
           "precio_mayorista": 12000,
-          "talles_disponibles": ["M", "L", "XL", "XXL"],
+          "talles_disponibles": [
+            "M",
+            "L",
+            "XL",
+            "XXL"
+          ],
           "disponible": true,
           "destacado": true,
-          "imagenes": ["camisa-grafa-1.jpg", "camisa-grafa-2.jpg"]
+          "imagenes": [
+            "camisa-grafa-1.jpg",
+            "camisa-grafa-2.jpg"
+          ]
+        },
+        {
+          "id": 10,
+          "nombre": "Producto nuevo",
+          "descripcion": "",
+          "precio_minorista": 0,
+          "precio_mayorista": 0,
+          "talles_disponibles": [],
+          "disponible": true,
+          "destacado": false,
+          "imagenes": []
+        },
+        {
+          "id": 11,
+          "nombre": "Producto nuevo",
+          "descripcion": "",
+          "precio_minorista": 0,
+          "precio_mayorista": 0,
+          "talles_disponibles": [],
+          "disponible": true,
+          "destacado": false,
+          "imagenes": []
         }
       ]
     },
@@ -141,10 +335,20 @@
           "descripcion": "Pantalón clásico de vestir en gabardina de poliéster y viscosa. Corte recto, pinzas, dos bolsillos laterales y uno trasero.",
           "precio_minorista": 28000,
           "precio_mayorista": 18500,
-          "talles_disponibles": ["38", "40", "42", "44", "46", "48"],
+          "talles_disponibles": [
+            "38",
+            "40",
+            "42",
+            "44",
+            "46",
+            "48"
+          ],
           "disponible": true,
           "destacado": true,
-          "imagenes": ["pantalon-vestir-negro-1.jpg", "pantalon-vestir-negro-2.jpg"]
+          "imagenes": [
+            "pantalon-vestir-negro-1.jpg",
+            "pantalon-vestir-negro-2.jpg"
+          ]
         },
         {
           "id": 5,
@@ -152,10 +356,19 @@
           "descripcion": "Mismo modelo clásico en gris antracita. Gabardina de poliéster y viscosa, corte recto con pinzas.",
           "precio_minorista": 28000,
           "precio_mayorista": 18500,
-          "talles_disponibles": ["38", "40", "42", "44", "46"],
+          "talles_disponibles": [
+            "38",
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
           "disponible": true,
           "destacado": false,
-          "imagenes": ["pantalon-vestir-gris-1.jpg", "pantalon-vestir-gris-2.jpg"]
+          "imagenes": [
+            "pantalon-vestir-gris-1.jpg",
+            "pantalon-vestir-gris-2.jpg"
+          ]
         },
         {
           "id": 6,
@@ -163,10 +376,19 @@
           "descripcion": "Pantalón de trabajo en grafa reforzada. Bolsillos amplios, cintura con elástico lateral y presillas anchas.",
           "precio_minorista": 24000,
           "precio_mayorista": 15500,
-          "talles_disponibles": ["40", "42", "44", "46", "48"],
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46",
+            "48"
+          ],
           "disponible": true,
           "destacado": true,
-          "imagenes": ["pantalon-grafa-1.jpg", "pantalon-grafa-2.jpg"]
+          "imagenes": [
+            "pantalon-grafa-1.jpg",
+            "pantalon-grafa-2.jpg"
+          ]
         }
       ]
     },
@@ -183,10 +405,20 @@
           "descripcion": "Jean de corte recto en denim de 12 onzas. Cinco bolsillos, tiro medio, remaches metálicos. El clásico que nunca falla.",
           "precio_minorista": 32000,
           "precio_mayorista": 21000,
-          "talles_disponibles": ["28", "30", "32", "34", "36", "38"],
+          "talles_disponibles": [
+            "28",
+            "30",
+            "32",
+            "34",
+            "36",
+            "38"
+          ],
           "disponible": true,
           "destacado": true,
-          "imagenes": ["jean-clasico-azul-1.jpg", "jean-clasico-azul-2.jpg"]
+          "imagenes": [
+            "jean-clasico-azul-1.jpg",
+            "jean-clasico-azul-2.jpg"
+          ]
         },
         {
           "id": 8,
@@ -194,10 +426,18 @@
           "descripcion": "Jean de corte slim en denim elastizado. Confort para todo el día, cinco bolsillos, tiro medio.",
           "precio_minorista": 34000,
           "precio_mayorista": 22500,
-          "talles_disponibles": ["28", "30", "32", "34"],
+          "talles_disponibles": [
+            "28",
+            "30",
+            "32",
+            "34"
+          ],
           "disponible": true,
           "destacado": false,
-          "imagenes": ["jean-slim-negro-1.jpg", "jean-slim-negro-2.jpg"]
+          "imagenes": [
+            "jean-slim-negro-1.jpg",
+            "jean-slim-negro-2.jpg"
+          ]
         },
         {
           "id": 9,
@@ -205,10 +445,19 @@
           "descripcion": "Jean pensado para uso industrial. Denim de 14 onzas, costuras dobles, bolsillos reforzados. Larga duración.",
           "precio_minorista": 36000,
           "precio_mayorista": 23500,
-          "talles_disponibles": ["30", "32", "34", "36", "38"],
+          "talles_disponibles": [
+            "30",
+            "32",
+            "34",
+            "36",
+            "38"
+          ],
           "disponible": true,
           "destacado": true,
-          "imagenes": ["jean-trabajo-1.jpg", "jean-trabajo-2.jpg"]
+          "imagenes": [
+            "jean-trabajo-1.jpg",
+            "jean-trabajo-2.jpg"
+          ]
         }
       ]
     }
@@ -246,9 +495,23 @@
   },
   "imagenes": {
     "logo": "logo.jpeg",
-    "hero_carousel": ["Historia1.jpeg", "Historia2.jpeg", "Historia3.jpeg", "Historia4.jpeg", "Historia5.jpeg"],
-    "fabrica_carousel": ["Fabrica1.jpeg", "Fabrica2.jpeg", "Fabrica3.jpeg"],
-    "local_carousel": ["Local1.jpeg", "Local2.jpeg", "Local3.jpeg"],
+    "hero_carousel": [
+      "Historia1.jpeg",
+      "Historia2.jpeg",
+      "Historia3.jpeg",
+      "Historia4.jpeg",
+      "Historia5.jpeg"
+    ],
+    "fabrica_carousel": [
+      "Fabrica1.jpeg",
+      "Fabrica2.jpeg",
+      "Fabrica3.jpeg"
+    ],
+    "local_carousel": [
+      "Local1.jpeg",
+      "Local2.jpeg",
+      "Local3.jpeg"
+    ],
     "og": "Historia1.jpeg"
   },
   "seo": {
