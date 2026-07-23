@@ -631,7 +631,7 @@
       <button class="btn-link" onclick="goToStep(null)">← Volver</button>
       <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #E5E5E5; text-align: center;">
         <span style="font-size: 0.82rem; color: #666;">¿No tenés cuenta? </span>
-        <a id="req-cta" target="_blank" rel="noopener noreferrer" style="font-size: 0.82rem; color: #0A0A0A; text-decoration: underline;">Solicitala por WhatsApp</a>
+        <a id="req-cta" href="./index.html#solicitar-mayorista" style="font-size: 0.82rem; color: #0A0A0A; text-decoration: underline;">Solicitá una cuenta mayorista</a>
       </div>
     </div>
 
@@ -845,9 +845,6 @@ function goToStep(step) {
   document.getElementById('modal-step-minorista').style.display = step === 'minorista' ? 'block' : 'none';
   if (step === 'mayorista') {
     document.getElementById('msg-mayorista').textContent = DATA.config.mayoristas.mensaje_bienvenida;
-    const wa = DATA.negocio.whatsapp;
-    const msg = encodeURIComponent('Hola! Quisiera solicitar una cuenta mayorista en Cattorini.');
-    document.getElementById('req-cta').href = `https://wa.me/${wa}?text=${msg}`;
     setTimeout(() => document.getElementById('input-codigo').focus(), 100);
   }
   if (step === 'minorista') {

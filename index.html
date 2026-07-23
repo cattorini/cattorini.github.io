@@ -362,14 +362,21 @@
       background: rgba(0,0,0,0.65);
       backdrop-filter: blur(4px);
       z-index: 80;
-      display: none; align-items: center; justify-content: center;
-      padding: 20px;
+      display: none;
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 40px 20px;
     }
     .may-back.open { display: flex; }
     .may-content {
       background: #FFF; max-width: 560px; width: 100%;
-      padding: 32px; max-height: 92vh; overflow-y: auto;
+      padding: 32px;
+      margin: auto; /* flex + margin auto: centrado con espacio, arriba si es grande */
       position: relative;
+    }
+    @media (max-width: 500px) {
+      .may-back { padding: 20px 12px; }
+      .may-content { padding: 24px 20px; }
     }
     .may-close {
       position: absolute; top: 14px; right: 20px;
@@ -1445,6 +1452,12 @@ async function init() {
   /* Service worker */
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
+  }
+
+  /* Auto-abrir modal mayorista si el hash lo pide (link desde tienda) */
+  if (window.location.hash === '#solicitar-mayorista') {
+    setTimeout(() => openMayForm(), 400);
+    history.replaceState(null, '', window.location.pathname);
   }
 }
 
