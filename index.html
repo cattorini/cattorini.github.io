@@ -356,6 +356,23 @@
       .hero { min-height: 80vh; }
     }
 
+    /* Pulse highlight para el botón "Solicitar cuenta mayorista"
+       cuando el usuario llega desde el gate de la tienda */
+    #mayoristas-cta.pulse-highlight {
+      animation: pulseHighlight 1.5s ease-in-out 3;
+      position: relative;
+    }
+    @keyframes pulseHighlight {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.6);
+      }
+      50% {
+        transform: scale(1.06);
+        box-shadow: 0 0 0 14px rgba(255, 255, 255, 0);
+      }
+    }
+
     /* Modal mayorista */
     .may-back {
       position: fixed; inset: 0;
@@ -1454,10 +1471,15 @@ async function init() {
     navigator.serviceWorker.register('./sw.js').catch(() => {});
   }
 
-  /* Auto-abrir modal mayorista si el hash lo pide (link desde tienda) */
-  if (window.location.hash === '#solicitar-mayorista') {
-    setTimeout(() => openMayForm(), 400);
-    history.replaceState(null, '', window.location.pathname);
+  /* Al llegar con #mayoristas (link desde tienda), scroll natural + highlight del botón */
+  if (window.location.hash === '#mayoristas') {
+    setTimeout(() => {
+      const btn = document.getElementById('mayoristas-cta');
+      if (btn) {
+        btn.classList.add('pulse-highlight');
+        setTimeout(() => btn.classList.remove('pulse-highlight'), 4500);
+      }
+    }, 800);
   }
 }
 
