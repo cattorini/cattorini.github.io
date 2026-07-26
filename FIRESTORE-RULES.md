@@ -89,6 +89,22 @@ service cloud.firestore {
       /* UPDATE y DELETE — solo admin autenticado */
       allow update, delete: if request.auth != null;
     }
+
+    /* ============ MAYORISTAS ACTIVOS ============ */
+    /* Doc ID = SHA-256 del código de acceso (nunca guardamos código plaintext) */
+    match /mayoristas_activos/{hashId} {
+
+      /* GET público — necesario para que la tienda valide el código
+         Es seguro porque hay que conocer el hash exacto (2^256 combinaciones)
+         para poder acceder a un doc */
+      allow get: if true;
+
+      /* LIST solo admin — para listar todos en el panel de gestión */
+      allow list: if request.auth != null;
+
+      /* CREATE, UPDATE, DELETE — solo admin autenticado */
+      allow create, update, delete: if request.auth != null;
+    }
   }
 }
 ```

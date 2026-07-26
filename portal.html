@@ -85,6 +85,48 @@
     .tabs-nav::-webkit-scrollbar { display: none; }
     .tab-panel { display: none; padding: 24px; }
     .tab-panel.active { display: block; }
+
+    /* Sub-tabs dentro de un tab-panel */
+    .subtabs-nav {
+      display: flex; gap: 4px;
+      border-bottom: 1px solid #E5E5E5;
+      background: #FAFAFA;
+      padding: 0 4px;
+      margin: -24px -24px 20px -24px;
+      overflow-x: auto;
+    }
+    .subtabs-nav::-webkit-scrollbar { display: none; }
+    .subtab-btn {
+      padding: 12px 18px; background: transparent;
+      border: none; border-bottom: 2px solid transparent;
+      font-size: 0.82rem; font-weight: 500;
+      cursor: pointer; color: #666;
+      white-space: nowrap;
+    }
+    .subtab-btn.active { color: #0A0A0A; border-bottom-color: #0A0A0A; background: #FFF; }
+    .subtab-panel { display: none; }
+    .subtab-panel.active { display: block; }
+
+    /* ABM activos */
+    .activo-row {
+      background: #FFF; border: 1px solid #E5E5E5;
+      padding: 14px 16px; margin-bottom: 10px;
+      display: grid; grid-template-columns: 1fr auto; gap: 16px;
+      align-items: center;
+    }
+    .activo-info h4 { font-weight: 500; font-size: 0.95rem; margin-bottom: 2px; }
+    .activo-info .sub { font-size: 0.82rem; color: #666; }
+    .activo-info .meta { font-size: 0.78rem; color: #999; margin-top: 4px; }
+    .activo-actions { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+    .activo-actions button, .activo-actions a {
+      padding: 6px 12px; font-size: 0.75rem;
+      background: transparent; border: 1px solid #E5E5E5;
+      cursor: pointer; color: #0A0A0A;
+      text-decoration: none;
+    }
+    .activo-actions button:hover, .activo-actions a:hover { border-color: #0A0A0A; }
+    .activo-actions .del { color: #900; border-color: #F0C0C0; }
+    .activo-actions .del:hover { background: #FDECEC; border-color: #900; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
     .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
@@ -224,10 +266,9 @@
   </div>
 
   <div class="tabs-nav">
-    <button class="tab-btn active" data-tab="solicitudes">Solicitudes <span id="badge-sol" style="background:#900;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;display:none;">0</span></button>
-    <button class="tab-btn" data-tab="negocio">Negocio</button>
+    <button class="tab-btn active" data-tab="negocio">Negocio</button>
     <button class="tab-btn" data-tab="envio">Envío</button>
-    <button class="tab-btn" data-tab="mayoristas">Mayoristas</button>
+    <button class="tab-btn" data-tab="mayoristas">Mayoristas <span id="badge-sol" style="background:#900;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;display:none;">0</span></button>
     <button class="tab-btn" data-tab="minoristas">Minoristas</button>
     <button class="tab-btn" data-tab="zonas">Zonas</button>
     <button class="tab-btn" data-tab="talles">Guía talles</button>
@@ -245,28 +286,8 @@
       </div>
     </div>
 
-    <!-- Tab Solicitudes mayoristas -->
-    <div class="tab-panel active" id="tab-solicitudes">
-      <div class="card">
-        <div class="flex justify-between items-center mb-4">
-          <h3 class="serif text-xl">Solicitudes de cuentas mayoristas</h3>
-          <div>
-            <button class="btn-ghost" onclick="loadSolicitudes()">↻ Recargar</button>
-            <select id="sol-filter" class="inp" style="width:auto;display:inline-block;margin-left:8px;padding:6px 10px;" onchange="renderSolicitudes()">
-              <option value="pendiente">Pendientes</option>
-              <option value="aceptada">Aceptadas</option>
-              <option value="rechazada">Rechazadas</option>
-              <option value="todas">Todas</option>
-            </select>
-          </div>
-        </div>
-        <div id="sol-status" class="msg-info">Cargando solicitudes...</div>
-        <div id="solicitudes-list"></div>
-      </div>
-    </div>
-
     <!-- Tab Negocio -->
-    <div class="tab-panel" id="tab-negocio">
+    <div class="tab-panel active" id="tab-negocio">
       <div class="card">
         <h3 class="serif text-xl mb-4">Datos del negocio</h3>
         <div class="grid-2">
@@ -296,65 +317,126 @@
       </div>
     </div>
 
-    <!-- Tab Mayoristas -->
+    <!-- Tab Mayoristas — con sub-tabs internos -->
     <div class="tab-panel" id="tab-mayoristas">
-      <div class="card">
-        <h3 class="serif text-xl mb-4">Configuración general</h3>
-        <div class="msg-info">El código se guarda solo como hash SHA-256 (no en texto plano) por seguridad. Al cambiarlo, escribí el nuevo código y clic en "Generar nuevo hash".</div>
-        <div class="grid-2">
-          <div>
-            <label class="lbl">Nuevo código de acceso</label>
-            <input type="text" id="new-may-code" class="inp" placeholder="Dejá vacío para no cambiar" autocomplete="off" />
-            <button class="btn-ghost mt-2" onclick="generateMayoHash()">Generar nuevo hash</button>
+      <div class="subtabs-nav">
+        <button class="subtab-btn active" data-subtab="config">Configuración</button>
+        <button class="subtab-btn" data-subtab="solicitudes">Solicitudes <span id="badge-sub-sol" style="background:#900;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;display:none;">0</span></button>
+        <button class="subtab-btn" data-subtab="alta">Alta manual</button>
+        <button class="subtab-btn" data-subtab="activos">Activos <span id="badge-activos" style="background:#0A0A0A;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;">0</span></button>
+      </div>
+
+      <!-- Sub-tab: Configuración general -->
+      <div class="subtab-panel active" id="subtab-config">
+        <div class="card">
+          <h3 class="serif text-xl mb-4">Configuración general</h3>
+          <div class="msg-info">El código master funciona para todos los mayoristas que no tengan uno individual. Se guarda solo como hash SHA-256 por seguridad.</div>
+          <div class="grid-2">
+            <div>
+              <label class="lbl">Nuevo código master</label>
+              <input type="text" id="new-may-code" class="inp" placeholder="Dejá vacío para no cambiar" autocomplete="off" />
+              <button class="btn-ghost mt-2" onclick="generateMayoHash()">Generar nuevo hash</button>
+            </div>
+            <div>
+              <label class="lbl">Hash actual (guardado)</label>
+              <input class="inp" data-field="config.mayoristas.codigo_hash" readonly style="font-family:monospace;font-size:0.72rem;background:#F5F5F5;" />
+            </div>
+            <div><label class="lbl">Mínimo de compra ($)</label><input type="number" class="inp" data-field="config.mayoristas.minimo_compra" /></div>
+            <div style="grid-column:1/-1;"><label class="lbl">Mensaje de bienvenida en el gate</label><textarea class="inp" rows="2" data-field="config.mayoristas.mensaje_bienvenida"></textarea></div>
           </div>
-          <div>
-            <label class="lbl">Hash actual (guardado)</label>
-            <input class="inp" data-field="config.mayoristas.codigo_hash" readonly style="font-family:monospace;font-size:0.72rem;background:#F5F5F5;" />
-          </div>
-          <div><label class="lbl">Mínimo de compra ($)</label><input type="number" class="inp" data-field="config.mayoristas.minimo_compra" /></div>
-          <div style="grid-column:1/-1;"><label class="lbl">Mensaje de bienvenida</label><textarea class="inp" rows="2" data-field="config.mayoristas.mensaje_bienvenida"></textarea></div>
         </div>
       </div>
 
-      <div class="card">
-        <h3 class="serif text-xl mb-4">Alta manual de mayorista</h3>
-        <div class="msg-info">Usalo cuando registrás un mayorista personalmente (visita, WhatsApp, feria). Se guarda directo como "aceptada" en el tab Solicitudes. Después contactalo por WhatsApp con el código.</div>
-        <div class="grid-2">
-          <div><label class="lbl">Nombre y apellido *</label><input class="inp" id="am-nombre" maxlength="80" /></div>
-          <div><label class="lbl">Razón social o negocio *</label><input class="inp" id="am-negocio" maxlength="100" /></div>
-          <div><label class="lbl">CUIT / CUIL</label><input class="inp" id="am-cuit" maxlength="15" placeholder="20-12345678-9" /></div>
-          <div>
-            <label class="lbl">Tipo de comercio</label>
-            <select class="inp" id="am-tipo">
-              <option value="">Elegí...</option>
-              <option>Mercería / Cotillón</option>
-              <option>Tienda de ropa</option>
-              <option>Uniformes / Trabajo</option>
-              <option>Feria / Bazar</option>
-              <option>Online / Ecommerce</option>
-              <option>Otro</option>
-            </select>
-          </div>
-          <div><label class="lbl">Teléfono</label><input class="inp" id="am-tel" maxlength="30" /></div>
-          <div><label class="lbl">WhatsApp (549...)</label><input class="inp" id="am-wa" maxlength="30" /></div>
-          <div style="grid-column:1/-1;"><label class="lbl">Email</label><input class="inp" id="am-email" type="email" maxlength="80" /></div>
-          <div><label class="lbl">Provincia</label><select class="inp" id="am-prov"></select></div>
-          <div>
-            <label class="lbl">Localidad</label>
-            <div class="loc-wrap">
-              <input class="inp" id="am-loc" maxlength="60" disabled placeholder="Elegí primero la provincia" style="margin-bottom:0;" />
-              <div id="am-loc-list" class="loc-list"></div>
+      <!-- Sub-tab: Solicitudes -->
+      <div class="subtab-panel" id="subtab-solicitudes">
+        <div class="card">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="serif text-xl">Solicitudes recibidas</h3>
+            <div>
+              <button class="btn-ghost" onclick="loadSolicitudes()">↻ Recargar</button>
+              <select id="sol-filter" class="inp" style="width:auto;display:inline-block;margin-left:8px;padding:6px 10px;" onchange="renderSolicitudes()">
+                <option value="pendiente">Pendientes</option>
+                <option value="aceptada">Aceptadas</option>
+                <option value="rechazada">Rechazadas</option>
+                <option value="todas">Todas</option>
+              </select>
             </div>
           </div>
-          <div style="grid-column:1/-1;"><label class="lbl">Notas internas</label><textarea class="inp" id="am-notas" rows="2" maxlength="500"></textarea></div>
-          <div style="grid-column:1/-1;">
-            <label class="lbl">Código mayorista a asignar</label>
-            <input class="inp" id="am-codigo" maxlength="30" placeholder='Ej: "CATT2024", "auto" para generar, o vacío para usar el master' />
-            <div style="font-size:0.75rem;color:#666;margin-top:4px;">Vacío = usar código master (avisale manualmente cuál es) · "auto" = genera CATT-XXXXXX aleatorio · o escribí uno custom</div>
-          </div>
+          <div id="sol-status" class="msg-info">Cargando solicitudes...</div>
+          <div id="solicitudes-list"></div>
         </div>
-        <button class="btn mt-4" onclick="crearMayoristaManual()" id="am-btn">Registrar mayorista</button>
-        <div id="am-msg" style="display:none;margin-top:12px;padding:12px;font-size:0.9rem;"></div>
+      </div>
+
+      <!-- Sub-tab: Alta manual -->
+      <div class="subtab-panel" id="subtab-alta">
+        <div class="card">
+          <h3 class="serif text-xl mb-4">Alta manual de mayorista</h3>
+          <div class="msg-info">Usalo cuando registrás un mayorista personalmente (visita, WhatsApp, feria). Al registrarlo se genera un código automático que podés enviarle por WhatsApp con un click.</div>
+          <div class="grid-2">
+            <div><label class="lbl">Nombre y apellido *</label><input class="inp" id="am-nombre" maxlength="80" /></div>
+            <div><label class="lbl">Razón social o negocio *</label><input class="inp" id="am-negocio" maxlength="100" /></div>
+            <div><label class="lbl">CUIT / CUIL</label><input class="inp" id="am-cuit" maxlength="15" placeholder="20-12345678-9" /></div>
+            <div>
+              <label class="lbl">Tipo de comercio</label>
+              <select class="inp" id="am-tipo">
+                <option value="">Elegí...</option>
+                <option>Mercería / Cotillón</option>
+                <option>Tienda de ropa</option>
+                <option>Uniformes / Trabajo</option>
+                <option>Feria / Bazar</option>
+                <option>Online / Ecommerce</option>
+                <option>Otro</option>
+              </select>
+            </div>
+            <div><label class="lbl">Teléfono</label><input class="inp" id="am-tel" maxlength="30" /></div>
+            <div><label class="lbl">WhatsApp (549...)</label><input class="inp" id="am-wa" maxlength="30" /></div>
+            <div style="grid-column:1/-1;"><label class="lbl">Email</label><input class="inp" id="am-email" type="email" maxlength="80" /></div>
+            <div><label class="lbl">Provincia</label><select class="inp" id="am-prov"></select></div>
+            <div>
+              <label class="lbl">Localidad</label>
+              <div class="loc-wrap">
+                <input class="inp" id="am-loc" maxlength="60" disabled placeholder="Elegí primero la provincia" style="margin-bottom:0;" />
+                <div id="am-loc-list" class="loc-list"></div>
+              </div>
+            </div>
+            <div style="grid-column:1/-1;"><label class="lbl">Notas internas</label><textarea class="inp" id="am-notas" rows="2" maxlength="500"></textarea></div>
+          </div>
+          <button class="btn mt-4" onclick="crearMayoristaManual()" id="am-btn">Registrar mayorista</button>
+        </div>
+      </div>
+
+      <!-- Sub-tab: Activos (ABM) -->
+      <div class="subtab-panel" id="subtab-activos">
+        <div class="card">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="serif text-xl">Mayoristas activos</h3>
+            <div>
+              <input type="text" id="act-search" class="inp" placeholder="Buscar por nombre, negocio o localidad..." style="width:280px;display:inline-block;padding:6px 10px;" oninput="renderActivos()" />
+              <button class="btn-ghost" onclick="loadActivos()" style="margin-left:8px;">↻</button>
+            </div>
+          </div>
+          <div id="act-status" class="msg-info">Cargando...</div>
+          <div id="activos-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal genérico: mostrar código generado + botón WhatsApp -->
+    <div id="modal-codigo" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center;padding:20px;overflow-y:auto;">
+      <div style="background:#FFF;max-width:500px;width:100%;padding:32px;position:relative;margin:auto;">
+        <button onclick="cerrarModalCodigo()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#999;">×</button>
+        <div style="text-align:center;">
+          <div style="width:56px;height:56px;border-radius:50%;background:#0A0A0A;color:#FFF;display:inline-flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:12px;">✓</div>
+          <h3 class="serif" style="font-size:1.5rem;margin-bottom:6px;" id="mc-titulo">Mayorista creado</h3>
+          <p style="color:#666;font-size:0.88rem;margin-bottom:12px;" id="mc-nombre">···</p>
+          <p style="color:#333;font-size:0.85rem;margin-bottom:6px;">Código de acceso generado:</p>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;letter-spacing:0.15em;background:#F5F5F5;padding:14px 20px;margin:8px 0 20px;user-select:all;" id="mc-codigo">···</div>
+          <p style="color:#666;font-size:0.78rem;margin-bottom:20px;line-height:1.5;">
+            Este código NO se puede recuperar después. Copiálo o enviálo ahora mismo.
+          </p>
+          <a id="mc-wa" target="_blank" rel="noopener noreferrer" class="btn" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;">Enviar por WhatsApp</a>
+          <button class="btn-ghost" onclick="copiarCodigo()" style="width:100%;">Copiar código</button>
+        </div>
       </div>
     </div>
 
@@ -1470,18 +1552,24 @@ function mensajeErrorAuth() {
 let solicitudes = [];
 let solUnsub = null;
 
-function genCodigoMayoristaCustom() {
+function genCodigoMayorista() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let s = '';
   for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
   return 'CATT-' + s;
 }
 
+async function sha256hex(str) {
+  const buf = new TextEncoder().encode(str);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function loadSolicitudes() {
   const statusEl = document.getElementById('sol-status');
   if (!fbDb) {
     statusEl.className = 'msg-info';
-    statusEl.textContent = 'Firebase no configurado. Las solicitudes se verán cuando conectes el proyecto.';
+    statusEl.textContent = 'Firebase no configurado.';
     return;
   }
   statusEl.textContent = 'Cargando...';
@@ -1493,9 +1581,12 @@ async function loadSolicitudes() {
       .onSnapshot(snap => {
         solicitudes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
-        const badge = document.getElementById('badge-sol');
-        badge.textContent = pendientes;
-        badge.style.display = pendientes > 0 ? 'inline-block' : 'none';
+        /* Badge en el tab-btn top-level "Mayoristas" y en el sub-tab "Solicitudes" */
+        [document.getElementById('badge-sol'), document.getElementById('badge-sub-sol')].forEach(badge => {
+          if (!badge) return;
+          badge.textContent = pendientes;
+          badge.style.display = pendientes > 0 ? 'inline-block' : 'none';
+        });
         renderSolicitudes();
       });
   } catch (e) {
@@ -1626,7 +1717,20 @@ function renderSolicitudes() {
         btnW.textContent = 'WhatsApp';
         btnW.target = '_blank';
         btnW.rel = 'noopener noreferrer';
-        const msg = encodeURIComponent(`Hola ${s.nombre}, te contacto de Cattorini por tu solicitud ${sol.codigo}.`);
+        let msg;
+        if (sol.estado === 'aceptada' && sol.respuesta && sol.respuesta.codigoMayorista) {
+          msg = encodeURIComponent(
+            `Hola ${s.nombre}, tu cuenta mayorista en Cattorini fue aprobada. ` +
+            `Tu código de acceso es: ${sol.respuesta.codigoMayorista}\n\n` +
+            `Usalo en la tienda al elegir "Soy mayorista". Cualquier duda, respondé este mensaje.`
+          );
+        } else if (sol.estado === 'rechazada') {
+          msg = encodeURIComponent(
+            `Hola ${s.nombre}, te contacto de Cattorini sobre tu solicitud mayorista ${sol.codigo}.`
+          );
+        } else {
+          msg = encodeURIComponent(`Hola ${s.nombre}, te contacto de Cattorini por tu solicitud ${sol.codigo}.`);
+        }
         btnW.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
         acts.appendChild(btnW);
       }
@@ -1646,23 +1750,58 @@ function renderSolicitudes() {
   });
 }
 
-/* Aceptar: 1 click, sin prompts. Usa el código master implícito.
-   Si querés dar un código custom, usá "Alta manual" y luego eliminá esta solicitud. */
+/* Aceptar solicitud:
+   1. Auto-genera código CATT-XXXXXX
+   2. Hashea el código
+   3. Crea doc en mayoristas_activos con hash como ID
+   4. Actualiza la solicitud a "aceptada" guardando el código plaintext (para que el solicitante lo vea en seguimiento)
+   5. Muestra modal con código + botón WhatsApp para el admin */
 async function aceptarSolicitud(sol) {
   const okAuth = await esperarAuth();
   if (!okAuth) { alert(mensajeErrorAuth()); return; }
+
+  const s = sol.solicitante || {};
+  const codigo = genCodigoMayorista();
+  const codigoHash = await sha256hex(codigo);
+
   try {
+    /* 1) Crear en mayoristas_activos con hash como ID */
+    await fbDb.collection('mayoristas_activos').doc(codigoHash).set({
+      nombre: s.nombre || '',
+      negocio: s.negocio || '',
+      cuit: s.cuit || '',
+      tipo: s.tipo || '',
+      telefono: s.telefono || '',
+      whatsapp: s.whatsapp || '',
+      email: s.email || '',
+      provincia: s.provincia || '',
+      localidad: s.localidad || '',
+      notas: sol.notas || '',
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      solicitudId: sol.id,
+      solicitudCodigo: sol.codigo || ''
+    });
+
+    /* 2) Marcar solicitud como aceptada con el código para el solicitante */
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'aceptada',
       respuesta: {
-        codigoMayorista: 'Te vamos a contactar por WhatsApp con tu código de acceso.',
+        codigoMayorista: codigo,
         resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
       }
+    });
+
+    /* 3) Modal para el admin con código + WhatsApp */
+    mostrarModalCodigo({
+      titulo: 'Solicitud aceptada',
+      nombre: `${s.nombre} — ${s.negocio}`,
+      codigo,
+      whatsapp: s.whatsapp
     });
   } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
 
-/* Rechazar: 1 confirm rápido (protege contra clicks accidentales), motivo default */
+/* Rechazar */
 async function rechazarSolicitud(sol) {
   const nom = (sol.solicitante && sol.solicitante.nombre) || '';
   if (!confirm('¿Rechazar la solicitud de ' + nom + '?')) return;
@@ -1679,6 +1818,44 @@ async function rechazarSolicitud(sol) {
   } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
 
+/* Modal código genérico */
+let _mcCodigoActual = '';
+function mostrarModalCodigo({ titulo, nombre, codigo, whatsapp }) {
+  _mcCodigoActual = codigo;
+  document.getElementById('mc-titulo').textContent = titulo;
+  document.getElementById('mc-nombre').textContent = nombre;
+  document.getElementById('mc-codigo').textContent = codigo;
+  const waEl = document.getElementById('mc-wa');
+  if (whatsapp) {
+    const num = whatsapp.replace(/[^0-9]/g, '');
+    const msg = encodeURIComponent(
+      `Hola ${nombre.split(' — ')[0]}, tu cuenta mayorista en Cattorini fue aprobada. ` +
+      `Tu código de acceso es: ${codigo}\n\nUsalo en la tienda al elegir "Soy mayorista". ` +
+      `Cualquier duda, respondé este mensaje.`
+    );
+    waEl.href = `https://wa.me/${num}?text=${msg}`;
+    waEl.style.display = 'block';
+  } else {
+    waEl.style.display = 'none';
+  }
+  document.getElementById('modal-codigo').style.display = 'flex';
+}
+
+function cerrarModalCodigo() {
+  document.getElementById('modal-codigo').style.display = 'none';
+  _mcCodigoActual = '';
+}
+
+async function copiarCodigo() {
+  try {
+    await navigator.clipboard.writeText(_mcCodigoActual);
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = orig, 1500);
+  } catch { alert('No se pudo copiar. Copialo manualmente: ' + _mcCodigoActual); }
+}
+
 /* ---- Alta manual mayorista ---- */
 let ubicacionesAM = null;
 async function initUbicacionesAM() {
@@ -1690,16 +1867,8 @@ async function initUbicacionesAM() {
   });
 }
 
-function showAM(msg, kind) {
-  const el = document.getElementById('am-msg');
-  el.textContent = msg;
-  el.style.display = 'block';
-  el.style.background = kind === 'ok' ? '#E7F5E7' : (kind === 'err' ? '#FDECEC' : '#F0F0F0');
-  el.style.borderLeft = '3px solid ' + (kind === 'ok' ? '#060' : (kind === 'err' ? '#C00' : '#0A0A0A'));
-  el.style.color = kind === 'ok' ? '#060' : (kind === 'err' ? '#900' : '#333');
-}
 function clearAM() {
-  ['am-nombre','am-negocio','am-cuit','am-tel','am-wa','am-email','am-notas','am-codigo','am-loc'].forEach(id => {
+  ['am-nombre','am-negocio','am-cuit','am-tel','am-wa','am-email','am-notas','am-loc'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1713,66 +1882,78 @@ function sanAM(s, max) {
   return String(s || '').slice(0, max).replace(/[<>]/g, '').trim();
 }
 
+/* Alta manual: crea DIRECTO en mayoristas_activos + registra la solicitud como aceptada */
 async function crearMayoristaManual() {
-  if (!fbDb) { showAM('Firebase no disponible. Recargá.', 'err'); return; }
+  if (!fbDb) { alert('Firebase no disponible. Recargá.'); return; }
   const btn = document.getElementById('am-btn');
-  document.getElementById('am-msg').style.display = 'none';
 
   const nombre = sanAM(document.getElementById('am-nombre').value, 80);
   const negocio = sanAM(document.getElementById('am-negocio').value, 100);
-  if (!nombre || !negocio) { showAM('Nombre y negocio son obligatorios.', 'err'); return; }
-
-  const codigoInput = sanAM(document.getElementById('am-codigo').value, 30);
-  let codigoMayorista;
-  if (!codigoInput) codigoMayorista = '(usar código master — avisar manualmente)';
-  else if (codigoInput.toLowerCase() === 'auto') codigoMayorista = genCodigoMayoristaCustom();
-  else if (codigoInput.length < 4) { showAM('El código debe tener al menos 4 caracteres.', 'err'); return; }
-  else codigoMayorista = codigoInput;
+  if (!nombre || !negocio) { alert('Nombre y negocio son obligatorios.'); return; }
 
   const okAuth = await esperarAuth();
-  if (!okAuth) { showAM('Auth de Firebase no lista. Recargá.', 'err'); return; }
+  if (!okAuth) { alert(mensajeErrorAuth()); return; }
 
   btn.disabled = true;
   btn.textContent = 'Registrando...';
 
+  const codigo = genCodigoMayorista();
+  const codigoHash = await sha256hex(codigo);
+  const wa = sanAM(document.getElementById('am-wa').value, 30);
+
+  const solicitanteData = {
+    nombre, negocio,
+    cuit: sanAM(document.getElementById('am-cuit').value, 15),
+    tipo: sanAM(document.getElementById('am-tipo').value, 50),
+    telefono: sanAM(document.getElementById('am-tel').value, 30),
+    whatsapp: wa,
+    email: sanAM(document.getElementById('am-email').value, 80),
+    provincia: sanAM(document.getElementById('am-prov').value, 40),
+    localidad: sanAM(document.getElementById('am-loc').value, 60)
+  };
+  const notas = sanAM(document.getElementById('am-notas').value, 500);
   const codigoSol = 'MAY-' + Array.from({length: 4}, () =>
     'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]
   ).join('');
 
-  const payload = {
-    codigo: codigoSol,
-    creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-    solicitante: {
-      nombre, negocio,
-      cuit: sanAM(document.getElementById('am-cuit').value, 15),
-      tipo: sanAM(document.getElementById('am-tipo').value, 50),
-      telefono: sanAM(document.getElementById('am-tel').value, 30),
-      whatsapp: sanAM(document.getElementById('am-wa').value, 30),
-      email: sanAM(document.getElementById('am-email').value, 80),
-      provincia: sanAM(document.getElementById('am-prov').value, 40),
-      localidad: sanAM(document.getElementById('am-loc').value, 60)
-    },
-    notas: sanAM(document.getElementById('am-notas').value, 500),
-    estado: 'pendiente',
-    respuesta: null
-  };
-
   try {
-    /* 1) Create as pending (permitido por rules públicas con shape check) */
-    const ref = await fbDb.collection('solicitudes_mayoristas').add(payload);
-    /* 2) Update inmediato a aceptada (requiere auth) */
-    await fbDb.collection('solicitudes_mayoristas').doc(ref.id).update({
+    /* 1) Crear en mayoristas_activos */
+    await fbDb.collection('mayoristas_activos').doc(codigoHash).set({
+      ...solicitanteData,
+      notas,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      manual: true,
+      solicitudCodigo: codigoSol
+    });
+
+    /* 2) Crear la solicitud (pending → aceptada) para el historial */
+    const solRef = await fbDb.collection('solicitudes_mayoristas').add({
+      codigo: codigoSol,
+      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
+      solicitante: solicitanteData,
+      notas,
+      estado: 'pendiente',
+      respuesta: null
+    });
+    await fbDb.collection('solicitudes_mayoristas').doc(solRef.id).update({
       estado: 'aceptada',
       respuesta: {
-        codigoMayorista,
+        codigoMayorista: codigo,
         resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
       },
       manual: true
     });
-    showAM(`✓ Mayorista registrado. Código de acceso: ${codigoMayorista}. Verás el registro en el tab Solicitudes.`, 'ok');
+
+    /* 3) Modal código con WhatsApp */
+    mostrarModalCodigo({
+      titulo: 'Mayorista registrado',
+      nombre: `${nombre} — ${negocio}`,
+      codigo,
+      whatsapp: wa
+    });
     clearAM();
   } catch (e) {
-    showAM('Error: ' + e.message, 'err');
+    alert('Error: ' + e.message);
     console.error(e);
   } finally {
     btn.disabled = false;
@@ -1780,18 +1961,205 @@ async function crearMayoristaManual() {
   }
 }
 
-/* Inicializar dropdowns cuando se abre la tab Mayoristas */
+/* ============ ABM Mayoristas activos ============ */
+let mayoristasActivos = [];
+let actUnsub = null;
+
+async function loadActivos() {
+  const statusEl = document.getElementById('act-status');
+  if (!fbDb) {
+    statusEl.className = 'msg-info';
+    statusEl.textContent = 'Firebase no configurado.';
+    return;
+  }
+  const okAuth = await esperarAuth();
+  if (!okAuth) {
+    statusEl.className = 'msg-info err';
+    statusEl.textContent = mensajeErrorAuth();
+    return;
+  }
+  statusEl.textContent = 'Cargando...';
+  try {
+    if (actUnsub) actUnsub();
+    actUnsub = fbDb.collection('mayoristas_activos').limit(500).onSnapshot(snap => {
+      mayoristasActivos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      /* Badge cantidad total */
+      const badge = document.getElementById('badge-activos');
+      if (badge) badge.textContent = mayoristasActivos.length;
+      renderActivos();
+    });
+  } catch (e) {
+    statusEl.className = 'msg-info err';
+    statusEl.textContent = 'Error: ' + e.message;
+  }
+}
+
+function renderActivos() {
+  const cont = document.getElementById('activos-list');
+  const statusEl = document.getElementById('act-status');
+  cont.innerHTML = '';
+
+  const q = (document.getElementById('act-search').value || '').toLowerCase().trim();
+  const filtered = q ? mayoristasActivos.filter(m => {
+    const hay = [m.nombre, m.negocio, m.localidad, m.provincia, m.email].join(' ').toLowerCase();
+    return hay.includes(q);
+  }) : mayoristasActivos;
+
+  if (!filtered.length) {
+    statusEl.className = 'msg-info';
+    statusEl.textContent = q ? 'Sin resultados para "' + q + '".' : 'Aún no hay mayoristas activos. Aceptá una solicitud o creá uno desde "Alta manual".';
+    statusEl.style.display = 'block';
+    return;
+  }
+  statusEl.style.display = 'none';
+
+  filtered.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+
+  filtered.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'activo-row';
+
+    const info = document.createElement('div');
+    info.className = 'activo-info';
+    const h4 = document.createElement('h4');
+    h4.textContent = m.nombre + ' — ' + m.negocio;
+    info.appendChild(h4);
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    sub.textContent = [m.localidad, m.provincia].filter(Boolean).join(', ');
+    info.appendChild(sub);
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    const bits = [];
+    if (m.whatsapp) bits.push('WA: ' + m.whatsapp);
+    if (m.telefono) bits.push('Tel: ' + m.telefono);
+    if (m.email) bits.push(m.email);
+    if (m.cuit) bits.push('CUIT: ' + m.cuit);
+    meta.textContent = bits.join(' · ');
+    info.appendChild(meta);
+    row.appendChild(info);
+
+    const acts = document.createElement('div');
+    acts.className = 'activo-actions';
+
+    if (m.whatsapp) {
+      const btnW = document.createElement('a');
+      btnW.textContent = 'WhatsApp';
+      btnW.target = '_blank';
+      btnW.rel = 'noopener noreferrer';
+      const msg = encodeURIComponent(`Hola ${m.nombre}, te contacto de Cattorini.`);
+      btnW.href = `https://wa.me/${m.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
+      acts.appendChild(btnW);
+    }
+
+    const btnEdit = document.createElement('button');
+    btnEdit.textContent = 'Editar';
+    btnEdit.onclick = () => editarActivo(m);
+    acts.appendChild(btnEdit);
+
+    const btnRegen = document.createElement('button');
+    btnRegen.textContent = 'Regenerar código';
+    btnRegen.onclick = () => regenerarCodigo(m);
+    acts.appendChild(btnRegen);
+
+    const btnDel = document.createElement('button');
+    btnDel.className = 'del';
+    btnDel.textContent = 'Eliminar';
+    btnDel.onclick = () => eliminarActivo(m);
+    acts.appendChild(btnDel);
+
+    row.appendChild(acts);
+    cont.appendChild(row);
+  });
+}
+
+async function editarActivo(m) {
+  const nuevoNombre = prompt('Nombre y apellido:', m.nombre || '');
+  if (nuevoNombre === null) return;
+  const nuevoNegocio = prompt('Razón social o negocio:', m.negocio || '');
+  if (nuevoNegocio === null) return;
+  const nuevoWA = prompt('WhatsApp (549...):', m.whatsapp || '');
+  if (nuevoWA === null) return;
+  const nuevoTel = prompt('Teléfono:', m.telefono || '');
+  if (nuevoTel === null) return;
+  const nuevoEmail = prompt('Email:', m.email || '');
+  if (nuevoEmail === null) return;
+  const nuevaLoc = prompt('Localidad:', m.localidad || '');
+  if (nuevaLoc === null) return;
+  const nuevaProv = prompt('Provincia:', m.provincia || '');
+  if (nuevaProv === null) return;
+  const nuevasNotas = prompt('Notas:', m.notas || '');
+  if (nuevasNotas === null) return;
+
+  try {
+    await fbDb.collection('mayoristas_activos').doc(m.id).update({
+      nombre: nuevoNombre.trim().slice(0, 80),
+      negocio: nuevoNegocio.trim().slice(0, 100),
+      whatsapp: nuevoWA.trim().slice(0, 30),
+      telefono: nuevoTel.trim().slice(0, 30),
+      email: nuevoEmail.trim().slice(0, 80),
+      localidad: nuevaLoc.trim().slice(0, 60),
+      provincia: nuevaProv.trim().slice(0, 40),
+      notas: nuevasNotas.trim().slice(0, 500)
+    });
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+async function regenerarCodigo(m) {
+  if (!confirm(`Regenerar código de ${m.nombre}?\n\nEl código anterior deja de funcionar inmediatamente.`)) return;
+  try {
+    const nuevoCodigo = genCodigoMayorista();
+    const nuevoHash = await sha256hex(nuevoCodigo);
+    /* Crear doc nuevo con hash nuevo, copiando todos los datos */
+    const nuevoDoc = { ...m };
+    delete nuevoDoc.id;
+    delete nuevoDoc.createdAt;
+    nuevoDoc.regeneradoAt = firebase.firestore.FieldValue.serverTimestamp();
+    nuevoDoc.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    await fbDb.collection('mayoristas_activos').doc(nuevoHash).set(nuevoDoc);
+    /* Eliminar el viejo */
+    await fbDb.collection('mayoristas_activos').doc(m.id).delete();
+    /* Modal con código nuevo */
+    mostrarModalCodigo({
+      titulo: 'Código regenerado',
+      nombre: `${m.nombre} — ${m.negocio}`,
+      codigo: nuevoCodigo,
+      whatsapp: m.whatsapp
+    });
+  } catch (e) { alert('Error: ' + e.message); console.error(e); }
+}
+
+async function eliminarActivo(m) {
+  if (!confirm(`Eliminar acceso mayorista de ${m.nombre} (${m.negocio})?\n\nLos pedidos anteriores se mantienen. Solo se elimina el permiso de acceso.`)) return;
+  try {
+    await fbDb.collection('mayoristas_activos').doc(m.id).delete();
+  } catch (e) { alert('Error: ' + e.message); }
+}
+
+/* ============ Navegación tabs / sub-tabs ============ */
 document.querySelectorAll('.tab-btn').forEach(b => {
   b.addEventListener('click', () => {
     if (b.dataset.tab === 'mayoristas') setTimeout(initUbicacionesAM, 80);
   });
 });
 
-/* Cuando se entra al app, cargar solicitudes también */
+document.querySelectorAll('.subtab-btn').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('.subtab-btn').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.subtab-panel').forEach(p => p.classList.remove('active'));
+    b.classList.add('active');
+    document.getElementById('subtab-' + b.dataset.subtab).classList.add('active');
+    if (b.dataset.subtab === 'alta') setTimeout(initUbicacionesAM, 80);
+    if (b.dataset.subtab === 'activos') loadActivos();
+  });
+});
+
+/* Al entrar al app, cargar solicitudes y activos */
 const originalEnterApp = enterApp;
 enterApp = async function() {
   await originalEnterApp();
   loadSolicitudes();
+  /* activos se cargan on-demand al abrir el sub-tab */
 };
 
 /* ============ Init ============ */

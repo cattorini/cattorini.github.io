@@ -728,9 +728,8 @@ try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    console.log('✅ Firebase OK — proyecto:', FIREBASE_CONFIG.projectId);
   }
-} catch(e) { console.error('❌ Firebase init error:', e.message); }
+} catch(e) { console.warn('Firebase no inicializado:', e.message); }
 
 const LS_PERFIL = 'catt_perfil';
 const LS_LOCALIDAD = 'catt_localidad';
@@ -801,17 +800,26 @@ function limpiarPerfil() {
 /* Rechequeo de perfil mayorista: si el JSON cambió el hash, invalida el perfil */
 async function validarPerfilPersistido() {
   const { perfil } = getPerfilActual();
-  if (perfil === 'mayorista') {
-    const codigoGuardado = sessionStorage.getItem('catt_codigo_valido_hash');
-    const hashConfig = DATA.config.mayoristas.codigo_hash;
-    if (codigoGuardado !== hashConfig) {
-      limpiarPerfil();
-      sessionStorage.removeItem('catt_codigo_valido_hash');
-      return false;
-    }
-    return true;
+  if (perfil !== 'mayorista') return true;
+
+  const codigoGuardado = sessionStorage.getItem('catt_codigo_valido_hash');
+  if (!codigoGuardado) { limpiarPerfil(); return false; }
+
+  /* Match master */
+  if (codigoGuardado === DATA.config.mayoristas.codigo_hash) return true;
+
+  /* Match mayorista individual */
+  if (db) {
+    try {
+      const doc = await db.collection('mayoristas_activos').doc(codigoGuardado).get();
+      if (doc.exists) return true;
+    } catch (e) { /* si falla, no invalidamos por miedo — dejamos entrar */ return true; }
   }
-  return true;
+
+  /* Ninguno matcheó → invalidar */
+  limpiarPerfil();
+  sessionStorage.removeItem('catt_codigo_valido_hash');
+  return false;
 }
 
 /* ---------- Modal ---------- */
@@ -866,7 +874,21 @@ async function submitCodigo() {
   const codigo = document.getElementById('input-codigo').value.trim();
   if (!codigo) return;
   const hash = await sha256(codigo);
-  if (hash === DATA.config.mayoristas.codigo_hash) {
+
+  /* 1) Match contra código master (siempre funciona) */
+  let valido = hash === DATA.config.mayoristas.codigo_hash;
+
+  /* 2) Match contra código individual de mayorista en mayoristas_activos/{hash} */
+  if (!valido && db) {
+    try {
+      const doc = await db.collection('mayoristas_activos').doc(hash).get();
+      valido = doc.exists;
+    } catch (e) {
+      console.warn('No se pudo consultar mayoristas_activos:', e);
+    }
+  }
+
+  if (valido) {
     sessionStorage.setItem('catt_codigo_valido_hash', hash);
     setPerfil('mayorista', { localidad: '', zonaStatus: 'ok' });
     hideModal();
