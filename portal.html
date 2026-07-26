@@ -1624,57 +1624,36 @@ function renderSolicitudes() {
   });
 }
 
+/* Aceptar: 1 click, sin prompts. Usa el código master implícito.
+   Si querés dar un código custom, usá "Alta manual" y luego eliminá esta solicitud. */
 async function aceptarSolicitud(sol) {
-  const opt = prompt(
-    'Elegí una opción:\n\n' +
-    '1) Enter directo — usa el código master actual (' + (data.config.mayoristas.codigo_hash ? 'hasheado, no visible' : 'sin definir') + ')\n' +
-    '2) Escribí un código custom nuevo (mínimo 4 caracteres) — se usa solo para este cliente\n' +
-    '3) Escribí "auto" para generar uno aleatorio\n\n' +
-    'Nota: si elegís opción 1, avisale por WhatsApp el código real que tenés guardado — no lo podemos recuperar del hash.',
-    ''
-  );
-  if (opt === null) return;
-
-  let codigoMayorista;
-  const v = opt.trim();
-  if (!v) {
-    codigoMayorista = '(usar código master actual — avisalo manualmente)';
-  } else if (v.toLowerCase() === 'auto') {
-    codigoMayorista = genCodigoMayoristaCustom();
-  } else {
-    if (v.length < 4) { alert('Mínimo 4 caracteres.'); return; }
-    codigoMayorista = v;
-  }
-
   const okAuth = await esperarAuth();
   if (!okAuth) { alert('Firebase auth no listo. Recargá.'); return; }
   try {
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'aceptada',
       respuesta: {
-        codigoMayorista,
+        codigoMayorista: 'Te vamos a contactar por WhatsApp con tu código de acceso.',
         resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
       }
     });
-    alert('Aceptada. El solicitante verá el código "' + codigoMayorista + '" en su URL de seguimiento.\n\nRecordá contactarlo por WhatsApp/email para reforzar el aviso.');
   } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
 
+/* Rechazar: 1 confirm rápido (protege contra clicks accidentales), motivo default */
 async function rechazarSolicitud(sol) {
-  const motivo = prompt('Motivo del rechazo (será visible para el solicitante):', '');
-  if (motivo === null) return;
-  if (!motivo.trim()) { alert('Ingresá un motivo.'); return; }
+  const nom = (sol.solicitante && sol.solicitante.nombre) || '';
+  if (!confirm('¿Rechazar la solicitud de ' + nom + '?')) return;
   const okAuth = await esperarAuth();
   if (!okAuth) { alert('Firebase auth no listo. Recargá.'); return; }
   try {
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'rechazada',
       respuesta: {
-        motivo: motivo.trim(),
+        motivo: 'Por el momento no podemos habilitar esta cuenta. Si querés más información, escribinos por WhatsApp.',
         resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
       }
     });
-    alert('Solicitud rechazada. El solicitante verá el motivo en su URL de seguimiento.');
   } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
 
