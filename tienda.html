@@ -683,6 +683,11 @@
       </div>
       <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" />
       <div id="envio-wrap" style="display:none;">
+        <!-- Botón editar visible solo para mayoristas con datos pre-cargados -->
+        <div id="envio-mayo-header" style="display:none;justify-content:space-between;align-items:center;margin-top:4px;font-size:0.78rem;color:#666;">
+          <span>Enviamos a tu dirección registrada</span>
+          <button type="button" id="btn-editar-dir" onclick="toggleEditarDireccion()" style="background:transparent;border:1px solid #E5E5E5;padding:4px 10px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:#0A0A0A;font-family:inherit;">Editar</button>
+        </div>
         <input type="text" id="in-direccion" class="delivery-input" placeholder="Calle, número, piso" maxlength="120" />
         <select id="in-provincia-envio" class="delivery-select"></select>
         <div class="loc-wrap">
@@ -1258,37 +1263,76 @@ function openCart() {
   initEnvioUbicaciones();
 }
 
-/* Si el usuario es mayorista con datos guardados, mostramos panel resumen y ocultamos el form.
-   Si es minorista o mayorista con código master (sin datos), mostramos el form normal. */
+let direccionEditada = false;
+
+/* Si el usuario es mayorista con datos guardados:
+   - Muestra panel resumen arriba (nombre, negocio, contactos, dirección)
+   - Oculta el input de nombre (ya lo tenemos)
+   - Si tiene dirección, pre-llena los campos de envío y los deja readonly + botón "Editar"
+   - Si NO tiene dirección, deja los campos vacíos y editables
+   Si es minorista o mayorista con código master (sin datos), form normal. */
 function aplicarModoMayorista() {
   const data = getMayoristaData();
   const panel = document.getElementById('mayorista-panel');
-  const form = document.getElementById('entrega-panel');
-  if (!panel || !form) return;
+  if (!panel) return;
+  direccionEditada = false;
 
   if (esMayoristaConDatos()) {
     panel.style.display = 'block';
     document.getElementById('mayorista-nombre').textContent = data.nombre + ' — ' + data.negocio;
     document.getElementById('mayorista-negocio').textContent = [data.whatsapp && ('WA: ' + data.whatsapp), data.email].filter(Boolean).join(' · ');
     const dirBits = [data.direccion, data.localidad, data.provincia, data.codigoPostal && ('CP ' + data.codigoPostal)].filter(Boolean);
-    document.getElementById('mayorista-dir').textContent = dirBits.length ? '📍 ' + dirBits.join(', ') : '';
+    document.getElementById('mayorista-dir').textContent = dirBits.length ? '📍 ' + dirBits.join(', ') : '(sin dirección registrada)';
 
-    /* Ocultar name field y address form completo — no los necesitamos */
+    /* Ocultar name field — ya tenemos el nombre */
     document.getElementById('in-nombre').style.display = 'none';
     document.getElementById('in-nombre').value = data.nombre || '';
 
-    /* Mostrar toggle retiro/envío igual */
-    /* Ocultar los campos de dirección porque ya los tenemos */
-    document.getElementById('envio-wrap').style.display = 'none';
-    /* Prellenar por si el envío se activa */
-    if (data.direccion) document.getElementById('in-direccion').value = data.direccion;
-    if (data.provincia) document.getElementById('in-provincia-envio').value = data.provincia;
-    if (data.localidad) document.getElementById('in-localidad-envio').value = data.localidad;
-    if (data.codigoPostal) document.getElementById('in-cp').value = data.codigoPostal;
+    /* Pre-llenar campos de dirección (se usan cuando se activa envío) */
+    document.getElementById('in-direccion').value = data.direccion || '';
+    document.getElementById('in-provincia-envio').value = data.provincia || '';
+    document.getElementById('in-localidad-envio').value = data.localidad || '';
+    document.getElementById('in-cp').value = data.codigoPostal || '';
+    aplicarReadonlyDireccion(true);
   } else {
     panel.style.display = 'none';
     document.getElementById('in-nombre').style.display = '';
+    document.getElementById('envio-mayo-header').style.display = 'none';
+    aplicarReadonlyDireccion(false);
   }
+}
+
+/* Habilita o deshabilita los inputs de dirección según modo */
+function aplicarReadonlyDireccion(readonly) {
+  const inputs = ['in-direccion', 'in-provincia-envio', 'in-localidad-envio', 'in-cp'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (readonly) {
+      el.setAttribute('disabled', 'disabled');
+      el.style.opacity = '0.7';
+      el.style.background = '#F5F5F5';
+      el.style.cursor = 'not-allowed';
+    } else {
+      el.removeAttribute('disabled');
+      el.style.opacity = '';
+      el.style.background = '';
+      el.style.cursor = '';
+    }
+  });
+  /* La localidad se deshabilita si no hay provincia elegida (comportamiento normal del autocomplete) */
+  if (!readonly && !document.getElementById('in-provincia-envio').value) {
+    document.getElementById('in-localidad-envio').setAttribute('disabled', 'disabled');
+  }
+}
+
+/* Botón "Editar dirección": desbloquea los campos y oculta el header */
+function toggleEditarDireccion() {
+  direccionEditada = true;
+  aplicarReadonlyDireccion(false);
+  document.getElementById('envio-mayo-header').style.display = 'none';
+  /* Focus en el primer campo para invitar a editar */
+  document.getElementById('in-direccion').focus();
 }
 function closeCart() {
   document.getElementById('drawer').classList.remove('open');
@@ -1417,6 +1461,24 @@ function setEntrega(modo) {
   document.getElementById('tog-retiro').classList.toggle('active', modo === 'retiro');
   document.getElementById('tog-envio').classList.toggle('active', modo === 'envio');
   document.getElementById('envio-wrap').style.display = modo === 'envio' ? 'block' : 'none';
+
+  /* Si es mayorista con datos + envío + tiene dirección + no editó todavía → mostrar header con "Editar" */
+  if (modo === 'envio' && esMayoristaConDatos()) {
+    const data = getMayoristaData();
+    const tieneDir = data && data.direccion;
+    if (tieneDir && !direccionEditada) {
+      document.getElementById('envio-mayo-header').style.display = 'flex';
+      aplicarReadonlyDireccion(true);
+    } else {
+      /* Sin dirección registrada — inputs editables para completarla */
+      document.getElementById('envio-mayo-header').style.display = 'none';
+      aplicarReadonlyDireccion(false);
+    }
+  } else {
+    document.getElementById('envio-mayo-header').style.display = 'none';
+    if (!esMayoristaConDatos()) aplicarReadonlyDireccion(false);
+  }
+
   renderTotals();
 }
 
@@ -1480,19 +1542,20 @@ async function sendOrder() {
   let nombre, direccion = '', localidad = '', provincia = '', cp = '', negocio = '', whatsapp = '', email = '', cuit = '';
 
   if (usarDatosMayorista) {
-    /* Mayorista con datos guardados: usar los del registro */
+    /* Mayorista: nombre/negocio/contactos del registro, dirección de los inputs
+       (pre-llenados con los datos guardados, o editados si el usuario cambió) */
     nombre = mayData.nombre || '';
     negocio = mayData.negocio || '';
     whatsapp = mayData.whatsapp || '';
     email = mayData.email || '';
     cuit = mayData.cuit || '';
     if (entrega === 'envio') {
-      direccion = mayData.direccion || '';
-      provincia = mayData.provincia || '';
-      localidad = mayData.localidad || '';
-      cp = mayData.codigoPostal || '';
+      direccion = sanitizeInput(document.getElementById('in-direccion').value, 120);
+      provincia = sanitizeInput(document.getElementById('in-provincia-envio').value, 40);
+      localidad = sanitizeInput(document.getElementById('in-localidad-envio').value, 60);
+      cp = sanitizeInput(document.getElementById('in-cp').value, 10);
       if (!direccion || !provincia || !localidad) {
-        showToast('Tu registro no tiene dirección completa. Contactanos por WhatsApp para completarla o elegí retiro.');
+        showToast('Completá dirección, provincia y localidad, o clickeá "Editar" para modificar.');
         return;
       }
     }
