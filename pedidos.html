@@ -64,10 +64,11 @@
     .tab-panel.active { display: block; }
     .kanban {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
     }
-    @media (max-width: 900px) { .kanban { grid-template-columns: 1fr; } }
+    @media (max-width: 1100px) { .kanban { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 600px) { .kanban { grid-template-columns: 1fr; } }
     .col {
       background: #FFF; border: 1px solid #E5E5E5;
       min-height: 200px;
@@ -134,7 +135,8 @@
       background: none; border: none; font-size: 1.5rem; cursor: pointer;
     }
 
-    .state-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 16px 0; }
+    .state-btns { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin: 16px 0; }
+    @media (min-width: 500px) { .state-btns { grid-template-columns: repeat(4, 1fr); } }
     .state-btn {
       padding: 10px; background: #FFF; border: 1px solid #E5E5E5;
       cursor: pointer; font-size: 0.78rem; text-transform: uppercase;
@@ -270,6 +272,10 @@
         <div class="col-head">Listos <span class="count" id="c-listo">0</span></div>
         <div class="col-body" id="body-listo"></div>
       </div>
+      <div class="col">
+        <div class="col-head">Enviados <span class="count" id="c-enviado">0</span></div>
+        <div class="col-body" id="body-enviado"></div>
+      </div>
     </div>
   </div>
 
@@ -331,25 +337,41 @@
     <button class="modal-close" onclick="closeManual()">×</button>
     <h3 class="serif" style="font-size:1.5rem;margin-bottom:16px;">Nuevo pedido manual</h3>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
-      <div><label class="lbl">Nombre cliente</label><input class="inp" id="m-nombre" maxlength="80" /></div>
-      <div>
-        <label class="lbl">Perfil</label>
-        <select class="inp" id="m-perfil"><option value="minorista">Minorista</option><option value="mayorista">Mayorista</option></select>
+    <!-- Paso 1: elegir perfil -->
+    <div style="margin-bottom:14px;">
+      <label class="lbl">Perfil del cliente</label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+        <button type="button" class="filter-pill active" id="m-perfil-mino" onclick="setManualPerfil('minorista')">Minorista</button>
+        <button type="button" class="filter-pill" id="m-perfil-mayo" onclick="setManualPerfil('mayorista')">Mayorista</button>
       </div>
+    </div>
+
+    <!-- Datos minorista: nombre libre -->
+    <div id="m-datos-mino" style="margin-bottom:12px;">
+      <label class="lbl">Nombre del cliente *</label>
+      <input class="inp" id="m-nombre" maxlength="80" placeholder="Nombre y apellido" />
+    </div>
+
+    <!-- Datos mayorista: pick de la lista de activos -->
+    <div id="m-datos-mayo" style="display:none;margin-bottom:12px;">
+      <label class="lbl">Elegí el mayorista *</label>
+      <select class="inp" id="m-mayorista-sel" onchange="onManualMayoristaChange()"></select>
+      <div id="m-mayorista-info" style="display:none;margin-top:8px;padding:10px;background:#F5F5F5;border-left:3px solid #0A0A0A;font-size:0.82rem;line-height:1.5;"></div>
     </div>
 
     <div style="margin-bottom:12px;">
       <label class="lbl">Modalidad</label>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
-        <button class="filter-pill active" id="m-tog-retiro" onclick="setManualMod('retiro')">Retiro</button>
-        <button class="filter-pill" id="m-tog-envio" onclick="setManualMod('envio')">Envío</button>
+        <button type="button" class="filter-pill active" id="m-tog-retiro" onclick="setManualMod('retiro')">Retiro</button>
+        <button type="button" class="filter-pill" id="m-tog-envio" onclick="setManualMod('envio')">Envío</button>
       </div>
     </div>
 
     <div id="m-envio-wrap" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
       <div><label class="lbl">Dirección</label><input class="inp" id="m-dir" maxlength="120" /></div>
       <div><label class="lbl">Localidad</label><input class="inp" id="m-loc" maxlength="60" /></div>
+      <div><label class="lbl">Provincia</label><input class="inp" id="m-prov" maxlength="40" /></div>
+      <div><label class="lbl">CP</label><input class="inp" id="m-cp" maxlength="10" /></div>
     </div>
 
     <div style="margin-bottom:12px;">
@@ -543,7 +565,7 @@ function render() {
 }
 
 function renderKanban(list) {
-  const activos = list.filter(o => ['pendiente','preparando','listo'].includes(o.estado));
+  const activos = list.filter(o => ['pendiente','preparando','listo','enviado'].includes(o.estado));
   const filtered = activos.filter(o => {
     if (filter === 'todos') return true;
     return (o.cliente && o.cliente.perfil) === filter;
@@ -551,14 +573,17 @@ function renderKanban(list) {
   const pend = filtered.filter(o => o.estado === 'pendiente');
   const prep = filtered.filter(o => o.estado === 'preparando');
   const listo = filtered.filter(o => o.estado === 'listo');
+  const enviado = filtered.filter(o => o.estado === 'enviado');
 
   document.getElementById('c-pend').textContent = pend.length;
   document.getElementById('c-prep').textContent = prep.length;
   document.getElementById('c-listo').textContent = listo.length;
+  document.getElementById('c-enviado').textContent = enviado.length;
 
   renderCol('body-pend', pend);
   renderCol('body-prep', prep);
   renderCol('body-listo', listo);
+  renderCol('body-enviado', enviado);
 }
 
 function renderCol(id, arr) {
@@ -663,9 +688,14 @@ function showDetail(o) {
     cliBox.appendChild(r);
   };
   addField('Nombre', cli.nombre);
+  addField('Negocio', cli.negocio);
+  addField('CUIT', cli.cuit);
+  addField('WhatsApp', cli.whatsapp);
+  addField('Email', cli.email);
   addField('Modalidad', o.modalidad === 'envio' ? 'Envío a domicilio' : 'Retiro en local');
   addField('Dirección', cli.direccion);
-  addField('Localidad', cli.localidad);
+  addField('Localidad', cli.localidad ? cli.localidad + (cli.provincia ? ', ' + cli.provincia : '') : '');
+  addField('Código postal', cli.codigoPostal);
   addField('Zona registrada', cli.localidadPerfil);
   cont.appendChild(cliBox);
 
@@ -712,7 +742,7 @@ function showDetail(o) {
   /* State buttons */
   const st = document.createElement('div');
   st.className = 'state-btns';
-  ['pendiente','preparando','listo'].forEach(estado => {
+  ['pendiente','preparando','listo','enviado'].forEach(estado => {
     const b = document.createElement('button');
     b.className = 'state-btn' + (o.estado === estado ? ' active' : '');
     b.textContent = estado;
@@ -862,19 +892,94 @@ document.querySelectorAll('.tab-btn').forEach(b => {
 });
 
 /* =========== Manual order =========== */
+let manualPerfil = 'minorista';
+let mayoristasCache = [];
+let mayoristaElegido = null;
+
 function openManual() {
   manualCart = [];
   document.getElementById('m-nombre').value = '';
   document.getElementById('m-dir').value = '';
   document.getElementById('m-loc').value = '';
+  document.getElementById('m-prov').value = '';
+  document.getElementById('m-cp').value = '';
   document.getElementById('m-nota').value = '';
   document.getElementById('m-qty').value = 1;
+  mayoristaElegido = null;
   renderManualItems();
   setManualMod('retiro');
+  setManualPerfil('minorista');
   document.getElementById('modal-manual').classList.add('open');
 }
 function closeManual() {
   document.getElementById('modal-manual').classList.remove('open');
+}
+
+function setManualPerfil(p) {
+  manualPerfil = p;
+  document.getElementById('m-perfil-mino').classList.toggle('active', p === 'minorista');
+  document.getElementById('m-perfil-mayo').classList.toggle('active', p === 'mayorista');
+  document.getElementById('m-datos-mino').style.display = p === 'minorista' ? 'block' : 'none';
+  document.getElementById('m-datos-mayo').style.display = p === 'mayorista' ? 'block' : 'none';
+  if (p === 'mayorista') cargarMayoristasParaSelect();
+  /* Cambio de perfil → recalcular precios de los items ya cargados */
+  actualizarPreciosCart();
+  /* Y refrescar el precio unitario del selector */
+  updateManualTallesAndPrice();
+}
+
+async function cargarMayoristasParaSelect() {
+  if (!db) return;
+  const sel = document.getElementById('m-mayorista-sel');
+  if (mayoristasCache.length && sel.options.length > 1) return;
+  sel.innerHTML = '<option value="">Cargando...</option>';
+  try {
+    const snap = await db.collection('mayoristas_activos').limit(500).get();
+    mayoristasCache = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    mayoristasCache.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+    sel.innerHTML = '<option value="">Elegí un mayorista...</option>';
+    mayoristasCache.forEach(m => {
+      const op = document.createElement('option');
+      op.value = m.id;
+      op.textContent = m.nombre + ' — ' + m.negocio + (m.localidad ? ' (' + m.localidad + ')' : '');
+      sel.appendChild(op);
+    });
+  } catch (e) {
+    sel.innerHTML = '<option value="">Error al cargar</option>';
+    console.error(e);
+  }
+}
+
+function onManualMayoristaChange() {
+  const id = document.getElementById('m-mayorista-sel').value;
+  const info = document.getElementById('m-mayorista-info');
+  if (!id) {
+    mayoristaElegido = null;
+    info.style.display = 'none';
+    return;
+  }
+  mayoristaElegido = mayoristasCache.find(m => m.id === id) || null;
+  if (!mayoristaElegido) { info.style.display = 'none'; return; }
+  const m = mayoristaElegido;
+  const bits = [];
+  if (m.whatsapp) bits.push('WA: ' + m.whatsapp);
+  if (m.email) bits.push(m.email);
+  if (m.cuit) bits.push('CUIT: ' + m.cuit);
+  const dirBits = [m.direccion, m.localidad, m.provincia, m.codigoPostal && ('CP ' + m.codigoPostal)].filter(Boolean);
+  info.innerHTML = '';
+  const l1 = document.createElement('div'); l1.style.fontWeight = '500'; l1.textContent = m.nombre + ' — ' + m.negocio;
+  const l2 = document.createElement('div'); l2.style.color = '#666'; l2.textContent = bits.join(' · ');
+  info.appendChild(l1); info.appendChild(l2);
+  if (dirBits.length) {
+    const l3 = document.createElement('div'); l3.style.color = '#666'; l3.style.marginTop = '4px'; l3.textContent = '📍 ' + dirBits.join(', ');
+    info.appendChild(l3);
+  }
+  info.style.display = 'block';
+  /* Auto-completar campos de envío con los datos del mayorista */
+  if (m.direccion) document.getElementById('m-dir').value = m.direccion;
+  if (m.localidad) document.getElementById('m-loc').value = m.localidad;
+  if (m.provincia) document.getElementById('m-prov').value = m.provincia;
+  if (m.codigoPostal) document.getElementById('m-cp').value = m.codigoPostal;
 }
 
 function setManualMod(m) {
@@ -903,6 +1008,7 @@ function populateManualSelects() {
   sel.onchange = updateManualTallesAndPrice;
   updateManualTallesAndPrice();
 }
+
 function updateManualTallesAndPrice() {
   const val = document.getElementById('m-producto').value;
   if (!val || !DATA) return;
@@ -916,11 +1022,23 @@ function updateManualTallesAndPrice() {
     const op = document.createElement('option'); op.value = t; op.textContent = t;
     talleSel.appendChild(op);
   });
-  const perfilSel = document.getElementById('m-perfil').value;
-  const precio = perfilSel === 'mayorista' ? p.precio_mayorista : p.precio_minorista;
+  const precio = manualPerfil === 'mayorista' ? p.precio_mayorista : p.precio_minorista;
   document.getElementById('m-precio').value = precio;
 }
-document.getElementById('m-perfil')?.addEventListener('change', updateManualTallesAndPrice);
+
+function actualizarPreciosCart() {
+  if (!DATA || !manualCart.length) return;
+  manualCart.forEach(item => {
+    for (const cat of DATA.categorias) {
+      const p = (cat.productos || []).find(x => x.id === item.id);
+      if (p) {
+        item.precio = manualPerfil === 'mayorista' ? p.precio_mayorista : p.precio_minorista;
+        return;
+      }
+    }
+  });
+  renderManualItems();
+}
 
 function addManualItem() {
   const val = document.getElementById('m-producto').value;
@@ -967,17 +1085,62 @@ function renderManualItems() {
   document.getElementById('m-tot').textContent = (sub + env).toLocaleString('es-AR');
 }
 
+function genManualTrackingCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
 async function submitManual() {
   if (!db) { alert('Firebase no configurado.'); return; }
-  const nombre = document.getElementById('m-nombre').value.trim().slice(0, 80);
-  if (!nombre) { alert('Ingresá nombre del cliente.'); return; }
   if (!manualCart.length) { alert('Agregá al menos un item.'); return; }
-  const dir = manualMod === 'envio' ? document.getElementById('m-dir').value.trim().slice(0,120) : '';
-  const loc = manualMod === 'envio' ? document.getElementById('m-loc').value.trim().slice(0,60) : '';
-  if (manualMod === 'envio' && (!dir || !loc)) { alert('Completá dirección y localidad.'); return; }
-  const perfil = document.getElementById('m-perfil').value;
-  const nota = document.getElementById('m-nota').value.trim().slice(0, 400);
 
+  let cli;
+  if (manualPerfil === 'mayorista') {
+    if (!mayoristaElegido) { alert('Elegí un mayorista de la lista.'); return; }
+    cli = {
+      nombre: mayoristaElegido.nombre || '',
+      negocio: mayoristaElegido.negocio || '',
+      whatsapp: mayoristaElegido.whatsapp || '',
+      email: mayoristaElegido.email || '',
+      cuit: mayoristaElegido.cuit || '',
+      perfil: 'mayorista',
+      zonaStatus: '',
+      localidadPerfil: '',
+      direccion: '',
+      provincia: '',
+      localidad: '',
+      codigoPostal: ''
+    };
+  } else {
+    const nombre = document.getElementById('m-nombre').value.trim().slice(0, 80);
+    if (!nombre) { alert('Ingresá nombre del cliente.'); return; }
+    cli = {
+      nombre,
+      negocio: '',
+      whatsapp: '',
+      email: '',
+      cuit: '',
+      perfil: 'minorista',
+      zonaStatus: 'libre',
+      localidadPerfil: '',
+      direccion: '',
+      provincia: '',
+      localidad: '',
+      codigoPostal: ''
+    };
+  }
+
+  if (manualMod === 'envio') {
+    cli.direccion = document.getElementById('m-dir').value.trim().slice(0, 120);
+    cli.localidad = document.getElementById('m-loc').value.trim().slice(0, 60);
+    cli.provincia = document.getElementById('m-prov').value.trim().slice(0, 40);
+    cli.codigoPostal = document.getElementById('m-cp').value.trim().slice(0, 10);
+    if (!cli.direccion || !cli.localidad) { alert('Completá al menos dirección y localidad.'); return; }
+  }
+
+  const nota = document.getElementById('m-nota').value.trim().slice(0, 400);
   const sub = manualCart.reduce((s, i) => s + (i.precio * i.qty), 0);
   const env = manualMod === 'envio' && DATA
     ? (sub >= DATA.config.envio.gratis_desde ? 0 : DATA.config.envio.costo_estandar)
@@ -985,8 +1148,9 @@ async function submitManual() {
 
   try {
     await db.collection('pedidos').add({
+      codigo: genManualTrackingCode(),
       creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-      cliente: { nombre, direccion: dir, localidad: loc, perfil, zonaStatus: '', localidadPerfil: '' },
+      cliente: cli,
       items: manualCart,
       modalidad: manualMod,
       subtotal: sub, envio: env, total: sub + env,
@@ -997,6 +1161,7 @@ async function submitManual() {
     closeManual();
   } catch (e) {
     alert('Error: ' + e.message);
+    console.error(e);
   }
 }
 

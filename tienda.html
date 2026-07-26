@@ -666,7 +666,16 @@
   <div class="drawer-footer" id="drawer-footer" style="display:none;">
     <div id="totals-box"></div>
 
-    <div style="margin-top:16px;">
+    <!-- Panel mayorista con datos precargados -->
+    <div id="mayorista-panel" style="display:none;margin-top:16px;padding:14px;background:#F5F5F5;border-left:3px solid #0A0A0A;">
+      <div style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:6px;">Cuenta mayorista</div>
+      <div id="mayorista-nombre" style="font-size:0.95rem;font-weight:500;"></div>
+      <div id="mayorista-negocio" style="font-size:0.82rem;color:#666;margin-top:2px;"></div>
+      <div id="mayorista-dir" style="font-size:0.82rem;color:#666;margin-top:6px;"></div>
+    </div>
+
+    <!-- Form estándar (minoristas o mayoristas sin datos) -->
+    <div id="entrega-panel" style="margin-top:16px;">
       <div style="font-size:0.78rem;font-weight:500;margin-bottom:4px;">Entrega</div>
       <div class="delivery-toggle">
         <button id="tog-retiro" class="active" type="button" onclick="setEntrega('retiro')">Retiro en local</button>
@@ -795,6 +804,7 @@ function limpiarPerfil() {
   localStorage.removeItem(LS_PERFIL);
   localStorage.removeItem(LS_LOCALIDAD);
   localStorage.removeItem(LS_ZONA_STATUS);
+  localStorage.removeItem('catt_mayorista_data');
 }
 
 /* Rechequeo de perfil mayorista: si el JSON cambió el hash, invalida el perfil */
@@ -877,12 +887,16 @@ async function submitCodigo() {
 
   /* 1) Match contra código master (siempre funciona) */
   let valido = hash === DATA.config.mayoristas.codigo_hash;
+  let mayoristaData = null;
 
   /* 2) Match contra código individual de mayorista en mayoristas_activos/{hash} */
   if (!valido && db) {
     try {
       const doc = await db.collection('mayoristas_activos').doc(hash).get();
-      valido = doc.exists;
+      if (doc.exists) {
+        valido = true;
+        mayoristaData = doc.data();
+      }
     } catch (e) {
       console.warn('No se pudo consultar mayoristas_activos:', e);
     }
@@ -890,6 +904,13 @@ async function submitCodigo() {
 
   if (valido) {
     sessionStorage.setItem('catt_codigo_valido_hash', hash);
+    /* Guardar datos del mayorista para auto-fill en checkout */
+    if (mayoristaData) {
+      localStorage.setItem('catt_mayorista_data', JSON.stringify(mayoristaData));
+    } else {
+      /* Login con código master — no tenemos datos específicos */
+      localStorage.removeItem('catt_mayorista_data');
+    }
     setPerfil('mayorista', { localidad: '', zonaStatus: 'ok' });
     hideModal();
     renderPerfilBadge();
@@ -1217,12 +1238,57 @@ function unlockBodyScroll() {
   window.scrollTo(0, _scrollLockY);
 }
 
+function getMayoristaData() {
+  try {
+    const raw = localStorage.getItem('catt_mayorista_data');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function esMayoristaConDatos() {
+  return localStorage.getItem(LS_PERFIL) === 'mayorista' && !!getMayoristaData();
+}
+
 function openCart() {
   renderCart();
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawer-back').classList.add('open');
   lockBodyScroll();
+  aplicarModoMayorista();
   initEnvioUbicaciones();
+}
+
+/* Si el usuario es mayorista con datos guardados, mostramos panel resumen y ocultamos el form.
+   Si es minorista o mayorista con código master (sin datos), mostramos el form normal. */
+function aplicarModoMayorista() {
+  const data = getMayoristaData();
+  const panel = document.getElementById('mayorista-panel');
+  const form = document.getElementById('entrega-panel');
+  if (!panel || !form) return;
+
+  if (esMayoristaConDatos()) {
+    panel.style.display = 'block';
+    document.getElementById('mayorista-nombre').textContent = data.nombre + ' — ' + data.negocio;
+    document.getElementById('mayorista-negocio').textContent = [data.whatsapp && ('WA: ' + data.whatsapp), data.email].filter(Boolean).join(' · ');
+    const dirBits = [data.direccion, data.localidad, data.provincia, data.codigoPostal && ('CP ' + data.codigoPostal)].filter(Boolean);
+    document.getElementById('mayorista-dir').textContent = dirBits.length ? '📍 ' + dirBits.join(', ') : '';
+
+    /* Ocultar name field y address form completo — no los necesitamos */
+    document.getElementById('in-nombre').style.display = 'none';
+    document.getElementById('in-nombre').value = data.nombre || '';
+
+    /* Mostrar toggle retiro/envío igual */
+    /* Ocultar los campos de dirección porque ya los tenemos */
+    document.getElementById('envio-wrap').style.display = 'none';
+    /* Prellenar por si el envío se activa */
+    if (data.direccion) document.getElementById('in-direccion').value = data.direccion;
+    if (data.provincia) document.getElementById('in-provincia-envio').value = data.provincia;
+    if (data.localidad) document.getElementById('in-localidad-envio').value = data.localidad;
+    if (data.codigoPostal) document.getElementById('in-cp').value = data.codigoPostal;
+  } else {
+    panel.style.display = 'none';
+    document.getElementById('in-nombre').style.display = '';
+  }
 }
 function closeCart() {
   document.getElementById('drawer').classList.remove('open');
@@ -1407,35 +1473,57 @@ async function sendOrder() {
   const cart = getCart();
   if (!cart.length) return;
 
-  const nombre = sanitizeInput(document.getElementById('in-nombre').value, 80);
-  if (!nombre) {
-    showToast('Ingresá tu nombre.');
-    document.getElementById('in-nombre').focus();
-    return;
-  }
+  const cart_perfil = localStorage.getItem(LS_PERFIL) || 'minorista';
+  const mayData = getMayoristaData();
+  const usarDatosMayorista = cart_perfil === 'mayorista' && !!mayData;
 
-  let direccion = '', localidad = '', provincia = '', cp = '';
-  if (entrega === 'envio') {
-    direccion = sanitizeInput(document.getElementById('in-direccion').value, 120);
-    provincia = sanitizeInput(document.getElementById('in-provincia-envio').value, 40);
-    localidad = sanitizeInput(document.getElementById('in-localidad-envio').value, 60);
-    cp = sanitizeInput(document.getElementById('in-cp').value, 10);
-    if (!direccion || !provincia || !localidad) {
-      showToast('Completá dirección, provincia y localidad.');
+  let nombre, direccion = '', localidad = '', provincia = '', cp = '', negocio = '', whatsapp = '', email = '', cuit = '';
+
+  if (usarDatosMayorista) {
+    /* Mayorista con datos guardados: usar los del registro */
+    nombre = mayData.nombre || '';
+    negocio = mayData.negocio || '';
+    whatsapp = mayData.whatsapp || '';
+    email = mayData.email || '';
+    cuit = mayData.cuit || '';
+    if (entrega === 'envio') {
+      direccion = mayData.direccion || '';
+      provincia = mayData.provincia || '';
+      localidad = mayData.localidad || '';
+      cp = mayData.codigoPostal || '';
+      if (!direccion || !provincia || !localidad) {
+        showToast('Tu registro no tiene dirección completa. Contactanos por WhatsApp para completarla o elegí retiro.');
+        return;
+      }
+    }
+  } else {
+    /* Minorista o mayorista con código master (sin datos): pedir todo */
+    nombre = sanitizeInput(document.getElementById('in-nombre').value, 80);
+    if (!nombre) {
+      showToast('Ingresá tu nombre.');
+      document.getElementById('in-nombre').focus();
       return;
     }
-    /* Validar localidad contra el dataset */
-    if (window.Ubicaciones) {
-      const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
-      if (!valida) {
-        showToast('Elegí una localidad de la lista sugerida.');
+    if (entrega === 'envio') {
+      direccion = sanitizeInput(document.getElementById('in-direccion').value, 120);
+      provincia = sanitizeInput(document.getElementById('in-provincia-envio').value, 40);
+      localidad = sanitizeInput(document.getElementById('in-localidad-envio').value, 60);
+      cp = sanitizeInput(document.getElementById('in-cp').value, 10);
+      if (!direccion || !provincia || !localidad) {
+        showToast('Completá dirección, provincia y localidad.');
         return;
+      }
+      if (window.Ubicaciones) {
+        const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
+        if (!valida) {
+          showToast('Elegí una localidad de la lista sugerida.');
+          return;
+        }
       }
     }
   }
 
   const nota = sanitizeInput(document.getElementById('cart-note').value, 400);
-  const perfil = localStorage.getItem(LS_PERFIL) || 'minorista';
   const zonaStatus = localStorage.getItem(LS_ZONA_STATUS) || 'libre';
   const localidadPerfil = localStorage.getItem(LS_LOCALIDAD) || '';
 
@@ -1449,12 +1537,18 @@ async function sendOrder() {
     codigo: code,
     creadoEn: (db && firebase.firestore.FieldValue.serverTimestamp()) || new Date().toISOString(),
     cliente: {
-      nombre,
+      nombre: nombre || '',
+      negocio: negocio || '',
+      whatsapp: whatsapp || '',
+      email: email || '',
+      cuit: cuit || '',
       direccion: entrega === 'envio' ? direccion : '',
       provincia: entrega === 'envio' ? provincia : '',
       localidad: entrega === 'envio' ? localidad : '',
       codigoPostal: entrega === 'envio' ? cp : '',
-      perfil, zonaStatus, localidadPerfil
+      perfil: cart_perfil,
+      zonaStatus: zonaStatus || '',
+      localidadPerfil: localidadPerfil || ''
     },
     items: cart.map(i => ({
       id: i.id, nombre: i.nombre, categoria: i.categoria,

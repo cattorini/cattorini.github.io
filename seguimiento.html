@@ -176,11 +176,11 @@
         </div>
         <div class="step" data-step="listo">
           <span class="step-num">3</span>
-          <span class="step-label">Listo</span>
+          <span class="step-label" id="step-label-3">Listo</span>
         </div>
-        <div class="step" data-step="entregado">
+        <div class="step" data-step="enviado">
           <span class="step-num">4</span>
-          <span class="step-label">Entregado</span>
+          <span class="step-label" id="step-label-4">Enviado</span>
         </div>
       </div>
     </div>
@@ -226,9 +226,8 @@ try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     db = firebase.firestore();
-    console.log('✅ Firebase OK — proyecto:', FIREBASE_CONFIG.projectId);
   }
-} catch(e) { console.error('❌ Firebase init error:', e.message); }
+} catch(e) { console.warn('Firebase no inicializado:', e.message); }
 
 const LS_MIS_PEDIDOS = 'catt_mis_pedidos';
 let DATA = null;
@@ -291,23 +290,41 @@ function volverBusqueda() {
   window.location.href = './seguimiento.html';
 }
 
-function renderTimeline(estado) {
-  const orden = ['pendiente','preparando','listo','entregado'];
+function renderTimeline(estado, modalidad) {
+  const orden = ['pendiente','preparando','listo','enviado'];
   const idx = orden.indexOf(estado);
   document.querySelectorAll('.step').forEach((el, i) => {
     el.classList.remove('done', 'current');
     if (i < idx) el.classList.add('done');
     else if (i === idx) el.classList.add('current');
   });
+  /* Labels dinámicos según modalidad */
+  const l3 = document.getElementById('step-label-3');
+  const l4 = document.getElementById('step-label-4');
+  if (modalidad === 'envio') {
+    if (l3) l3.textContent = 'Listo';
+    if (l4) l4.textContent = 'Enviado';
+  } else {
+    if (l3) l3.textContent = 'Listo para retirar';
+    if (l4) l4.textContent = 'Retirado';
+  }
 }
 
-const STATUS_MESSAGES = {
-  pendiente: 'Tu pedido fue recibido y está en cola. Vamos a comenzar a prepararlo pronto.',
-  preparando: 'Estamos preparando tu pedido. En breve estará listo.',
-  listo: 'Tu pedido está listo. Si es retiro, ya podés pasar a buscarlo. Si es envío, lo despachamos por Vía Cargo pronto.',
-  entregado: 'Tu pedido fue entregado. ¡Gracias por elegirnos!',
-  cancelado: 'Tu pedido fue cancelado. Si tenés dudas, escribinos.'
-};
+function statusMsgFor(estado, modalidad) {
+  const esEnvio = modalidad === 'envio';
+  const MSGS = {
+    pendiente: 'Tu pedido fue recibido y está en cola. Vamos a comenzar a prepararlo pronto.',
+    preparando: 'Estamos preparando tu pedido. En breve estará listo.',
+    listo: esEnvio
+      ? 'Tu pedido está listo. Lo estamos despachando a la logística de Vía Cargo.'
+      : 'Tu pedido está listo. Ya podés pasar a buscarlo por el local.',
+    enviado: esEnvio
+      ? 'Tu pedido fue despachado a Vía Cargo. Vas a recibir el seguimiento por WhatsApp cuando esté en camino.'
+      : 'Tu pedido fue retirado. ¡Gracias por elegirnos!',
+    cancelado: 'Tu pedido fue cancelado. Si tenés dudas, escribinos.'
+  };
+  return MSGS[estado] || 'Estado desconocido.';
+}
 
 function renderPedido(doc) {
   document.getElementById('search-card').style.display = 'none';
@@ -319,8 +336,8 @@ function renderPedido(doc) {
   const code = d.codigo || (doc.id ? doc.id.slice(-5).toUpperCase() : '?');
 
   document.getElementById('code-display').textContent = '#' + code;
-  document.getElementById('status-msg').textContent = STATUS_MESSAGES[d.estado] || 'Estado desconocido.';
-  renderTimeline(d.estado);
+  document.getElementById('status-msg').textContent = statusMsgFor(d.estado, d.modalidad);
+  renderTimeline(d.estado, d.modalidad);
 
   /* Cliente */
   const cliBox = document.getElementById('detalle-cliente');

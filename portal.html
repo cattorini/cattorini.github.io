@@ -399,6 +399,8 @@
                 <div id="am-loc-list" class="loc-list"></div>
               </div>
             </div>
+            <div style="grid-column:1/-1;"><label class="lbl">Dirección (calle, número, piso)</label><input class="inp" id="am-direccion" maxlength="120" placeholder="Para envíos por Vía Cargo" /></div>
+            <div><label class="lbl">Código postal</label><input class="inp" id="am-cp" maxlength="10" /></div>
             <div style="grid-column:1/-1;"><label class="lbl">Notas internas</label><textarea class="inp" id="am-notas" rows="2" maxlength="500"></textarea></div>
           </div>
           <button class="btn mt-4" onclick="crearMayoristaManual()" id="am-btn">Registrar mayorista</button>
@@ -1868,7 +1870,7 @@ async function initUbicacionesAM() {
 }
 
 function clearAM() {
-  ['am-nombre','am-negocio','am-cuit','am-tel','am-wa','am-email','am-notas','am-loc'].forEach(id => {
+  ['am-nombre','am-negocio','am-cuit','am-tel','am-wa','am-email','am-notas','am-loc','am-direccion','am-cp'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.value = '';
   });
@@ -1909,7 +1911,9 @@ async function crearMayoristaManual() {
     whatsapp: wa,
     email: sanAM(document.getElementById('am-email').value, 80),
     provincia: sanAM(document.getElementById('am-prov').value, 40),
-    localidad: sanAM(document.getElementById('am-loc').value, 60)
+    localidad: sanAM(document.getElementById('am-loc').value, 60),
+    direccion: sanAM(document.getElementById('am-direccion').value, 120),
+    codigoPostal: sanAM(document.getElementById('am-cp').value, 10)
   };
   const notas = sanAM(document.getElementById('am-notas').value, 500);
   const codigoSol = 'MAY-' + Array.from({length: 4}, () =>
@@ -2037,6 +2041,13 @@ function renderActivos() {
     if (m.cuit) bits.push('CUIT: ' + m.cuit);
     meta.textContent = bits.join(' · ');
     info.appendChild(meta);
+    if (m.direccion) {
+      const dir = document.createElement('div');
+      dir.className = 'meta';
+      dir.style.marginTop = '2px';
+      dir.textContent = '📍 ' + m.direccion + (m.codigoPostal ? ' (CP ' + m.codigoPostal + ')' : '');
+      info.appendChild(dir);
+    }
     row.appendChild(info);
 
     const acts = document.createElement('div');
@@ -2084,10 +2095,14 @@ async function editarActivo(m) {
   if (nuevoTel === null) return;
   const nuevoEmail = prompt('Email:', m.email || '');
   if (nuevoEmail === null) return;
-  const nuevaLoc = prompt('Localidad:', m.localidad || '');
-  if (nuevaLoc === null) return;
   const nuevaProv = prompt('Provincia:', m.provincia || '');
   if (nuevaProv === null) return;
+  const nuevaLoc = prompt('Localidad:', m.localidad || '');
+  if (nuevaLoc === null) return;
+  const nuevaDir = prompt('Dirección (calle, número, piso):', m.direccion || '');
+  if (nuevaDir === null) return;
+  const nuevoCP = prompt('Código postal:', m.codigoPostal || '');
+  if (nuevoCP === null) return;
   const nuevasNotas = prompt('Notas:', m.notas || '');
   if (nuevasNotas === null) return;
 
@@ -2098,8 +2113,10 @@ async function editarActivo(m) {
       whatsapp: nuevoWA.trim().slice(0, 30),
       telefono: nuevoTel.trim().slice(0, 30),
       email: nuevoEmail.trim().slice(0, 80),
-      localidad: nuevaLoc.trim().slice(0, 60),
       provincia: nuevaProv.trim().slice(0, 40),
+      localidad: nuevaLoc.trim().slice(0, 60),
+      direccion: nuevaDir.trim().slice(0, 120),
+      codigoPostal: nuevoCP.trim().slice(0, 10),
       notas: nuevasNotas.trim().slice(0, 500)
     });
   } catch (e) { alert('Error: ' + e.message); }
