@@ -1424,6 +1424,8 @@ const FIREBASE_CONFIG = {
 let fbDb = null;
 let fbAuth = null;
 let fbAuthReady = false;
+let fbAuthErrorCode = null;
+let fbAuthErrorMsg = null;
 try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -1431,7 +1433,11 @@ try {
     fbAuth = firebase.auth();
     fbAuth.signInAnonymously()
       .then(() => { fbAuthReady = true; console.log('✅ Firebase auth OK'); })
-      .catch(e => console.error('❌ Firebase auth error:', e));
+      .catch(e => {
+        fbAuthErrorCode = e.code || '';
+        fbAuthErrorMsg = e.message || String(e);
+        console.error('❌ Firebase auth error:', e);
+      });
   }
 } catch(e) { console.error('❌ Firebase init error en portal:', e.message); }
 
@@ -1440,9 +1446,24 @@ async function esperarAuth() {
   if (fbAuthReady) return true;
   for (let i = 0; i < 30; i++) {
     if (fbAuthReady) return true;
+    if (fbAuthErrorCode) return false; // no seguir esperando si ya sabemos que falló
     await new Promise(r => setTimeout(r, 200));
   }
   return false;
+}
+
+function mensajeErrorAuth() {
+  if (fbAuthErrorCode === 'auth/operation-not-allowed' || fbAuthErrorCode === 'auth/admin-restricted-operation') {
+    return 'Firebase Authentication anónima no está habilitada.\n\n' +
+      'Solución: andá a Firebase Console → Authentication → Sign-in method → habilitá "Anónimo".';
+  }
+  if (fbAuthErrorCode === 'auth/network-request-failed') {
+    return 'Sin conexión a Firebase. Verificá tu internet.';
+  }
+  if (fbAuthErrorCode) {
+    return 'Error de Firebase auth: ' + fbAuthErrorCode + '\n' + (fbAuthErrorMsg || '');
+  }
+  return 'Firebase auth no listo (timeout). Recargá la página. Revisá la consola del browser (F12) para más detalle.';
 }
 
 let solicitudes = [];
@@ -1628,7 +1649,7 @@ function renderSolicitudes() {
    Si querés dar un código custom, usá "Alta manual" y luego eliminá esta solicitud. */
 async function aceptarSolicitud(sol) {
   const okAuth = await esperarAuth();
-  if (!okAuth) { alert('Firebase auth no listo. Recargá.'); return; }
+  if (!okAuth) { alert(mensajeErrorAuth()); return; }
   try {
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'aceptada',
@@ -1645,7 +1666,7 @@ async function rechazarSolicitud(sol) {
   const nom = (sol.solicitante && sol.solicitante.nombre) || '';
   if (!confirm('¿Rechazar la solicitud de ' + nom + '?')) return;
   const okAuth = await esperarAuth();
-  if (!okAuth) { alert('Firebase auth no listo. Recargá.'); return; }
+  if (!okAuth) { alert(mensajeErrorAuth()); return; }
   try {
     await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
       estado: 'rechazada',
