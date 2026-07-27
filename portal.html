@@ -1658,6 +1658,8 @@ function renderSolicitudes() {
     add('WhatsApp', s.whatsapp);
     add('Email', s.email);
     add('Localidad', (s.localidad || '') + (s.provincia ? ', ' + s.provincia : ''));
+    add('Dirección', s.direccion);
+    add('Código postal', s.codigoPostal);
     if (sol.creadoEn && sol.creadoEn.toDate) {
       add('Recibida', sol.creadoEn.toDate().toLocaleString('es-AR'));
     }
@@ -1778,6 +1780,8 @@ async function aceptarSolicitud(sol) {
       email: s.email || '',
       provincia: s.provincia || '',
       localidad: s.localidad || '',
+      direccion: s.direccion || '',
+      codigoPostal: s.codigoPostal || '',
       notas: sol.notas || '',
       createdAt: firebase.firestore.FieldValue.serverTimestamp(),
       solicitudId: sol.id,

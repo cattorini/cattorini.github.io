@@ -774,6 +774,20 @@
         </div>
       </div>
 
+      <div class="may-row">
+        <div style="grid-column: 1 / -1;">
+          <label class="may-lbl">Dirección (calle, número, piso)</label>
+          <input class="may-inp" id="may-direccion" maxlength="120" placeholder="Para envíos por Vía Cargo" />
+        </div>
+      </div>
+      <div class="may-row">
+        <div>
+          <label class="may-lbl">Código postal</label>
+          <input class="may-inp" id="may-cp" maxlength="10" />
+        </div>
+        <div></div>
+      </div>
+
       <label class="may-lbl">Notas (opcional)</label>
       <textarea class="may-txt" id="may-notas" rows="3" maxlength="500" placeholder="Volumen estimado de compra, referencias, etc."></textarea>
 
@@ -1219,11 +1233,14 @@ async function submitMayForm() {
   const email = sanInp(document.getElementById('may-email').value, 80);
   const provincia = sanInp(document.getElementById('may-provincia').value, 40);
   const localidad = sanInp(document.getElementById('may-localidad').value, 60);
+  const direccion = sanInp(document.getElementById('may-direccion').value, 120);
+  const codigoPostal = sanInp(document.getElementById('may-cp').value, 10);
   const notas = sanInp(document.getElementById('may-notas').value, 500);
 
   if (!nombre || !negocio) { showMayErr('Nombre y negocio son obligatorios.'); return; }
   if (!wa && !email) { showMayErr('Necesitamos WhatsApp o email para contactarte.'); return; }
   if (!provincia || !localidad) { showMayErr('Elegí provincia y localidad.'); return; }
+  if (!direccion) { showMayErr('Ingresá la dirección para poder enviarte pedidos por Vía Cargo.'); return; }
   if (window.Ubicaciones) {
     const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
     if (!valida) { showMayErr('Elegí una localidad de la lista sugerida.'); return; }
@@ -1240,7 +1257,7 @@ async function submitMayForm() {
     solicitante: {
       nombre, negocio, cuit, tipo,
       telefono: tel, whatsapp: wa, email,
-      provincia, localidad
+      provincia, localidad, direccion, codigoPostal
     },
     notas,
     estado: 'pendiente',
