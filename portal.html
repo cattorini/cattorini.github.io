@@ -438,6 +438,16 @@
           </p>
           <a id="mc-wa" target="_blank" rel="noopener noreferrer" class="btn" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;">Enviar por WhatsApp</a>
           <button class="btn-ghost" onclick="copiarCodigo()" style="width:100%;">Copiar código</button>
+
+          <!-- Bloqueo de zona minoristas -->
+          <div id="mc-zona-block" style="display:none;margin-top:20px;padding:14px;background:#FAFAFA;border:1px solid #E5E5E5;text-align:left;">
+            <div style="font-size:0.78rem;font-weight:500;margin-bottom:6px;">Zona: <span id="mc-zona-label">···</span></div>
+            <p style="font-size:0.78rem;color:#666;margin-bottom:10px;line-height:1.5;">
+              Al bloquear, los minoristas de esta localidad no podrán comprar en la tienda y se derivarán a este mayorista.
+            </p>
+            <button id="mc-zona-btn" onclick="bloquearZonaDeModal()" class="btn-ghost" style="width:100%;padding:10px;font-size:0.78rem;">Bloquear zona para minoristas</button>
+            <div id="mc-zona-status" style="display:none;margin-top:8px;font-size:0.82rem;text-align:center;"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -1797,12 +1807,18 @@ async function aceptarSolicitud(sol) {
       }
     });
 
-    /* 3) Modal para el admin con código + WhatsApp */
+    /* 3) Modal para el admin con código + WhatsApp + opción bloquear zona */
     mostrarModalCodigo({
       titulo: 'Solicitud aceptada',
       nombre: `${s.nombre} — ${s.negocio}`,
       codigo,
-      whatsapp: s.whatsapp
+      whatsapp: s.whatsapp,
+      mayoristaData: {
+        nombre: s.nombre, negocio: s.negocio,
+        telefono: s.telefono, whatsapp: s.whatsapp,
+        provincia: s.provincia, localidad: s.localidad,
+        direccion: s.direccion, codigoPostal: s.codigoPostal
+      }
     });
   } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
@@ -1826,11 +1842,15 @@ async function rechazarSolicitud(sol) {
 
 /* Modal código genérico */
 let _mcCodigoActual = '';
-function mostrarModalCodigo({ titulo, nombre, codigo, whatsapp }) {
+let _mcZonaData = null;
+
+function mostrarModalCodigo({ titulo, nombre, codigo, whatsapp, mayoristaData }) {
   _mcCodigoActual = codigo;
+  _mcZonaData = mayoristaData || null;
   document.getElementById('mc-titulo').textContent = titulo;
   document.getElementById('mc-nombre').textContent = nombre;
   document.getElementById('mc-codigo').textContent = codigo;
+
   const waEl = document.getElementById('mc-wa');
   if (whatsapp) {
     const num = whatsapp.replace(/[^0-9]/g, '');
@@ -1844,12 +1864,104 @@ function mostrarModalCodigo({ titulo, nombre, codigo, whatsapp }) {
   } else {
     waEl.style.display = 'none';
   }
+
+  /* Bloque de zona: solo si tenemos provincia + localidad */
+  const zonaBlock = document.getElementById('mc-zona-block');
+  const zonaStatus = document.getElementById('mc-zona-status');
+  const zonaBtn = document.getElementById('mc-zona-btn');
+  zonaStatus.style.display = 'none';
+  zonaBtn.disabled = false;
+  zonaBtn.textContent = 'Bloquear zona para minoristas';
+
+  if (mayoristaData && mayoristaData.provincia && mayoristaData.localidad) {
+    document.getElementById('mc-zona-label').textContent = `${mayoristaData.localidad}, ${mayoristaData.provincia}`;
+    /* Chequear si la zona ya está bloqueada */
+    const yaBloqueada = data && data.zonas_mayoristas && data.zonas_mayoristas.some(z => {
+      if ((z.provincia || '').trim().toLowerCase() !== mayoristaData.provincia.trim().toLowerCase()) return false;
+      return (z.localidades || []).some(l => l.trim().toLowerCase() === mayoristaData.localidad.trim().toLowerCase());
+    });
+    if (yaBloqueada) {
+      zonaBtn.disabled = true;
+      zonaBtn.textContent = '✓ Zona ya bloqueada';
+    }
+    zonaBlock.style.display = 'block';
+  } else {
+    zonaBlock.style.display = 'none';
+  }
+
   document.getElementById('modal-codigo').style.display = 'flex';
+}
+
+async function bloquearZonaDeModal() {
+  if (!_mcZonaData) return;
+  const btn = document.getElementById('mc-zona-btn');
+  const status = document.getElementById('mc-zona-status');
+  btn.disabled = true;
+  btn.textContent = 'Bloqueando...';
+  status.style.display = 'none';
+  try {
+    await bloquearZonaMinoristas(_mcZonaData);
+    btn.textContent = '✓ Zona bloqueada';
+    status.textContent = 'Cambio publicado. Los minoristas de esta zona ya no pueden comprar.';
+    status.style.color = '#060';
+    status.style.display = 'block';
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = 'Reintentar';
+    status.textContent = 'Error: ' + e.message;
+    status.style.color = '#900';
+    status.style.display = 'block';
+    console.error(e);
+  }
+}
+
+/* Agrega la zona del mayorista a data.zonas_mayoristas y publica productos.json */
+async function bloquearZonaMinoristas(m) {
+  if (!data) throw new Error('No hay datos cargados. Recargá.');
+  const prov = (m.provincia || '').trim();
+  const loc = (m.localidad || '').trim();
+  if (!prov || !loc) throw new Error('Falta provincia o localidad.');
+
+  data.zonas_mayoristas = data.zonas_mayoristas || [];
+  const norm = s => (s || '').trim().toLowerCase();
+
+  /* Buscar zona existente por provincia */
+  let zona = data.zonas_mayoristas.find(z => norm(z.provincia) === norm(prov));
+
+  const contactoMayorista = {
+    nombre: (m.nombre || '') + (m.negocio ? ' — ' + m.negocio : ''),
+    telefono: m.telefono || '',
+    whatsapp: m.whatsapp || '',
+    direccion: (m.direccion || '') + (m.codigoPostal ? ' (CP ' + m.codigoPostal + ')' : '')
+  };
+
+  if (zona) {
+    zona.localidades = zona.localidades || [];
+    if (!zona.localidades.some(l => norm(l) === norm(loc))) {
+      zona.localidades.push(loc);
+    }
+    /* Solo overrideamos el mayorista si esa zona no tenía datos */
+    if (!zona.mayorista || !zona.mayorista.nombre) {
+      zona.mayorista = contactoMayorista;
+    }
+  } else {
+    data.zonas_mayoristas.push({
+      provincia: prov,
+      localidades: [loc],
+      mayorista: contactoMayorista
+    });
+  }
+
+  markDirty();
+  if (typeof renderZonas === 'function') renderZonas();
+  /* Publicar inmediatamente para que tome efecto ya */
+  await publishChanges();
 }
 
 function cerrarModalCodigo() {
   document.getElementById('modal-codigo').style.display = 'none';
   _mcCodigoActual = '';
+  _mcZonaData = null;
 }
 
 async function copiarCodigo() {
@@ -1952,12 +2064,13 @@ async function crearMayoristaManual() {
       manual: true
     });
 
-    /* 3) Modal código con WhatsApp */
+    /* 3) Modal código con WhatsApp + opción bloquear zona */
     mostrarModalCodigo({
       titulo: 'Mayorista registrado',
       nombre: `${nombre} — ${negocio}`,
       codigo,
-      whatsapp: wa
+      whatsapp: wa,
+      mayoristaData: solicitanteData
     });
     clearAM();
   } catch (e) {
@@ -2072,6 +2185,40 @@ function renderActivos() {
     btnEdit.onclick = () => editarActivo(m);
     acts.appendChild(btnEdit);
 
+    /* Botón bloquear zona (solo si tiene provincia+localidad y no está ya bloqueada) */
+    if (m.provincia && m.localidad) {
+      const norm = s => (s || '').trim().toLowerCase();
+      const yaBloqueada = data && data.zonas_mayoristas && data.zonas_mayoristas.some(z =>
+        norm(z.provincia) === norm(m.provincia) &&
+        (z.localidades || []).some(l => norm(l) === norm(m.localidad))
+      );
+      if (yaBloqueada) {
+        const badge = document.createElement('button');
+        badge.textContent = '✓ Zona bloqueada';
+        badge.disabled = true;
+        badge.style.opacity = '0.7';
+        badge.style.cursor = 'default';
+        acts.appendChild(badge);
+      } else {
+        const btnZona = document.createElement('button');
+        btnZona.textContent = 'Bloquear zona';
+        btnZona.onclick = async () => {
+          if (!confirm(`Bloquear ventas minoristas en ${m.localidad}, ${m.provincia}?\n\nLos minoristas de esa zona serán derivados a este mayorista.`)) return;
+          btnZona.disabled = true;
+          btnZona.textContent = 'Bloqueando...';
+          try {
+            await bloquearZonaMinoristas(m);
+            btnZona.textContent = '✓ Bloqueada';
+          } catch (e) {
+            alert('Error: ' + e.message);
+            btnZona.disabled = false;
+            btnZona.textContent = 'Bloquear zona';
+          }
+        };
+        acts.appendChild(btnZona);
+      }
+    }
+
     const btnRegen = document.createElement('button');
     btnRegen.textContent = 'Regenerar código';
     btnRegen.onclick = () => regenerarCodigo(m);
@@ -2145,7 +2292,8 @@ async function regenerarCodigo(m) {
       titulo: 'Código regenerado',
       nombre: `${m.nombre} — ${m.negocio}`,
       codigo: nuevoCodigo,
-      whatsapp: m.whatsapp
+      whatsapp: m.whatsapp,
+      mayoristaData: m
     });
   } catch (e) { alert('Error: ' + e.message); console.error(e); }
 }
