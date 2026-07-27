@@ -645,6 +645,23 @@
 <div class="toast" id="toast">···</div>
 <div class="curtain" id="curtain"></div>
 
+<!-- Modal zona bloqueada en checkout (validación anti-fraude) -->
+<div id="zona-block-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:75;display:none;align-items:center;justify-content:center;padding:20px;">
+  <div style="background:#FFF;max-width:460px;width:100%;padding:32px;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="width:60px;height:60px;border-radius:50%;background:#FDECEC;color:#900;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:8px;">⚠</div>
+      <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;">No podemos enviarte a esa localidad</h2>
+    </div>
+    <p style="color:#333;font-size:0.92rem;line-height:1.6;margin-bottom:16px;" id="zb-msg">···</p>
+    <div style="padding:16px;background:#F5F5F5;border-left:3px solid #0A0A0A;margin-bottom:20px;">
+      <div style="font-weight:500;font-size:1rem;margin-bottom:6px;" id="zb-nombre">···</div>
+      <div style="font-size:0.85rem;color:#666;line-height:1.5;" id="zb-detalle">···</div>
+    </div>
+    <a id="zb-wa" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;">Contactar por WhatsApp</a>
+    <button class="btn-secondary" onclick="document.getElementById('zona-block-modal').style.display='none'" style="width:100%;">Cambiar dirección</button>
+  </div>
+</div>
+
 <!-- Confirmation modal -->
 <div id="confirm-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:70;display:none;align-items:center;justify-content:center;padding:20px;">
   <div style="background:#FFF;max-width:460px;width:100%;padding:40px 32px;text-align:center;">
@@ -1165,6 +1182,39 @@ function saveMyOrderCode(code, docId) {
   } catch {}
 }
 
+/* Valida si una localidad está en zonas_mayoristas */
+function verificarZonaBloqueada(provincia, localidad) {
+  if (!DATA || !DATA.zonas_mayoristas) return null;
+  const norm = s => (s || '').trim().toLowerCase();
+  return DATA.zonas_mayoristas.find(z => {
+    if (norm(z.provincia) !== norm(provincia)) return false;
+    return (z.localidades || []).some(l => norm(l) === norm(localidad));
+  }) || null;
+}
+
+function mostrarZonaBloqueadaCheckout(zona) {
+  const may = zona.mayorista || {};
+  document.getElementById('zb-msg').textContent =
+    (DATA.config.minoristas && DATA.config.minoristas.mensaje_zona_con_mayorista) ||
+    'En esta zona contamos con un distribuidor autorizado. Compralo directamente con él.';
+  document.getElementById('zb-nombre').textContent = may.nombre || 'Distribuidor';
+  const bits = [];
+  if (may.direccion) bits.push('📍 ' + may.direccion);
+  if (may.telefono) bits.push('Tel: ' + may.telefono);
+  if (may.whatsapp) bits.push('WA: ' + may.whatsapp);
+  document.getElementById('zb-detalle').textContent = bits.join('  ·  ') || 'Contactalo para más info.';
+  const waEl = document.getElementById('zb-wa');
+  if (may.whatsapp) {
+    const num = may.whatsapp.replace(/[^0-9]/g, '');
+    const msg = encodeURIComponent(`Hola! Los contacto porque en Cattorini me indicaron que son distribuidores en mi zona.`);
+    waEl.href = `https://wa.me/${num}?text=${msg}`;
+    waEl.style.display = 'block';
+  } else {
+    waEl.style.display = 'none';
+  }
+  document.getElementById('zona-block-modal').style.display = 'flex';
+}
+
 async function sendOrder() {
   const now = Date.now();
   if (now - lastSubmit < RATE_LIMIT_MS) {
@@ -1202,8 +1252,18 @@ async function sendOrder() {
     }
   }
 
-  const nota = sanitizeInput(document.getElementById('cart-note').value, 400);
   const perfil = localStorage.getItem('catt_perfil') || 'minorista';
+
+  /* Validación anti-fraude: minorista + envío no puede ir a zona bloqueada */
+  if (perfil === 'minorista' && entrega === 'envio') {
+    const zonaBloqueada = verificarZonaBloqueada(provincia, localidad);
+    if (zonaBloqueada) {
+      mostrarZonaBloqueadaCheckout(zonaBloqueada);
+      return;
+    }
+  }
+
+  const nota = sanitizeInput(document.getElementById('cart-note').value, 400);
   const zonaStatus = localStorage.getItem('catt_zona_status') || 'libre';
   const localidadPerfil = localStorage.getItem('catt_localidad') || '';
 
