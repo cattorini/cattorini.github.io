@@ -38,7 +38,20 @@
       "mensaje_zona_con_mayorista": "En tu zona contamos con un distribuidor autorizado. Te dejamos sus datos para que compres directamente con él y aproveches precios mejores."
     }
   },
-  "zonas_mayoristas": [],
+  "zonas_mayoristas": [
+    {
+      "provincia": "Buenos Aires",
+      "localidades": [
+        "11 de Septiembre"
+      ],
+      "mayorista": {
+        "nombre": "Karina Piacentini — Celiropa",
+        "telefono": "1122998877",
+        "whatsapp": "",
+        "direccion": "Plaza 543 (CP 1752)"
+      }
+    }
+  ],
   "guia_talles": {
     "camisas": {
       "unidad": "cm",
