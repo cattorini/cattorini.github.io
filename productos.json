@@ -50,6 +50,18 @@
         "whatsapp": "",
         "direccion": "Plaza 543 (CP 1752)"
       }
+    },
+    {
+      "provincia": "Chubut",
+      "localidades": [
+        "Puerto Madryn"
+      ],
+      "mayorista": {
+        "nombre": "Jonathan Dantas — Mi dulcesita",
+        "telefono": "11223344556",
+        "whatsapp": "",
+        "direccion": "Plaza (CP 1752)"
+      }
     }
   ],
   "guia_talles": {
