@@ -1273,13 +1273,15 @@ function esMayoristaConDatos() {
   return localStorage.getItem(LS_PERFIL) === 'mayorista' && !!getMayoristaData();
 }
 
-function openCart() {
+async function openCart() {
   renderCart();
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawer-back').classList.add('open');
   lockBodyScroll();
+  /* Cargar opciones de provincia ANTES de aplicar el modo mayorista
+     (sino el select está vacío y no se pueden pre-llenar los datos) */
+  await initEnvioUbicaciones();
   aplicarModoMayorista();
-  initEnvioUbicaciones();
 }
 
 let direccionEditada = false;
