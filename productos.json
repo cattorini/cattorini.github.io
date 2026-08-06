@@ -269,8 +269,8 @@
           "id": 1,
           "nombre": "Camisa Oxford Blanca",
           "descripcion": "Camisa de vestir en algodón Oxford 100%. Corte regular fit, cuello con botones, puños ajustables. Ideal para uniforme corporativo o uso diario.",
-          "precio_minorista": 22000,
-          "precio_mayorista": 14500,
+          "precio_minorista": 30000,
+          "precio_mayorista": 14499,
           "talles_disponibles": [
             "S",
             "M",
@@ -328,7 +328,7 @@
           "nombre": "Camisa Strong",
           "descripcion": "Descripccion de camisa strong",
           "precio_minorista": 35000,
-          "precio_mayorista": 20000,
+          "precio_mayorista": 20001,
           "talles_disponibles": [
             "L",
             "XL",
