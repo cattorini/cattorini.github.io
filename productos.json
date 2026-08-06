@@ -325,36 +325,20 @@
         },
         {
           "id": 10,
-          "nombre": "Producto nuevo",
-          "descripcion": "",
-          "precio_minorista": 0,
-          "precio_mayorista": 0,
-          "talles_disponibles": [],
+          "nombre": "Camisa Strong",
+          "descripcion": "Descripccion de camisa strong",
+          "precio_minorista": 35000,
+          "precio_mayorista": 20000,
+          "talles_disponibles": [
+            "L",
+            "XL",
+            "XXL"
+          ],
           "disponible": true,
-          "destacado": false,
-          "imagenes": []
-        },
-        {
-          "id": 12,
-          "nombre": "Producto nuevo",
-          "descripcion": "",
-          "precio_minorista": 0,
-          "precio_mayorista": 0,
-          "talles_disponibles": [],
-          "disponible": true,
-          "destacado": false,
-          "imagenes": []
-        },
-        {
-          "id": 13,
-          "nombre": "Producto nuevo",
-          "descripcion": "",
-          "precio_minorista": 0,
-          "precio_mayorista": 0,
-          "talles_disponibles": [],
-          "disponible": true,
-          "destacado": false,
-          "imagenes": []
+          "destacado": true,
+          "imagenes": [
+            "p10-1786037697183-asdw.jpeg"
+          ]
         }
       ]
     },
