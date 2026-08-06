@@ -344,6 +344,17 @@
           "disponible": true,
           "destacado": false,
           "imagenes": []
+        },
+        {
+          "id": 13,
+          "nombre": "Producto nuevo",
+          "descripcion": "",
+          "precio_minorista": 0,
+          "precio_mayorista": 0,
+          "talles_disponibles": [],
+          "disponible": true,
+          "destacado": false,
+          "imagenes": []
         }
       ]
     },
