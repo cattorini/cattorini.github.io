@@ -681,6 +681,16 @@
         <button id="tog-retiro" class="active" type="button" onclick="setEntrega('retiro')">Retiro en local</button>
         <button id="tog-envio" type="button" onclick="setEntrega('envio')">Envío a domicilio</button>
       </div>
+
+      <div id="retiro-pago-wrap" style="margin-top:10px;">
+        <div style="font-size:0.78rem;font-weight:500;margin-bottom:4px;">¿Cómo vas a pagar?</div>
+        <div class="delivery-toggle">
+          <button id="tog-pago-local" class="active" type="button" onclick="setPagaEnLocal(true)">Pago en el local</button>
+          <button id="tog-pago-qr" type="button" onclick="setPagaEnLocal(false)">Pago electrónico (QR)</button>
+        </div>
+        <p style="font-size:0.76rem;color:#666;margin-top:4px;" id="pago-local-hint">Vas a abonar cuando retires el pedido.</p>
+      </div>
+
       <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" />
       <div id="envio-wrap" style="display:none;">
         <!-- Botón editar visible solo para mayoristas con datos pre-cargados -->
@@ -734,9 +744,21 @@
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
     <p style="color:#666;font-size:0.9rem;margin-bottom:8px;">Guardá este código para consultar el estado de tu pedido:</p>
     <div class="confirm-code" id="confirm-code">···</div>
-    <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;">
+    <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;" id="confirm-msg">
       Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.
     </p>
+
+    <div id="confirm-pago-qr" style="display:none;background:#F5F5F5;padding:20px;margin-bottom:20px;">
+      <p style="font-weight:500;font-size:0.9rem;margin-bottom:4px;">Pedido pendiente de pago</p>
+      <p style="color:#666;font-size:0.82rem;margin-bottom:14px;line-height:1.5;">
+        Escaneá el QR con cualquier billetera virtual que ofrezca pagos QR (Mercado Pago, Cuenta DNI, etc.) para abonar tu pedido.
+      </p>
+      <img src="./img/qr-pago.jpg" alt="QR de pago" style="width:180px;height:180px;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin-bottom:14px;" />
+      <p style="color:#666;font-size:0.82rem;line-height:1.5;">
+        ¿Preferís pagar por otro medio? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
+      </p>
+    </div>
+
     <a id="track-link" class="btn" style="display:inline-block;padding:14px 28px;text-align:center;text-decoration:none;">Ver estado del pedido</a>
     <button class="btn-secondary" onclick="closeConfirm()" style="margin-top:10px;">Seguir comprando</button>
   </div>
@@ -774,6 +796,12 @@ const RATE_LIMIT_MS = 2500;
 let DATA = null;
 let categoriaActual = 'todos';
 let entrega = 'retiro';
+/* Solo relevante para retiro — envío siempre necesita pago QR (decisión de
+   producto: el envío es a cargo del comprador y se cobra antes de despachar). */
+let pagaEnLocal = true;
+function necesitaQR() {
+  return entrega === 'envio' || (entrega === 'retiro' && !pagaEnLocal);
+}
 let lastSubmit = 0;
 let ubicacionGate = null;
 let ubicacionEnvio = null;
@@ -829,6 +857,7 @@ function limpiarPerfil() {
   localStorage.removeItem(LS_LOCALIDAD);
   localStorage.removeItem(LS_ZONA_STATUS);
   localStorage.removeItem('catt_mayorista_data');
+  localStorage.removeItem('catt_codigo_valido_hash');
 }
 
 /* Rechequeo de perfil mayorista: si el JSON cambió el hash, invalida el perfil */
@@ -836,7 +865,13 @@ async function validarPerfilPersistido() {
   const { perfil } = getPerfilActual();
   if (perfil !== 'mayorista') return true;
 
-  const codigoGuardado = sessionStorage.getItem('catt_codigo_valido_hash');
+  /* catt_codigo_valido_hash tiene que vivir en localStorage, igual que
+     LS_PERFIL y catt_mayorista_data: si quedaba en sessionStorage, se
+     borraba al cerrar la pestaña/navegador y en la siguiente visita esta
+     función invalidaba el perfil mayorista aunque el código siguiera
+     siendo válido — el autocompletado del checkout "andaba a veces sí, a
+     veces no" dependiendo de si era la misma pestaña de siempre o no. */
+  const codigoGuardado = localStorage.getItem('catt_codigo_valido_hash');
   if (!codigoGuardado) { limpiarPerfil(); return false; }
 
   /* Match master */
@@ -850,9 +885,8 @@ async function validarPerfilPersistido() {
     } catch (e) { /* si falla, no invalidamos por miedo — dejamos entrar */ return true; }
   }
 
-  /* Ninguno matcheó → invalidar */
+  /* Ninguno matcheó → invalidar (limpiarPerfil ya borra catt_codigo_valido_hash) */
   limpiarPerfil();
-  sessionStorage.removeItem('catt_codigo_valido_hash');
   return false;
 }
 
@@ -927,7 +961,7 @@ async function submitCodigo() {
   }
 
   if (valido) {
-    sessionStorage.setItem('catt_codigo_valido_hash', hash);
+    localStorage.setItem('catt_codigo_valido_hash', hash);
     /* Guardar datos del mayorista para auto-fill en checkout */
     if (mayoristaData) {
       localStorage.setItem('catt_mayorista_data', JSON.stringify(mayoristaData));
@@ -1009,7 +1043,7 @@ function renderPerfilBadge() {
     let label = 'Cliente minorista';
     if (localidad) label += ` · ${localidad}`;
     if (zonaStatus === 'libre' && DATA.config.minoristas.bonificacion_zonas_libres > 0) {
-      label += ` · Descuento ${DATA.config.minoristas.bonificacion_zonas_libres}% aplicado`;
+      label += ` · Para tu zona tenemos ${DATA.config.minoristas.bonificacion_zonas_libres}% de descuento`;
     }
     span.textContent = label;
   }
@@ -1133,6 +1167,12 @@ function renderCatalog() {
   cat.style.display = 'block';
   cat.innerHTML = '';
 
+  /* El catálogo mayorista es solo de fabricación propia — productos de
+     otras marcas (fabricacion_propia === false) se venden únicamente al
+     público minorista en el local. Default true (backward-compat: los
+     productos ya cargados, sin este campo todavía, se consideran propios). */
+  const { perfil } = getPerfilActual();
+
   DATA.categorias.forEach(categoria => {
     const section = document.createElement('section');
     section.className = 'cat-section';
@@ -1155,6 +1195,7 @@ function renderCatalog() {
 
     (categoria.productos || []).forEach((p, idx) => {
       if (!p.disponible) return;
+      if (perfil === 'mayorista' && p.fabricacion_propia === false) return;
       const link = document.createElement('a');
       link.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
       link.className = 'pcard';
@@ -1406,7 +1447,7 @@ function renderCart() {
     info.appendChild(name);
     const meta = document.createElement('div');
     meta.className = 'cart-item-meta';
-    meta.textContent = `${item.categoria} · Talle ${item.talle}`;
+    meta.textContent = `${item.categoria} · Talle ${item.talle}` + (item.color ? ` · ${item.color}` : '');
     info.appendChild(meta);
     const price = document.createElement('div');
     price.className = 'cart-item-price';
@@ -1439,9 +1480,12 @@ function renderTotals() {
   const cart = getCart();
   const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
   const env = DATA.config.envio;
+  const { perfil } = getPerfilActual();
   let envio = 0;
   if (entrega === 'envio') {
-    envio = subtotal >= env.gratis_desde ? 0 : env.costo_estandar;
+    /* El envío mayorista siempre corre por cuenta del comprador — el
+       envío gratis por monto es un beneficio exclusivo de minoristas. */
+    envio = (perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar;
   }
   const total = subtotal + envio;
 
@@ -1482,6 +1526,8 @@ function setEntrega(modo) {
   document.getElementById('tog-retiro').classList.toggle('active', modo === 'retiro');
   document.getElementById('tog-envio').classList.toggle('active', modo === 'envio');
   document.getElementById('envio-wrap').style.display = modo === 'envio' ? 'block' : 'none';
+  /* El pago en el local solo tiene sentido si vas a estar físicamente ahí */
+  document.getElementById('retiro-pago-wrap').style.display = modo === 'retiro' ? 'block' : 'none';
 
   /* Si es mayorista con datos + envío + tiene dirección + no editó todavía → mostrar header con "Editar" */
   if (modo === 'envio' && esMayoristaConDatos()) {
@@ -1501,6 +1547,15 @@ function setEntrega(modo) {
   }
 
   renderTotals();
+}
+
+function setPagaEnLocal(val) {
+  pagaEnLocal = val;
+  document.getElementById('tog-pago-local').classList.toggle('active', val);
+  document.getElementById('tog-pago-qr').classList.toggle('active', !val);
+  document.getElementById('pago-local-hint').textContent = val
+    ? 'Vas a abonar cuando retires el pedido.'
+    : 'Vas a poder pagar con QR apenas confirmes la compra.';
 }
 
 function chgCartQty(idx, delta) {
@@ -1662,7 +1717,7 @@ async function sendOrder() {
 
   const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
   const env = DATA.config.envio;
-  const envio = entrega === 'envio' ? (subtotal >= env.gratis_desde ? 0 : env.costo_estandar) : 0;
+  const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
   const total = subtotal + envio;
 
   const code = genTrackingCode();
@@ -1685,9 +1740,10 @@ async function sendOrder() {
     },
     items: cart.map(i => ({
       id: i.id, nombre: i.nombre, categoria: i.categoria,
-      talle: i.talle, qty: i.qty, precio: i.precio
+      talle: i.talle, color: i.color || null, qty: i.qty, precio: i.precio
     })),
     modalidad: entrega,
+    pagaEnLocal: entrega === 'retiro' ? pagaEnLocal : false,
     subtotal, envio, total,
     nota,
     estado: 'pendiente'
@@ -1698,6 +1754,44 @@ async function sendOrder() {
     showToast('Sistema de pedidos no disponible. Recargá la página.');
     return;
   }
+
+  /* Descuento de stock atómico — solo para items con color (= bajo control
+     de stock). Productos viejos sin stock cargado (sin color) no se tocan,
+     por compatibilidad hacia atrás. Si no alcanza el stock para alguno,
+     se corta todo el pedido antes de crearlo (nada de "medio pedido"). */
+  const itemsConStock = cart.filter(i => i.color);
+  const resultantePorItem = {};
+  if (itemsConStock.length) {
+    try {
+      await db.runTransaction(async (tx) => {
+        const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
+        const refs = idsUnicos.map(id => db.collection('stock').doc(id));
+        const snaps = await Promise.all(refs.map(r => tx.get(r)));
+        const variantesPorId = {};
+        idsUnicos.forEach((id, idx) => {
+          variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
+        });
+        itemsConStock.forEach(i => {
+          const variantes = variantesPorId[String(i.id)];
+          const actual = ((variantes[i.talle] || {})[i.color] || {}).cantidad || 0;
+          if (actual < i.qty) {
+            throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}. Ajustá la cantidad en el carrito.`);
+          }
+          const restante = actual - i.qty;
+          variantes[i.talle] = variantes[i.talle] || {};
+          variantes[i.talle][i.color] = { ...(variantes[i.talle][i.color] || {}), cantidad: restante };
+          resultantePorItem[i.key] = restante;
+        });
+        idsUnicos.forEach((id, idx) => {
+          tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+        });
+      });
+    } catch (e) {
+      showToast(e.message);
+      return;
+    }
+  }
+
   try {
     const ref = await db.collection('pedidos').add(payload);
     docId = ref.id;
@@ -1707,12 +1801,42 @@ async function sendOrder() {
     return;
   }
 
+  /* Auditoría del descuento (no bloqueante: si falla el log, el pedido ya
+     está creado y el stock ya se descontó, no tiene sentido revertir todo). */
+  if (itemsConStock.length) {
+    const fecha = new Date().toISOString().split('T')[0];
+    itemsConStock.forEach(i => {
+      db.collection('stock').doc(String(i.id)).collection('movimientos').add({
+        talle: i.talle, color: i.color, delta: -i.qty,
+        cantidadResultante: resultantePorItem[i.key] ?? null,
+        motivo: 'Venta #' + code, fecha,
+        ts: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(e => console.warn('No se pudo registrar movimiento de stock:', e.message));
+    });
+  }
+
   lastSubmit = now;
   saveMyOrderCode(code, docId);
 
-  /* Mostrar confirmación */
+  /* Mostrar confirmación — el QR de pago aplica a envío siempre, y a retiro
+     solo si el cliente no eligió pagar en el local. */
   document.getElementById('confirm-code').textContent = '#' + code;
   document.getElementById('track-link').href = `./seguimiento.html?code=${code}`;
+  const qrBox = document.getElementById('confirm-pago-qr');
+  const msgEl = document.getElementById('confirm-msg');
+  if (necesitaQR()) {
+    qrBox.style.display = 'block';
+    msgEl.textContent = 'Tu pedido queda pendiente de pago. Apenas lo recibamos, lo pasamos a preparación.';
+    const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
+    const waMsg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
+    document.getElementById('confirm-wa-pago').href = `https://wa.me/${wa}?text=${waMsg}`;
+  } else if (entrega === 'retiro') {
+    qrBox.style.display = 'none';
+    msgEl.textContent = 'Tu pedido queda a la espera de que lo confirmemos. Vas a abonarlo cuando pases a retirarlo por el local.';
+  } else {
+    qrBox.style.display = 'none';
+    msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.';
+  }
   document.getElementById('confirm-modal').classList.add('open');
 
   saveCart([]);
