@@ -104,6 +104,9 @@
     .card-cli { font-size: 0.85rem; margin-bottom: 4px; }
     .card-total { font-weight: 500; font-size: 0.95rem; margin-top: 6px; }
     .card-modalidad { font-size: 0.72rem; color: #666; margin-top: 2px; }
+    .card-pago { font-size: 0.68rem; letter-spacing: 0.04em; padding: 2px 7px; margin-top: 4px; display: inline-block; }
+    .card-pago.local { background: #E7F5E7; color: #1A6B1A; }
+    .card-pago.qr { background: #FFF7E0; color: #7A5000; }
 
     .filters {
       display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
@@ -261,7 +264,7 @@
     </div>
     <div class="kanban">
       <div class="col">
-        <div class="col-head">Pendientes <span class="count" id="c-pend">0</span></div>
+        <div class="col-head">Pendiente de pago <span class="count" id="c-pend">0</span></div>
         <div class="col-body" id="body-pend"></div>
       </div>
       <div class="col">
@@ -564,6 +567,22 @@ function render() {
   renderHistory(list);
 }
 
+/* Código que ve el cliente en tienda/seguimiento — usar SIEMPRE este, nunca
+   doc.id, para que coincida con lo que el cliente tiene anotado. */
+function trackCode(o) {
+  if (o.codigo) return '#' + o.codigo.toUpperCase();
+  return '#' + (o.id ? o.id.slice(-5).toUpperCase() : '···');
+}
+
+/* Info de pago a mostrar mientras el pedido está en la primera columna:
+   null si ya no aplica (pasó de estado). Envío siempre es QR; retiro puede
+   ser "paga en el local" (sin QR) o QR también si el cliente lo eligió. */
+function pagoInfo(o) {
+  if (o.estado !== 'pendiente') return null;
+  if (o.modalidad === 'retiro' && o.pagaEnLocal) return { texto: '🏬 Paga en el local', clase: 'local' };
+  return { texto: '💳 Pendiente de pago', clase: 'qr' };
+}
+
 function renderKanban(list) {
   const activos = list.filter(o => ['pendiente','preparando','listo','enviado'].includes(o.estado));
   const filtered = activos.filter(o => {
@@ -608,7 +627,7 @@ function mkCard(o) {
   head.className = 'card-head';
   const num = document.createElement('div');
   num.className = 'card-num';
-  num.textContent = '#' + (o.id ? o.id.slice(-5).toUpperCase() : '···');
+  num.textContent = trackCode(o);
   head.appendChild(num);
   const time = document.createElement('div');
   time.className = 'card-time';
@@ -632,6 +651,14 @@ function mkCard(o) {
   meta.className = 'card-modalidad';
   meta.textContent = `${items} item${items===1?'':'s'} · ${o.modalidad === 'envio' ? 'Envío' : 'Retiro'}`;
   c.appendChild(meta);
+
+  const pago = pagoInfo(o);
+  if (pago) {
+    const pagoEl = document.createElement('div');
+    pagoEl.className = 'card-pago ' + pago.clase;
+    pagoEl.textContent = pago.texto;
+    c.appendChild(pagoEl);
+  }
 
   const total = document.createElement('div');
   total.className = 'card-total';
@@ -663,7 +690,7 @@ function showDetail(o) {
   const num = document.createElement('div');
   num.className = 'serif';
   num.style.fontSize = '1.5rem';
-  num.textContent = '#' + (o.id ? o.id.slice(-5).toUpperCase() : '');
+  num.textContent = trackCode(o);
   head.appendChild(num);
 
   const perfilB = document.createElement('span');
@@ -671,6 +698,15 @@ function showDetail(o) {
   perfilB.className = 'card-perfil ' + perfil;
   perfilB.textContent = perfil;
   head.appendChild(perfilB);
+
+  const pagoDet = pagoInfo(o);
+  if (pagoDet) {
+    const pagoB = document.createElement('span');
+    pagoB.className = 'card-pago ' + pagoDet.clase;
+    pagoB.style.marginLeft = '8px';
+    pagoB.textContent = pagoDet.texto;
+    head.appendChild(pagoB);
+  }
   cont.appendChild(head);
 
   /* Cliente */
@@ -706,7 +742,7 @@ function showDetail(o) {
     const r = document.createElement('div');
     r.className = 'item-line';
     const left = document.createElement('span');
-    left.textContent = `${it.nombre} · Talle ${it.talle} · x${it.qty}`;
+    left.textContent = `${it.nombre} · Talle ${it.talle}` + (it.color ? ` · ${it.color}` : '') + ` · x${it.qty}`;
     const right = document.createElement('span');
     right.textContent = '$' + (it.precio * it.qty).toLocaleString('es-AR');
     r.appendChild(left); r.appendChild(right);
@@ -742,10 +778,11 @@ function showDetail(o) {
   /* State buttons */
   const st = document.createElement('div');
   st.className = 'state-btns';
+  const estadoLabels = { pendiente: 'Pendiente de pago', preparando: 'Preparando', listo: 'Listo', enviado: 'Enviado' };
   ['pendiente','preparando','listo','enviado'].forEach(estado => {
     const b = document.createElement('button');
     b.className = 'state-btn' + (o.estado === estado ? ' active' : '');
-    b.textContent = estado;
+    b.textContent = estadoLabels[estado];
     b.onclick = () => setEstado(o.id, estado);
     st.appendChild(b);
   });
@@ -817,7 +854,7 @@ function renderHistory(list) {
     tr.onclick = () => showDetail(o);
     const cells = [
       o.creadoEn && o.creadoEn.toDate ? o.creadoEn.toDate().toLocaleString('es-AR') : '',
-      '#' + (o.id ? o.id.slice(-5).toUpperCase() : ''),
+      trackCode(o),
       (o.cliente && o.cliente.nombre) || '',
       (o.cliente && o.cliente.perfil) || '',
       o.modalidad || '',
@@ -837,21 +874,22 @@ function renderHistory(list) {
 /* =========== CSV export =========== */
 function exportCSV() {
   const list = Object.values(orders);
-  const headers = ['Fecha','Hora','Pedido','Nombre','Direccion','Localidad','Perfil','Modalidad','Items','Subtotal','Envio','Total','Nota','Estado'];
+  const headers = ['Fecha','Hora','Pedido','Nombre','Direccion','Localidad','Perfil','Modalidad','Pago','Items','Subtotal','Envio','Total','Nota','Estado'];
   const rows = [headers.join(';')];
   list.forEach(o => {
     const d = o.creadoEn && o.creadoEn.toDate ? o.creadoEn.toDate() : new Date();
     const cli = o.cliente || {};
-    const items = (o.items || []).map(i => `${i.nombre} T:${i.talle} x${i.qty}`).join(' | ');
+    const items = (o.items || []).map(i => `${i.nombre} T:${i.talle}${i.color ? ' C:' + i.color : ''} x${i.qty}`).join(' | ');
     const row = [
       d.toLocaleDateString('es-AR'),
       d.toLocaleTimeString('es-AR'),
-      (o.id || '').slice(-5).toUpperCase(),
+      (o.codigo || (o.id || '').slice(-5)).toUpperCase(),
       cli.nombre || '',
       cli.direccion || '',
       cli.localidad || '',
       cli.perfil || '',
       o.modalidad || '',
+      o.modalidad === 'retiro' ? (o.pagaEnLocal ? 'En el local' : 'QR') : 'QR',
       items,
       o.subtotal || 0,
       o.envio || 0,
@@ -1153,6 +1191,9 @@ async function submitManual() {
       cliente: cli,
       items: manualCart,
       modalidad: manualMod,
+      /* Pedido cargado por el admin (teléfono/mostrador) — se asume que ya
+         arreglaron el pago en persona, así que no dispara el flujo QR. */
+      pagaEnLocal: manualMod === 'retiro',
       subtotal: sub, envio: env, total: sub + env,
       nota,
       estado: 'pendiente',
