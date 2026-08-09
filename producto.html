@@ -255,6 +255,27 @@
     .talle-btn.active { background: #0A0A0A; color: #FFF; border-color: #0A0A0A; }
     .talle-btn:disabled { opacity: 0.3; cursor: not-allowed; text-decoration: line-through; }
 
+    /* Colores */
+    .colores-section { margin: 32px 0; }
+    .colores-label { font-size: 0.85rem; font-weight: 500; margin-bottom: 12px; }
+    .colores-grid { display: flex; flex-wrap: wrap; gap: 10px; }
+    .color-chip {
+      display: flex; align-items: center; gap: 8px;
+      padding: 6px 14px 6px 6px;
+      background: #FFF; border: 1px solid #E5E5E5; border-radius: 999px;
+      cursor: pointer; font-size: 0.82rem; font-weight: 500;
+      transition: all .2s; font-family: inherit; color: #0A0A0A;
+    }
+    .color-chip:hover:not(:disabled) { border-color: #0A0A0A; }
+    .color-chip.active { border-color: #0A0A0A; background: #FAFAFA; box-shadow: 0 0 0 1px #0A0A0A; }
+    .color-chip:disabled { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+    .color-swatch {
+      width: 20px; height: 20px; border-radius: 50%;
+      border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0;
+    }
+    .stock-info { font-size: 0.78rem; color: #666; margin-top: 8px; }
+    .stock-info.low { color: #900; }
+
     /* Qty */
     .qty-section { margin: 24px 0; }
     .qty-label { font-size: 0.85rem; font-weight: 500; margin-bottom: 12px; }
@@ -569,6 +590,14 @@
         <div class="talles-grid" id="talles-grid"></div>
       </div>
 
+      <div class="colores-section" id="colores-section" style="display:none;">
+        <div class="talles-header">
+          <div class="colores-label">Color: <span id="color-selected" style="color:#666;font-weight:300;">—</span></div>
+        </div>
+        <div class="colores-grid" id="colores-grid"></div>
+        <div class="stock-info" id="stock-info"></div>
+      </div>
+
       <div class="qty-section">
         <div class="qty-label">Cantidad</div>
         <div class="qty-ctrl">
@@ -710,6 +739,9 @@ let DATA = null;
 let PRODUCT = null;
 let CATEGORIA = null;
 let selectedTalle = null;
+let selectedColor = null;
+let stockVariantes = null;
+let stockLoadPromise = null;
 let mainImgIdx = 0;
 let entrega = 'retiro';
 let lastSubmit = 0;
@@ -799,6 +831,7 @@ function renderProduct() {
 
   renderGallery();
   renderTalles();
+  cargarStockProducto();
 
   const env = DATA.config.envio;
   document.getElementById('envio-info').textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
@@ -889,20 +922,113 @@ function renderTalles() {
   });
 }
 
-function selectTalle(t) {
+async function selectTalle(t) {
   selectedTalle = t;
+  selectedColor = null;
   document.getElementById('talle-selected').textContent = t;
   document.getElementById('talle-selected').style.color = '#0A0A0A';
   document.getElementById('talle-selected').style.fontWeight = '500';
   document.getElementById('add-cart-btn').disabled = false;
   renderTalles();
+  /* Los colores dependen del stock cargado en Firestore para este producto;
+     si todavía no llegó, esperamos el fetch antes de dibujar los chips. */
+  if (stockLoadPromise) await stockLoadPromise;
+  renderColores();
 }
 
 function chgQty(delta) {
   const inp = document.getElementById('qty');
   let v = parseInt(inp.value, 10) || 1;
-  v = Math.max(1, Math.min(999, v + delta));
+  const max = inp.max ? (parseInt(inp.max, 10) || 999) : 999;
+  v = Math.max(1, Math.min(max, v + delta));
   inp.value = v;
+}
+
+/* =========== Stock / color por talle =========== */
+function cargarStockProducto() {
+  if (!db) { stockVariantes = {}; return Promise.resolve(); }
+  stockLoadPromise = db.collection('stock').doc(String(PRODUCT.id)).get()
+    .then(snap => { stockVariantes = (snap.exists && snap.data().variantes) || {}; })
+    .catch(() => { stockVariantes = {}; });
+  return stockLoadPromise;
+}
+
+function renderColores() {
+  const section = document.getElementById('colores-section');
+  const grid = document.getElementById('colores-grid');
+  const addBtn = document.getElementById('add-cart-btn');
+  const coloresTalle = (stockVariantes && stockVariantes[selectedTalle]) || {};
+  const nombres = Object.keys(coloresTalle);
+
+  grid.innerHTML = '';
+
+  if (!nombres.length) {
+    /* Sin colores/stock cargados para este talle todavía: se mantiene el
+       comportamiento anterior (talle solo, sin bloqueo por stock) para no
+       romper productos que aún no cargaron su stock en el portal. */
+    section.style.display = 'none';
+    document.getElementById('stock-info').textContent = '';
+    addBtn.disabled = false;
+    return;
+  }
+
+  section.style.display = 'block';
+  const colorLbl = document.getElementById('color-selected');
+  if (!selectedColor) {
+    addBtn.disabled = true;
+    colorLbl.textContent = '—';
+    colorLbl.style.color = '#666';
+    colorLbl.style.fontWeight = '300';
+  }
+
+  nombres.forEach(nombre => {
+    const v = coloresTalle[nombre] || {};
+    const cant = v.cantidad || 0;
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'color-chip' + (selectedColor === nombre ? ' active' : '');
+    chip.disabled = cant <= 0;
+    const sw = document.createElement('span');
+    sw.className = 'color-swatch';
+    sw.style.background = v.hex || '#999';
+    chip.appendChild(sw);
+    chip.appendChild(document.createTextNode(nombre + (cant <= 0 ? ' (sin stock)' : '')));
+    chip.onclick = () => selectColor(nombre);
+    grid.appendChild(chip);
+  });
+
+  updateStockInfo();
+}
+
+function selectColor(c) {
+  selectedColor = c;
+  const v = ((stockVariantes[selectedTalle] || {})[c]) || { cantidad: 0 };
+  const colorLbl = document.getElementById('color-selected');
+  colorLbl.textContent = c;
+  colorLbl.style.color = '#0A0A0A';
+  colorLbl.style.fontWeight = '500';
+  document.getElementById('add-cart-btn').disabled = v.cantidad <= 0;
+  renderColores();
+  updateStockInfo();
+}
+
+function updateStockInfo() {
+  const info = document.getElementById('stock-info');
+  const qtyInput = document.getElementById('qty');
+  info.classList.remove('low');
+  if (!selectedColor) { info.textContent = ''; qtyInput.removeAttribute('max'); return; }
+  const v = ((stockVariantes[selectedTalle] || {})[selectedColor]) || { cantidad: 0 };
+  qtyInput.max = v.cantidad;
+  if (parseInt(qtyInput.value, 10) > v.cantidad) qtyInput.value = Math.max(1, v.cantidad);
+  if (v.cantidad <= 0) {
+    info.textContent = 'Sin stock disponible en este talle y color.';
+    info.classList.add('low');
+  } else if (v.cantidad <= 3) {
+    info.textContent = `¡Últimas ${v.cantidad} unidades!`;
+    info.classList.add('low');
+  } else {
+    info.textContent = `${v.cantidad} disponibles`;
+  }
 }
 
 /* =========== Guía modal =========== */
@@ -968,10 +1094,20 @@ function updateCartCount() {
 
 function addToCart() {
   if (!selectedTalle) return;
-  const qty = parseInt(document.getElementById('qty').value, 10) || 1;
+  const coloresTalle = (stockVariantes && stockVariantes[selectedTalle]) || {};
+  const tieneColores = Object.keys(coloresTalle).length > 0;
+  if (tieneColores && !selectedColor) { showToast('Elegí un color'); return; }
+
+  let qty = parseInt(document.getElementById('qty').value, 10) || 1;
+  if (tieneColores) {
+    const disponible = (coloresTalle[selectedColor] || {}).cantidad || 0;
+    if (disponible <= 0) { showToast('Sin stock en ese color'); return; }
+    if (qty > disponible) qty = disponible;
+  }
+
   const pricing = precioParaPerfil(PRODUCT);
   const cart = getCart();
-  const key = `${PRODUCT.id}__${selectedTalle}`;
+  const key = `${PRODUCT.id}__${selectedTalle}__${selectedColor || ''}`;
   const existing = cart.find(i => i.key === key);
   if (existing) {
     existing.qty += qty;
@@ -982,13 +1118,14 @@ function addToCart() {
       nombre: PRODUCT.nombre,
       categoria: CATEGORIA.nombre,
       talle: selectedTalle,
+      color: selectedColor || null,
       qty,
       precio: pricing.precio,
       imagen: (PRODUCT.imagenes || [])[0] || ''
     });
   }
   saveCart(cart);
-  showToast(`Agregado · Talle ${selectedTalle} ×${qty}`);
+  showToast(`Agregado · Talle ${selectedTalle}${selectedColor ? ' · ' + selectedColor : ''} ×${qty}`);
 }
 
 function showToast(msg) {
@@ -1341,7 +1478,12 @@ async function init() {
   }
 
   const found = findProduct(idNum);
-  if (!found || !found.producto.disponible) {
+  /* Mayoristas solo compran fabricación propia — si entran directo al link
+     de un producto de otra marca, lo tratamos como no encontrado (mismo
+     filtro que ya se aplica al listado de tienda.html). */
+  const perfilActual = localStorage.getItem(LS_PERFIL);
+  const noDisponibleParaMayorista = perfilActual === 'mayorista' && found && found.producto.fabricacion_propia === false;
+  if (!found || !found.producto.disponible || noDisponibleParaMayorista) {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('not-found').style.display = 'block';
     return;
