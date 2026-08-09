@@ -80,6 +80,14 @@ service cloud.firestore {
         && request.resource.data.solicitante.negocio is string
         && request.resource.data.solicitante.negocio.size() > 0
         && request.resource.data.solicitante.negocio.size() <= 100
+        && (
+          !('foto_negocio' in request.resource.data.solicitante)
+          || request.resource.data.solicitante.foto_negocio == null
+          || (
+            request.resource.data.solicitante.foto_negocio is string
+            && request.resource.data.solicitante.foto_negocio.size() <= 700000
+          )
+        )
         && request.resource.data.estado == 'pendiente'
         && request.resource.data.respuesta == null;
 
@@ -104,6 +112,58 @@ service cloud.firestore {
 
       /* CREATE, UPDATE, DELETE — solo admin autenticado */
       allow create, update, delete: if request.auth != null;
+    }
+
+    /* ============ STOCK ============ */
+    /* Doc ID = id del producto (string). Cantidad actual por talle+color,
+       para que la tienda pueda chequear disponibilidad y bloquear la venta
+       en 0 en tiempo real. */
+    match /stock/{productId} {
+
+      /* READ público — la tienda necesita ver cantidades disponibles
+         antes de dejar agregar al carrito */
+      allow read: if true;
+
+      /* UPDATE público limitado — es el único paso donde un cliente anónimo
+         (al confirmar un pedido) descuenta stock. Se restringe a que SOLO
+         pueda tocar los campos variantes/actualizadoEn (no puede inyectar
+         campos nuevos ni reemplazar el doc entero). No hay forma 100% de
+         garantizar por reglas que el número solo baje (requeriría Cloud
+         Functions, fuera de alcance en plan Spark) — se acepta el mismo
+         nivel de riesgo que ya se documentó para /pedidos: shape validation,
+         no protección económica perfecta. El movimiento negativo real queda
+         auditado en la subcolección de abajo, que sí está más restringida. */
+      allow update: if
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variantes', 'actualizadoEn'])
+        && request.resource.data.variantes is map;
+
+      /* CREATE y DELETE del doc de stock — solo admin (alta de producto nuevo) */
+      allow create, delete: if request.auth != null;
+
+      /* Historial de movimientos (entradas/salidas por día) */
+      match /movimientos/{movId} {
+
+        /* READ solo admin — es data operativa interna, no hace falta
+           exponerla públicamente */
+        allow read: if request.auth != null;
+
+        /* CREATE: el admin puede crear cualquier movimiento (ingresos,
+           ajustes, import CSV — positivos o negativos). Un cliente anónimo
+           SOLO puede crear movimientos negativos (ventas) — nunca puede
+           inflar stock propio ni ajeno. */
+        allow create: if
+          request.resource.data.keys().hasAll(['talle', 'color', 'delta', 'motivo', 'fecha'])
+          && request.resource.data.talle is string
+          && request.resource.data.color is string
+          && request.resource.data.delta is number
+          && (
+            request.auth != null
+            || request.resource.data.delta < 0
+          );
+
+        /* UPDATE y DELETE — nunca, ni admin. El historial es append-only. */
+        allow update, delete: if false;
+      }
     }
   }
 }
