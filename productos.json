@@ -2,10 +2,10 @@
   "negocio": {
     "nombre": "Cattorini",
     "nombre_completo": "Cattorini — Camisas y Pantalones",
-    "tagline": "Fábrica textil en Las Flores desde 1978",
-    "descripcion_corta": "Fábrica de camisas, pantalones y jeans. Venta mayorista a todo el país y minorista en local de Las Flores.",
-    "descripcion_larga": "Somos una fábrica textil familiar ubicada en Las Flores, provincia de Buenos Aires. Producimos camisas, pantalones y jeans con estándares de calidad industrial y atención al detalle artesanal. Vendemos por mayor a comercios de todo el país y al público en nuestro local propio.",
-    "whatsapp": "5492244454040",
+    "tagline": "Textil de Las Flores desde 1959",
+    "descripcion_corta": "Camisas, pantalones y jeans. Venta mayorista a todo el país y minorista en local de Las Flores.",
+    "descripcion_larga": "Somos una marca textil familiar de Las Flores, provincia de Buenos Aires, con más de 60 años de trayectoria. Camisas, pantalones y jeans con estándares de calidad y atención al detalle en cada prenda. Vendemos por mayor a comercios de todo el país y al público en nuestro local propio.",
+    "whatsapp": "5492244429515",
     "telefono": "02244 45-4040",
     "direccion": "Sarmiento esquina 25 de Mayo, Las Flores, B7200, Buenos Aires",
     "direccion_corta": "Sarmiento y 25 de Mayo, Las Flores",
@@ -17,7 +17,7 @@
     "maps_embed": "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3244.5!2d-59.0928!3d-36.0111!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sSarmiento%20y%2025%20de%20Mayo%2C%20Las%20Flores!5e0!3m2!1ses!2sar!4v1700000000000",
     "rating": 4.3,
     "resenas_count": 23,
-    "fundacion": 1978,
+    "fundacion": 1959,
     "analytics_id": ""
   },
   "config": {
@@ -283,7 +283,8 @@
           "imagenes": [
             "camisa-oxford-blanca-1.jpg",
             "camisa-oxford-blanca-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 2,
@@ -302,7 +303,8 @@
           "imagenes": [
             "camisa-oxford-celeste-1.jpg",
             "camisa-oxford-celeste-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 3,
@@ -321,7 +323,8 @@
           "imagenes": [
             "camisa-grafa-1.jpg",
             "camisa-grafa-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 10,
@@ -338,7 +341,8 @@
           "destacado": false,
           "imagenes": [
             "p10-1786037697183-asdw.jpeg"
-          ]
+          ],
+          "fabricacion_propia": true
         }
       ]
     },
@@ -368,7 +372,8 @@
           "imagenes": [
             "pantalon-vestir-negro-1.jpg",
             "pantalon-vestir-negro-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 5,
@@ -388,7 +393,8 @@
           "imagenes": [
             "pantalon-vestir-gris-1.jpg",
             "pantalon-vestir-gris-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 6,
@@ -408,7 +414,8 @@
           "imagenes": [
             "pantalon-grafa-1.jpg",
             "pantalon-grafa-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         }
       ]
     },
@@ -438,7 +445,8 @@
           "imagenes": [
             "jean-clasico-azul-1.jpg",
             "jean-clasico-azul-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 8,
@@ -457,7 +465,8 @@
           "imagenes": [
             "jean-slim-negro-1.jpg",
             "jean-slim-negro-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         },
         {
           "id": 9,
@@ -477,7 +486,8 @@
           "imagenes": [
             "jean-trabajo-1.jpg",
             "jean-trabajo-2.jpg"
-          ]
+          ],
+          "fabricacion_propia": true
         }
       ]
     }
@@ -485,12 +495,12 @@
   "textos": {
     "hero": {
       "titulo": "Camisas, pantalones y jeans",
-      "subtitulo": "Fabricamos desde 1978 en Las Flores. Venta mayorista a todo el país y minorista en nuestro local.",
+      "subtitulo": "Desde 1959 en Las Flores. Venta mayorista a todo el país y minorista en nuestro local.",
       "cta": "Ver catálogo"
     },
     "fabrica": {
-      "titulo": "Nuestra fábrica",
-      "texto": "Más de cuatro décadas produciendo indumentaria en Las Flores. Un equipo estable, máquinas propias y el orgullo de fabricar cada prenda en Argentina. Cada corte, cada costura y cada terminación pasa por nuestras manos."
+      "titulo": "Nuestra Producción",
+      "texto": "Más de sesenta años vistiendo a Las Flores y a comercios de todo el país. Seleccionamos cada prenda con el mismo criterio desde 1959: buena tela, buena terminación y el respeto por los plazos de entrega."
     },
     "local": {
       "titulo": "Visitá el local",
@@ -502,8 +512,8 @@
       "cta": "Solicitar cuenta mayorista"
     },
     "confianza": {
-      "titulo": "Fábrica con historia",
-      "texto": "Trabajamos hace más de 45 años. Nuestros clientes nos eligen por la calidad de la confección y el respeto por los plazos de entrega."
+      "titulo": "Trayectoria con historia",
+      "texto": "Trabajamos hace más de 60 años. Nuestros clientes nos eligen por la calidad de la confección y el respeto por los plazos de entrega."
     },
     "footer": {
       "texto": "Cattorini · Fabricación textil argentina · Las Flores, provincia de Buenos Aires."
