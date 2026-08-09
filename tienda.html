@@ -82,6 +82,13 @@
       display: flex; align-items: center; gap: 6px;
     }
     .back-link:hover { opacity: 0.6; }
+    .header-right { display: flex; align-items: center; gap: 16px; }
+    .track-link {
+      font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase;
+      color: #0A0A0A; text-decoration: none;
+      white-space: nowrap;
+    }
+    .track-link:hover { opacity: 0.6; }
     .brand-logo {
       display: flex; align-items: center;
       text-decoration: none; color: #0A0A0A;
@@ -570,9 +577,12 @@
     <a href="./index.html" class="brand-logo" aria-label="Cattorini — Ir al inicio">
       <img src="./img/logo.jpeg" alt="Cattorini" />
     </a>
-    <button class="cart-btn" onclick="openCart()" aria-label="Ver mi pedido">
-      Pedido <span class="cart-badge" id="cart-count">0</span>
-    </button>
+    <div class="header-right">
+      <a href="./seguimiento.html" class="track-link">Mis pedidos</a>
+      <button class="cart-btn" onclick="openCart()" aria-label="Ver mi pedido">
+        Pedido <span class="cart-badge" id="cart-count">0</span>
+      </button>
+    </div>
   </div>
   <div id="perfil-badge" style="display: none;"></div>
   <div class="cat-strip" id="cat-strip"></div>
@@ -753,7 +763,7 @@
       <p style="color:#666;font-size:0.82rem;margin-bottom:14px;line-height:1.5;">
         Escaneá el QR con cualquier billetera virtual que ofrezca pagos QR (Mercado Pago, Cuenta DNI, etc.) para abonar tu pedido.
       </p>
-      <img src="./img/qr-pago.jpg" alt="QR de pago" style="width:180px;height:180px;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin-bottom:14px;" />
+      <img src="./img/qr-pago.jpg" alt="QR de pago" style="display:block;width:220px;height:220px;max-width:100%;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin:0 auto 14px;" />
       <p style="color:#666;font-size:0.82rem;line-height:1.5;">
         ¿Preferís pagar por otro medio? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
       </p>
