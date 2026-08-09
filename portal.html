@@ -274,6 +274,7 @@
     <button class="tab-btn" data-tab="talles">Guía talles</button>
     <button class="tab-btn" data-tab="horarios">Horarios</button>
     <button class="tab-btn" data-tab="catalogo">Catálogo</button>
+    <button class="tab-btn" data-tab="stock">Stock</button>
     <button class="tab-btn" data-tab="textos">Textos</button>
     <button class="tab-btn" data-tab="imagenes">Imágenes</button>
   </div>
@@ -323,7 +324,7 @@
         <button class="subtab-btn active" data-subtab="config">Configuración</button>
         <button class="subtab-btn" data-subtab="solicitudes">Solicitudes <span id="badge-sub-sol" style="background:#900;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;display:none;">0</span></button>
         <button class="subtab-btn" data-subtab="alta">Alta manual</button>
-        <button class="subtab-btn" data-subtab="activos">Activos <span id="badge-activos" style="background:#0A0A0A;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;">0</span></button>
+        <button class="subtab-btn" data-subtab="activos">Activos <span id="badge-activos" style="background:#0A0A0A;color:#FFF;font-size:0.65rem;padding:1px 6px;margin-left:4px;">···</span></button>
       </div>
 
       <!-- Sub-tab: Configuración general -->
@@ -503,7 +504,59 @@
           <h3 class="serif text-xl">Categorías y productos</h3>
           <button class="btn-ghost" onclick="addCategoria()">+ Nueva categoría</button>
         </div>
+        <input class="inp mb-4" id="cat-search" placeholder="Buscar producto por nombre..." oninput="catSearchQuery = this.value; renderCategorias();" />
         <div id="cat-list"></div>
+      </div>
+    </div>
+
+    <!-- Tab Stock — con sub-tabs internos -->
+    <div class="tab-panel" id="tab-stock">
+      <div class="subtabs-nav">
+        <button class="subtab-btn active" data-subtab="stock-editar">Editar</button>
+        <button class="subtab-btn" data-subtab="stock-import">Importar CSV</button>
+        <button class="subtab-btn" data-subtab="stock-historial">Historial</button>
+      </div>
+
+      <div class="subtab-panel active" id="subtab-stock-editar">
+        <div class="card">
+          <h3 class="serif text-xl mb-4">Editar stock por talle y color</h3>
+          <div style="max-width:420px;margin-bottom:16px;">
+            <label class="lbl">Producto</label>
+            <select class="inp" id="stock-prod-select" onchange="renderStockEditor()"></select>
+          </div>
+          <div id="stock-editor"></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" id="subtab-stock-import">
+        <div class="card">
+          <h3 class="serif text-xl mb-4">Importar variación de stock (CSV)</h3>
+          <p class="text-sm mb-4" style="color:var(--muted);">
+            Formato: <code>producto_id,talle,color,delta,motivo</code> — una fila por movimiento del día.
+            <code>delta</code> es lo que entró (positivo) o salió (negativo) hoy, no el total. <code>motivo</code> es opcional.
+            Si el color no existía para ese talle, se crea (con un color gris por defecto, editable después en "Editar").
+          </p>
+          <textarea class="inp" id="stock-csv-input" rows="8" placeholder="12,M,Rojo,10,Ingreso de mercadería&#10;12,M,Azul,-2,Venta en local&#10;15,L,Negro,5"></textarea>
+          <div class="flex gap-2 mt-3">
+            <label class="btn-ghost" style="cursor:pointer;">
+              Cargar archivo .csv
+              <input type="file" accept=".csv,text/csv" style="display:none;" onchange="cargarCSVArchivo(this)" />
+            </label>
+            <button class="btn" style="background:#0A0A0A;color:#FFF;" onclick="importarStockCSV()">Importar</button>
+          </div>
+          <div id="stock-import-status" class="text-sm mt-3"></div>
+        </div>
+      </div>
+
+      <div class="subtab-panel" id="subtab-stock-historial">
+        <div class="card">
+          <h3 class="serif text-xl mb-4">Historial de movimientos</h3>
+          <div style="max-width:420px;margin-bottom:16px;">
+            <label class="lbl">Producto</label>
+            <select class="inp" id="stock-hist-select" onchange="renderStockHistorial()"></select>
+          </div>
+          <div id="stock-historial-list"></div>
+        </div>
       </div>
     </div>
 
@@ -518,8 +571,8 @@
 
           <div style="grid-column:1/-1;"><hr style="border:none;border-top:1px solid #E5E5E5;margin:8px 0;" /></div>
 
-          <div><label class="lbl">Fábrica · título</label><input class="inp" data-field="textos.fabrica.titulo" /></div>
-          <div style="grid-column:1/-1;"><label class="lbl">Fábrica · texto</label><textarea class="inp" rows="3" data-field="textos.fabrica.texto"></textarea></div>
+          <div><label class="lbl">Producción · título</label><input class="inp" data-field="textos.fabrica.titulo" /></div>
+          <div style="grid-column:1/-1;"><label class="lbl">Producción · texto</label><textarea class="inp" rows="3" data-field="textos.fabrica.texto"></textarea></div>
 
           <div style="grid-column:1/-1;"><hr style="border:none;border-top:1px solid #E5E5E5;margin:8px 0;" /></div>
 
@@ -558,17 +611,22 @@
             <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'hero-local.jpg','hero')" />Subir imagen del local</label>
           </div>
           <div>
-            <label class="lbl">Fábrica</label>
+            <label class="lbl">Producción</label>
             <div id="img-fabrica-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
-            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'fabrica.jpg','fabrica')" />Subir foto de la fábrica</label>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'fabrica.jpg','fabrica')" />Subir foto de producción</label>
           </div>
           <div>
             <label class="lbl">Local (interior)</label>
             <div id="img-local-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
             <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'local.jpg','local')" />Subir foto del local</label>
           </div>
+          <div>
+            <label class="lbl">QR de pago</label>
+            <div id="img-qr_pago-preview" style="aspect-ratio:1;max-width:200px;background:#F5F5F5;background-size:contain;background-repeat:no-repeat;background-position:center;margin-bottom:8px;"></div>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'qr-pago.jpg','qr_pago')" />Subir QR de pago</label>
+          </div>
         </div>
-        <div class="msg-info mt-4">Las imágenes se suben al repositorio de GitHub. Puede tardar unos segundos.</div>
+        <div class="msg-info mt-4">Las imágenes se suben al repositorio de GitHub. Puede tardar unos segundos. El QR de pago es el que ven los clientes al confirmar un pedido con envío — subí una captura del QR estático de tu billetera virtual (Mercado Pago, etc.). Si cambiás de billetera, solo tenés que reemplazar esta imagen.</div>
       </div>
     </div>
 
@@ -812,8 +870,25 @@ async function publishChanges() {
   try {
     setStatus('Publicando...');
     const content = JSON.stringify(data, null, 2);
+
+    /* Releer el archivo remoto justo antes de publicar (no confiar en el sha
+       cacheado desde el último loadRemote): evita 409 por sha desactualizado
+       si hubo otro publish en el medio (ej. otra pestaña, o "bloquear zona"
+       auto-publicando), y permite comparar contra el contenido REAL actual
+       en vez de contra lo que había al abrir el portal. */
+    const remote = await ghGet(FILE_PATH);
+    const remoteContent = base64UnicodeDecode(remote.content);
+
+    if (remoteContent === content) {
+      dirty = false;
+      document.getElementById('save-bar').style.display = 'none';
+      setStatus('Sin cambios', 'ok');
+      alert('No hay cambios reales para publicar: el contenido editado es idéntico al que ya está en el sitio. Si esperabas ver un cambio, revisá que el campo que tocaste realmente se haya guardado antes de publicar.');
+      return;
+    }
+
     const b64 = base64UnicodeEncode(content);
-    const res = await ghPut(FILE_PATH, b64, dataSha, 'chore: actualizar productos.json desde portal');
+    const res = await ghPut(FILE_PATH, b64, remote.sha, 'chore: actualizar productos.json desde portal');
     dataSha = res.content.sha;
     dirty = false;
     document.getElementById('save-bar').style.display = 'none';
@@ -853,6 +928,16 @@ ${urls.map(u => `  <url>
   </url>`).join('\n')}
 </urlset>
 `;
+    /* Evitar commits vacíos: si el sitemap no cambió (mismo set de productos
+       disponibles, mismo día), no publicar de nuevo — antes generaba un
+       commit con 0 archivos modificados que confundía el diagnóstico de
+       publicaciones reales. */
+    if (existing) {
+      const existingXml = base64UnicodeDecode(existing.content).replace(/<lastmod>[\d-]+<\/lastmod>/g, '<lastmod/>');
+      const newXmlNoDate = xml.replace(/<lastmod>[\d-]+<\/lastmod>/g, '<lastmod/>');
+      if (existingXml === newXmlNoDate) return;
+    }
+
     const b64 = base64UnicodeEncode(xml);
     await ghPut(SITEMAP_PATH, b64, existing ? existing.sha : null, 'chore: actualizar sitemap.xml');
   } catch (e) {
@@ -894,6 +979,7 @@ function renderAll() {
   renderHorarios();
   renderCategorias();
   renderImagenes();
+  poblarSelectsStock();
 }
 
 /* ---- Zonas ---- */
@@ -1038,11 +1124,15 @@ function renderTalles() {
     meds.innerHTML = '<label class="lbl">Nombres de columnas (separados por coma)</label>';
     const medI = document.createElement('input'); medI.className = 'inp';
     medI.value = (guia[tipo].medidas || []).join(', ');
+    /* oninput solo guarda el dato (sin reconstruir la tabla) para no perder
+       el foco ni saltar de scroll en cada tecla. La tabla de columnas se
+       reconstruye recién en onchange (al salir del campo o Enter), que es
+       el único momento en que hace falta ver las columnas nuevas reflejadas. */
     medI.oninput = () => {
       guia[tipo].medidas = medI.value.split(',').map(s => s.trim()).filter(Boolean);
       markDirty();
-      renderTalles();
     };
+    medI.onchange = () => renderTalles();
     meds.appendChild(medI); g.appendChild(meds);
     row.appendChild(g);
 
@@ -1181,12 +1271,21 @@ function renderHorarios() {
 }
 
 /* ---- Categorías + productos ---- */
+let catSearchQuery = '';
+let catExpandedIds = new Set();
+
 function renderCategorias() {
   const cont = document.getElementById('cat-list');
   cont.innerHTML = '';
   data.categorias = data.categorias || [];
+  const q = catSearchQuery.trim().toLowerCase();
 
   data.categorias.forEach((cat, ci) => {
+    /* Con búsqueda activa, se muestran solo los productos que matchean —
+       si ninguno matchea en esta categoría, la categoría entera se oculta. */
+    const productosVisibles = (cat.productos || []).filter(p => !q || (p.nombre || '').toLowerCase().includes(q));
+    if (q && !productosVisibles.length) return;
+
     const catBox = document.createElement('div');
     catBox.className = 'item-row';
 
@@ -1205,7 +1304,7 @@ function renderCategorias() {
     delC.className = 'btn-danger'; delC.textContent = 'Eliminar categoría';
     delC.onclick = () => {
       if (!confirm('Eliminar categoría y todos sus productos?')) return;
-      data.categorias.splice(ci, 1); markDirty(); renderCategorias();
+      data.categorias.splice(ci, 1); markDirty(); renderCategorias(); poblarSelectsStock();
     };
     acts.appendChild(addP); acts.appendChild(delC);
     head.appendChild(title); head.appendChild(acts);
@@ -1236,6 +1335,7 @@ function renderCategorias() {
     const prodsWrap = document.createElement('div');
     prodsWrap.style.marginTop = '16px';
     (cat.productos || []).forEach((p, pi) => {
+      if (q && !productosVisibles.includes(p)) return;
       prodsWrap.appendChild(renderProductRow(cat, ci, p, pi));
     });
     catBox.appendChild(prodsWrap);
@@ -1251,8 +1351,17 @@ function renderProductRow(cat, ci, p, pi) {
   const head = document.createElement('div');
   head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
   const title = document.createElement('div');
-  title.style.fontWeight = '500';
-  title.textContent = `#${p.id} · ${p.nombre || '(sin nombre)'}`;
+  title.style.cssText = 'font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;';
+  const chevron = document.createElement('span');
+  chevron.textContent = catExpandedIds.has(p.id) ? '▾' : '▸';
+  chevron.style.cssText = 'font-size:0.7rem;color:#999;';
+  const titleTxt = document.createElement('span');
+  titleTxt.textContent = `#${p.id} · ${p.nombre || '(sin nombre)'}`;
+  title.appendChild(chevron); title.appendChild(titleTxt);
+  title.onclick = () => {
+    if (catExpandedIds.has(p.id)) catExpandedIds.delete(p.id); else catExpandedIds.add(p.id);
+    renderCategorias();
+  };
   const acts = document.createElement('div');
   acts.style.display = 'flex'; acts.style.gap = '6px'; acts.style.alignItems = 'center';
 
@@ -1280,15 +1389,31 @@ function renderProductRow(cat, ci, p, pi) {
   destLbl.appendChild(destSw); destLbl.appendChild(document.createTextNode('Dest.'));
   acts.appendChild(destLbl);
 
+  const propLbl = document.createElement('label');
+  propLbl.style.cssText = 'display:flex;align-items:center;gap:6px;font-size:0.78rem;';
+  propLbl.title = 'Si está apagado, el producto es de otra marca: solo se vende a minoristas, nunca aparece en el catálogo mayorista.';
+  const propSw = document.createElement('label');
+  propSw.className = 'switch';
+  const propIn = document.createElement('input'); propIn.type = 'checkbox';
+  propIn.checked = p.fabricacion_propia !== false;
+  propIn.onchange = () => { p.fabricacion_propia = propIn.checked; markDirty(); };
+  const propSp = document.createElement('span'); propSp.className = 'slider';
+  propSw.appendChild(propIn); propSw.appendChild(propSp);
+  propLbl.appendChild(propSw); propLbl.appendChild(document.createTextNode('Fab. propia'));
+  acts.appendChild(propLbl);
+
   const del = document.createElement('button');
   del.className = 'btn-danger'; del.textContent = 'Eliminar';
   del.onclick = () => {
     if (!confirm('Eliminar producto?')) return;
-    cat.productos.splice(pi, 1); markDirty(); renderCategorias();
+    cat.productos.splice(pi, 1); markDirty(); renderCategorias(); poblarSelectsStock();
   };
   acts.appendChild(del);
   head.appendChild(title); head.appendChild(acts);
   box.appendChild(head);
+
+  const detail = document.createElement('div');
+  detail.style.display = catExpandedIds.has(p.id) ? 'block' : 'none';
 
   const g = document.createElement('div');
   g.className = 'grid-2';
@@ -1306,11 +1431,11 @@ function renderProductRow(cat, ci, p, pi) {
     inp.oninput = () => {
       p[f] = t === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
       markDirty();
-      if (f === 'nombre') title.textContent = `#${p.id} · ${p.nombre}`;
+      if (f === 'nombre') titleTxt.textContent = `#${p.id} · ${p.nombre}`;
     };
     w.appendChild(lb); w.appendChild(inp); g.appendChild(w);
   });
-  box.appendChild(g);
+  detail.appendChild(g);
 
   const descW = document.createElement('div');
   descW.style.marginTop = '8px';
@@ -1319,7 +1444,7 @@ function renderProductRow(cat, ci, p, pi) {
   dInp.value = p.descripcion || '';
   dInp.oninput = () => { p.descripcion = dInp.value; markDirty(); };
   descW.appendChild(dLbl); descW.appendChild(dInp);
-  box.appendChild(descW);
+  detail.appendChild(descW);
 
   /* Talles disponibles */
   const tallesW = document.createElement('div');
@@ -1352,7 +1477,7 @@ function renderProductRow(cat, ci, p, pi) {
     tallesW.appendChild(w);
   }
   tallesW.appendChild(chips);
-  box.appendChild(tallesW);
+  detail.appendChild(tallesW);
 
   /* Imágenes */
   const imgsW = document.createElement('div');
@@ -1384,7 +1509,8 @@ function renderProductRow(cat, ci, p, pi) {
   up.appendChild(document.createTextNode('+ Subir imágenes'));
   imgsW.appendChild(up);
 
-  box.appendChild(imgsW);
+  detail.appendChild(imgsW);
+  box.appendChild(detail);
 
   return box;
 }
@@ -1414,14 +1540,16 @@ function addProducto(ci) {
     talles_disponibles: [],
     disponible: true,
     destacado: false,
+    fabricacion_propia: true,
     imagenes: []
   });
-  markDirty(); renderCategorias();
+  catExpandedIds.add(nextId);
+  markDirty(); renderCategorias(); poblarSelectsStock();
 }
 
 /* ---- Imágenes generales ---- */
 function renderImagenes() {
-  const map = { logo: 'logo.jpeg', hero: 'hero-local.jpg', fabrica: 'fabrica.jpg', local: 'local.jpg' };
+  const map = { logo: 'logo.jpeg', hero: 'hero-local.jpg', fabrica: 'fabrica.jpg', local: 'local.jpg', qr_pago: 'qr-pago.jpg' };
   Object.entries(map).forEach(([k, filename]) => {
     const el = document.getElementById(`img-${k}-preview`);
     if (el) el.style.backgroundImage = `url('./img/${filename}?v=${Date.now()}')`;
@@ -1477,6 +1605,263 @@ function fileToBase64(file) {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+/* ============ Stock (Firestore: stock/{productId} + subcolección movimientos) ============
+   La cantidad y los colores viven en Firestore (no en productos.json) porque
+   cambian todos los días — así no hace falta "Publicar cambios" cada vez que
+   se ajusta stock. talles_disponibles (qué talles tiene el producto) sigue
+   siendo del catálogo estático; los COLORES de cada talle sólo existen acá. */
+function flattenProductos() {
+  const out = [];
+  (data.categorias || []).forEach(cat => {
+    (cat.productos || []).forEach(p => out.push({ id: p.id, nombre: p.nombre, cat }));
+  });
+  return out.sort((a, b) => a.nombre.localeCompare(b.nombre));
+}
+
+function poblarSelectsStock() {
+  const prods = flattenProductos();
+  ['stock-prod-select', 'stock-hist-select'].forEach(selId => {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    const prev = sel.value;
+    sel.innerHTML = '';
+    if (!prods.length) {
+      sel.innerHTML = '<option value="">(no hay productos todavía)</option>';
+      return;
+    }
+    prods.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.id; opt.textContent = `#${p.id} · ${p.nombre}`;
+      sel.appendChild(opt);
+    });
+    if (prev && prods.some(p => String(p.id) === prev)) sel.value = prev;
+  });
+  if (document.getElementById('subtab-stock-editar').classList.contains('active')) renderStockEditor();
+}
+
+async function getStockDoc(productId) {
+  const snap = await fbDb.collection('stock').doc(String(productId)).get();
+  return snap.exists ? snap.data() : { variantes: {} };
+}
+
+/* delta: +N entrada, -N salida. Si hex viene definido, fija/actualiza el color de esa variante. */
+async function ajustarStock(productId, talle, color, delta, motivo, hex) {
+  const okAuth = await esperarAuth();
+  if (!okAuth) throw new Error(mensajeErrorAuth());
+  const ref = fbDb.collection('stock').doc(String(productId));
+  const fecha = new Date().toISOString().split('T')[0];
+  let nuevaCantidad = 0;
+  await fbDb.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    const variantes = (doc.exists && doc.data().variantes) || {};
+    variantes[talle] = variantes[talle] || {};
+    const prev = variantes[talle][color];
+    const actual = (prev && prev.cantidad) || 0;
+    nuevaCantidad = actual + delta;
+    if (nuevaCantidad < 0) throw new Error(`Stock insuficiente en ${talle}/${color}: hay ${actual}, se pidió restar ${-delta}.`);
+    variantes[talle][color] = {
+      cantidad: nuevaCantidad,
+      hex: hex || (prev && prev.hex) || '#999999'
+    };
+    tx.set(ref, { variantes, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+  });
+  if (delta !== 0) {
+    await ref.collection('movimientos').add({
+      talle, color, delta, cantidadResultante: nuevaCantidad,
+      motivo: motivo || 'Ajuste manual', fecha,
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  return nuevaCantidad;
+}
+
+async function eliminarColorStock(productId, talle, color) {
+  if (!confirm(`Eliminar el color "${color}" del talle ${talle}? Se pierde el stock cargado (queda registrado en el historial).`)) return;
+  const okAuth = await esperarAuth();
+  if (!okAuth) { alert(mensajeErrorAuth()); return; }
+  const ref = fbDb.collection('stock').doc(String(productId));
+  let cantidadPrevia = 0;
+  await fbDb.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return;
+    const variantes = doc.data().variantes || {};
+    if (!variantes[talle] || !variantes[talle][color]) return;
+    cantidadPrevia = variantes[talle][color].cantidad || 0;
+    delete variantes[talle][color];
+    tx.set(ref, { variantes, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+  });
+  if (cantidadPrevia !== 0) {
+    await ref.collection('movimientos').add({
+      talle, color, delta: -cantidadPrevia, cantidadResultante: 0,
+      motivo: 'Color eliminado', fecha: new Date().toISOString().split('T')[0],
+      ts: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+  renderStockEditor();
+}
+
+async function renderStockEditor() {
+  const sel = document.getElementById('stock-prod-select');
+  const cont = document.getElementById('stock-editor');
+  cont.innerHTML = '';
+  const productId = sel && sel.value;
+  if (!productId) { cont.textContent = 'Elegí un producto.'; return; }
+  const prods = flattenProductos();
+  const info = prods.find(p => String(p.id) === String(productId));
+  const p = info && (info.cat.productos || []).find(x => String(x.id) === String(productId));
+  if (!p) { cont.textContent = 'Producto no encontrado.'; return; }
+
+  cont.textContent = 'Cargando...';
+  const stockDoc = await getStockDoc(productId);
+  cont.innerHTML = '';
+
+  const talles = p.talles_disponibles || [];
+  if (!talles.length) {
+    cont.innerHTML = '<div style="color:#900;font-size:0.85rem;">Este producto no tiene talles marcados en el tab Catálogo — marcá al menos uno antes de cargar stock.</div>';
+    return;
+  }
+
+  talles.forEach(talle => {
+    const box = document.createElement('div');
+    box.className = 'item-row';
+    box.style.marginBottom = '14px';
+    const h = document.createElement('div');
+    h.style.cssText = 'font-weight:500;margin-bottom:10px;';
+    h.textContent = 'Talle ' + talle;
+    box.appendChild(h);
+
+    const tabla = document.createElement('table');
+    tabla.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.85rem;margin-bottom:10px;';
+    const colores = (stockDoc.variantes && stockDoc.variantes[talle]) || {};
+    Object.entries(colores).forEach(([color, v]) => {
+      const tr = document.createElement('tr');
+
+      const tdSw = document.createElement('td'); tdSw.style.cssText = 'padding:6px;width:28px;';
+      const hexIn = document.createElement('input'); hexIn.type = 'color'; hexIn.value = v.hex || '#999999';
+      hexIn.style.cssText = 'width:28px;height:28px;border:none;cursor:pointer;';
+      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value).then(renderStockEditor);
+      tdSw.appendChild(hexIn); tr.appendChild(tdSw);
+
+      const tdN = document.createElement('td'); tdN.style.padding = '6px'; tdN.textContent = color;
+      tr.appendChild(tdN);
+
+      const tdQ = document.createElement('td'); tdQ.style.padding = '6px'; tdQ.style.width = '110px';
+      const qIn = document.createElement('input'); qIn.type = 'number'; qIn.className = 'inp'; qIn.value = v.cantidad || 0;
+      qIn.onchange = async () => {
+        const nuevo = parseInt(qIn.value, 10) || 0;
+        const delta = nuevo - (v.cantidad || 0);
+        if (delta === 0) return;
+        try {
+          await ajustarStock(productId, talle, color, delta, delta > 0 ? 'Ingreso manual' : 'Ajuste manual');
+          renderStockEditor();
+        } catch (e) { alert(e.message); qIn.value = v.cantidad || 0; }
+      };
+      tdQ.appendChild(qIn); tr.appendChild(tdQ);
+
+      const tdA = document.createElement('td'); tdA.style.padding = '6px';
+      const delBtn = document.createElement('button'); delBtn.className = 'btn-danger'; delBtn.textContent = '×';
+      delBtn.onclick = () => eliminarColorStock(productId, talle, color);
+      tdA.appendChild(delBtn); tr.appendChild(tdA);
+
+      tabla.appendChild(tr);
+    });
+    box.appendChild(tabla);
+
+    /* Agregar color nuevo */
+    const addRow = document.createElement('div');
+    addRow.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;';
+    const nameIn = document.createElement('input'); nameIn.className = 'inp'; nameIn.placeholder = 'Nombre del color (ej: Rojo)'; nameIn.style.maxWidth = '180px';
+    const hexNew = document.createElement('input'); hexNew.type = 'color'; hexNew.value = '#888888'; hexNew.style.cssText = 'width:28px;height:28px;border:none;cursor:pointer;';
+    const qtyNew = document.createElement('input'); qtyNew.type = 'number'; qtyNew.className = 'inp'; qtyNew.placeholder = 'Stock inicial'; qtyNew.style.maxWidth = '110px'; qtyNew.value = 0;
+    const addBtn = document.createElement('button'); addBtn.className = 'btn-ghost'; addBtn.textContent = '+ Agregar color';
+    addBtn.onclick = async () => {
+      const nombre = nameIn.value.trim();
+      if (!nombre) { alert('Poné un nombre de color.'); return; }
+      if (colores[nombre]) { alert('Ese color ya existe para este talle — editalo en la tabla.'); return; }
+      const cant = parseInt(qtyNew.value, 10) || 0;
+      try {
+        await ajustarStock(productId, talle, nombre, cant, 'Alta inicial', hexNew.value);
+        renderStockEditor();
+      } catch (e) { alert(e.message); }
+    };
+    addRow.appendChild(nameIn); addRow.appendChild(hexNew); addRow.appendChild(qtyNew); addRow.appendChild(addBtn);
+    box.appendChild(addRow);
+
+    cont.appendChild(box);
+  });
+}
+
+/* ---- Import CSV ---- */
+function cargarCSVArchivo(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById('stock-csv-input').value = reader.result; };
+  reader.readAsText(file, 'UTF-8');
+  input.value = '';
+}
+
+async function importarStockCSV() {
+  const raw = document.getElementById('stock-csv-input').value.trim();
+  const statusEl = document.getElementById('stock-import-status');
+  if (!raw) { statusEl.textContent = 'Pegá o cargá un CSV primero.'; return; }
+  const lineas = raw.split('\n').map(l => l.trim()).filter(Boolean);
+  let ok = 0, errores = [];
+  statusEl.textContent = 'Importando...';
+  for (let i = 0; i < lineas.length; i++) {
+    const cols = lineas[i].split(',').map(c => c.trim());
+    const [productoId, talle, color, deltaStr, motivo] = cols;
+    if (!productoId || !talle || !color || deltaStr === undefined) {
+      errores.push(`Línea ${i + 1}: faltan columnas (esperado producto_id,talle,color,delta[,motivo])`);
+      continue;
+    }
+    const delta = parseFloat(deltaStr);
+    if (isNaN(delta)) { errores.push(`Línea ${i + 1}: delta "${deltaStr}" no es un número`); continue; }
+    try {
+      await ajustarStock(productoId, talle, color, delta, motivo || 'Importación CSV');
+      ok++;
+    } catch (e) {
+      errores.push(`Línea ${i + 1} (#${productoId} ${talle}/${color}): ${e.message}`);
+    }
+  }
+  statusEl.innerHTML = `${ok} movimiento(s) importado(s) correctamente.` +
+    (errores.length ? `<br><span style="color:#900;">${errores.length} error(es):<br>${errores.map(e => '· ' + e).join('<br>')}</span>` : '');
+  if (ok > 0) renderStockEditor();
+}
+
+/* ---- Historial ---- */
+async function renderStockHistorial() {
+  const sel = document.getElementById('stock-hist-select');
+  const cont = document.getElementById('stock-historial-list');
+  const productId = sel && sel.value;
+  if (!productId) { cont.textContent = 'Elegí un producto.'; return; }
+  cont.textContent = 'Cargando...';
+  try {
+    const snap = await fbDb.collection('stock').doc(String(productId))
+      .collection('movimientos').orderBy('ts', 'desc').limit(100).get();
+    cont.innerHTML = '';
+    if (snap.empty) { cont.textContent = 'Sin movimientos registrados todavía.'; return; }
+    const tabla = document.createElement('table');
+    tabla.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.85rem;';
+    tabla.innerHTML = '<thead><tr>' +
+      ['Fecha', 'Talle', 'Color', 'Movimiento', 'Resultado', 'Motivo'].map(h => `<th style="text-align:left;padding:6px;background:#F5F5F5;">${h}</th>`).join('') +
+      '</tr></thead>';
+    const tbody = document.createElement('tbody');
+    snap.forEach(doc => {
+      const m = doc.data();
+      const tr = document.createElement('tr');
+      const signo = m.delta > 0 ? '+' : '';
+      tr.innerHTML = `<td style="padding:6px;">${m.fecha || ''}</td><td style="padding:6px;">${m.talle || ''}</td><td style="padding:6px;">${m.color || ''}</td>` +
+        `<td style="padding:6px;color:${m.delta < 0 ? '#900' : '#060'};">${signo}${m.delta}</td><td style="padding:6px;">${m.cantidadResultante ?? ''}</td><td style="padding:6px;">${m.motivo || ''}</td>`;
+      tbody.appendChild(tr);
+    });
+    tabla.appendChild(tbody);
+    cont.appendChild(tabla);
+  } catch (e) {
+    cont.textContent = 'Error al cargar historial: ' + e.message;
+  }
 }
 
 /* ---- Hash mayorista ---- */
@@ -1675,6 +2060,26 @@ function renderSolicitudes() {
     }
     box.appendChild(info);
 
+    if (s.foto_negocio) {
+      const fotoWrap = document.createElement('div');
+      fotoWrap.style.marginBottom = '12px';
+      const fLbl = document.createElement('div');
+      fLbl.style.cssText = 'font-size:0.7rem;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;';
+      fLbl.textContent = 'Foto del negocio';
+      const foto = document.createElement('img');
+      foto.src = 'data:image/jpeg;base64,' + s.foto_negocio;
+      foto.style.cssText = 'max-width:160px;max-height:160px;object-fit:cover;border:1px solid #E5E5E5;cursor:zoom-in;transition:max-width .2s,max-height .2s;';
+      foto.title = 'Click para agrandar';
+      let ampliada = false;
+      foto.onclick = () => {
+        ampliada = !ampliada;
+        foto.style.maxWidth = ampliada ? '480px' : '160px';
+        foto.style.maxHeight = ampliada ? '480px' : '160px';
+      };
+      fotoWrap.appendChild(fLbl); fotoWrap.appendChild(foto);
+      box.appendChild(fotoWrap);
+    }
+
     if (sol.notas) {
       const nota = document.createElement('div');
       nota.style.cssText = 'padding:10px;background:#F5F5F5;font-size:0.85rem;margin-bottom:12px;';
@@ -1695,6 +2100,22 @@ function renderSolicitudes() {
         resp.textContent = 'Motivo: ' + (sol.respuesta.motivo || '');
       }
       box.appendChild(resp);
+    }
+
+    /* Warning: ya hay un mayorista activo en la misma localidad. No bloquea
+       nada — es informativo, para que el admin decida a criterio (distancia,
+       tamaño de la localidad) si igual puede convivir con el nuevo. */
+    if (sol.estado === 'pendiente' && s.localidad) {
+      const norm = v => (v || '').trim().toLowerCase();
+      const existentes = (mayoristasActivos || []).filter(m =>
+        norm(m.localidad) === norm(s.localidad) && norm(m.provincia) === norm(s.provincia)
+      );
+      if (existentes.length) {
+        const warn = document.createElement('div');
+        warn.style.cssText = 'padding:10px;background:#FFF7E0;color:#7A5000;font-size:0.85rem;margin-bottom:12px;border-left:3px solid #C89000;';
+        warn.innerHTML = `⚠ Ya hay ${existentes.length > 1 ? existentes.length + ' mayoristas' : 'un mayorista'} activo en ${s.localidad}, ${s.provincia}: <strong>${existentes.map(m => (m.nombre || '') + (m.negocio ? ' — ' + m.negocio : '')).join(', ')}</strong>. Verificá la distancia entre direcciones antes de aceptar o rechazar — en localidades grandes pueden convivir sin problema.`;
+        box.appendChild(warn);
+      }
     }
 
     /* Actions */
@@ -2309,26 +2730,36 @@ async function eliminarActivo(m) {
 document.querySelectorAll('.tab-btn').forEach(b => {
   b.addEventListener('click', () => {
     if (b.dataset.tab === 'mayoristas') setTimeout(initUbicacionesAM, 80);
+    if (b.dataset.tab === 'stock') renderStockEditor();
   });
 });
 
 document.querySelectorAll('.subtab-btn').forEach(b => {
   b.addEventListener('click', () => {
-    document.querySelectorAll('.subtab-btn').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.subtab-panel').forEach(p => p.classList.remove('active'));
+    /* Escopado al tab-panel contenedor: con más de un grupo de sub-tabs en
+       la página (Mayoristas, Stock), un querySelectorAll global rompía el
+       estado "active" del OTRO grupo al navegar entre tabs. */
+    const scope = b.closest('.tab-panel');
+    scope.querySelectorAll('.subtab-btn').forEach(x => x.classList.remove('active'));
+    scope.querySelectorAll('.subtab-panel').forEach(p => p.classList.remove('active'));
     b.classList.add('active');
     document.getElementById('subtab-' + b.dataset.subtab).classList.add('active');
     if (b.dataset.subtab === 'alta') setTimeout(initUbicacionesAM, 80);
     if (b.dataset.subtab === 'activos') loadActivos();
+    if (b.dataset.subtab === 'stock-editar') renderStockEditor();
+    if (b.dataset.subtab === 'stock-historial') renderStockHistorial();
   });
 });
 
-/* Al entrar al app, cargar solicitudes y activos */
+/* Al entrar al app, cargar solicitudes y activos.
+   Activos se carga eager (no solo on-demand al abrir el sub-tab) porque
+   ahora también hace falta en Solicitudes, para avisar si ya hay un
+   mayorista en la misma zona antes de aceptar una solicitud nueva. */
 const originalEnterApp = enterApp;
 enterApp = async function() {
   await originalEnterApp();
   loadSolicitudes();
-  /* activos se cargan on-demand al abrir el sub-tab */
+  loadActivos();
 };
 
 /* ============ Init ============ */
