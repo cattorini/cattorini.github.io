@@ -1169,7 +1169,7 @@ function renderInfoEnvio() {
     /* El envío gratis por monto es un beneficio exclusivo de minoristas —
        mostrarle esa leyenda a un mayorista es directamente falso, porque
        para él el envío siempre corre por su cuenta. */
-    banner.textContent = `Envíos por ${env.transportista}. El costo de envío corre por tu cuenta en todos los casos.`;
+    banner.textContent = `Envíos por ${env.transportista}. El costo de envío se discrimina aparte y se suma al total en el carrito.`;
   } else {
     banner.textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
   }
