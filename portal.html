@@ -2667,6 +2667,12 @@ async function loadActivos() {
       const badge = document.getElementById('badge-activos');
       if (badge) badge.textContent = mayoristasActivos.length;
       renderActivos();
+      /* Re-renderizar Solicitudes también: el aviso de zona duplicada usa
+         mayoristasActivos, y este snapshot puede resolver DESPUÉS del de
+         solicitudes_mayoristas (ambos son listeners independientes) — sin
+         este llamado, el aviso quedaba sin mostrarse hasta el próximo
+         cambio en solicitudes_mayoristas, que podía tardar o no llegar. */
+      renderSolicitudes();
     });
   } catch (e) {
     statusEl.className = 'msg-info err';
