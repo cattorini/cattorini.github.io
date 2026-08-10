@@ -913,7 +913,10 @@ function renderGallery() {
 function renderTalles() {
   const grid = document.getElementById('talles-grid');
   grid.innerHTML = '';
-  const tipoTalle = CATEGORIA.tipo_talle;
+  /* La guía de talles es por producto (no por categoría) — dos productos de
+     la misma categoría pueden tener cortes distintos. Fallback al tipo de
+     la categoría para productos cargados antes de este cambio. */
+  const tipoTalle = PRODUCT.tipo_talle || CATEGORIA.tipo_talle;
   const talles = DATA.guia_talles[tipoTalle] ? Object.keys(DATA.guia_talles[tipoTalle].tabla) : (PRODUCT.talles_disponibles || []);
   const disponibles = PRODUCT.talles_disponibles || [];
 
@@ -1043,11 +1046,11 @@ function updateStockInfo() {
 
 /* =========== Guía modal =========== */
 function openGuia() {
-  const tipo = CATEGORIA.tipo_talle;
+  const tipo = PRODUCT.tipo_talle || CATEGORIA.tipo_talle;
   const guia = DATA.guia_talles[tipo];
   if (!guia) return;
 
-  document.getElementById('guia-titulo').textContent = `Guía de talles · ${CATEGORIA.nombre}`;
+  document.getElementById('guia-titulo').textContent = `Guía de talles · ${PRODUCT.nombre}`;
   document.getElementById('guia-unidad').textContent = `Medidas en ${guia.unidad || 'cm'}`;
 
   const tabla = document.getElementById('guia-tabla');
