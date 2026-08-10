@@ -328,10 +328,17 @@
         <h3 class="serif text-xl mb-4">Configuración de envío</h3>
         <div class="grid-2">
           <div><label class="lbl">Costo estándar ($)</label><input type="number" class="inp" data-field="config.envio.costo_estandar" /></div>
-          <div><label class="lbl">Envío gratis desde ($)</label><input type="number" class="inp" data-field="config.envio.gratis_desde" /></div>
+          <div>
+            <label class="lbl">Envío gratis desde ($) — solo minoristas</label>
+            <input type="number" class="inp" data-field="config.envio.gratis_desde" />
+          </div>
           <div style="grid-column:1/-1;"><label class="lbl">Transportista</label><input class="inp" data-field="config.envio.transportista" /></div>
-          <div style="grid-column:1/-1;"><label class="lbl">Leyenda pública</label><textarea class="inp" rows="2" data-field="config.envio.leyenda"></textarea></div>
+          <div style="grid-column:1/-1;">
+            <label class="lbl">Leyenda pública — solo la ven minoristas</label>
+            <textarea class="inp" rows="2" data-field="config.envio.leyenda"></textarea>
+          </div>
         </div>
+        <div class="msg-info mt-4">Este umbral de envío gratis y la leyenda de arriba son exclusivos de minoristas — los mayoristas siempre pagan el envío, sin excepción, y ven un mensaje distinto en la tienda que se genera automáticamente (no se edita acá).</div>
       </div>
     </div>
 
