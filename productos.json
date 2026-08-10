@@ -202,6 +202,19 @@
           "82"
         ]
       }
+    },
+    "camisas Slim": {
+      "unidad": "cm",
+      "medidas": [
+        "Cintura",
+        "Largo"
+      ],
+      "tabla": {
+        "S": [
+          "90",
+          "80"
+        ]
+      }
     }
   },
   "horarios": {
