@@ -277,6 +277,7 @@
     <button class="tab-btn" data-tab="stock">Stock</button>
     <button class="tab-btn" data-tab="textos">Textos</button>
     <button class="tab-btn" data-tab="imagenes">Imágenes</button>
+    <button class="tab-btn" data-tab="pago">Datos de pago</button>
   </div>
 
   <div class="content-wrap">
@@ -484,6 +485,9 @@
           <h3 class="serif text-xl">Guía de talles por tipo de prenda</h3>
           <button class="btn-ghost" onclick="addTipoTalle()">+ Nuevo tipo</button>
         </div>
+        <p class="text-sm mb-4" style="color:var(--muted);">
+          Acá creás las tablas de medidas. Cada producto elige cuál de estas tablas usar desde el tab <b>Catálogo</b> — así dos productos de la misma categoría (ej. "camisas corte clásico" y "camisas slim fit") pueden tener medidas distintas. Creá un tipo nuevo por cada tabla de medidas diferente que necesites.
+        </p>
         <div id="talles-list"></div>
       </div>
     </div>
@@ -620,13 +624,31 @@
             <div id="img-local-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
             <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'local.jpg','local')" />Subir foto del local</label>
           </div>
-          <div>
-            <label class="lbl">QR de pago</label>
-            <div id="img-qr_pago-preview" style="aspect-ratio:1;max-width:200px;background:#F5F5F5;background-size:contain;background-repeat:no-repeat;background-position:center;margin-bottom:8px;"></div>
-            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'qr-pago.jpg','qr_pago')" />Subir QR de pago</label>
-          </div>
         </div>
-        <div class="msg-info mt-4">Las imágenes se suben al repositorio de GitHub. Puede tardar unos segundos. El QR de pago es el que ven los clientes al confirmar un pedido con envío — subí una captura del QR estático de tu billetera virtual (Mercado Pago, etc.). Si cambiás de billetera, solo tenés que reemplazar esta imagen.</div>
+        <div class="msg-info mt-4">Las imágenes se suben al repositorio de GitHub. Puede tardar unos segundos.</div>
+      </div>
+    </div>
+
+    <!-- Tab Datos de pago -->
+    <div class="tab-panel" id="tab-pago">
+      <div class="card">
+        <h3 class="serif text-xl mb-4">QR de pago</h3>
+        <div style="max-width:200px;">
+          <div id="img-qr_pago-preview" style="aspect-ratio:1;background:#F5F5F5;background-size:contain;background-repeat:no-repeat;background-position:center;margin-bottom:8px;"></div>
+          <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'qr-pago.jpg','qr_pago')" />Subir QR de pago</label>
+        </div>
+        <div class="msg-info mt-4">Es el QR que ven los clientes al confirmar un pedido pendiente de pago (envío, o retiro con pago electrónico). Subí una captura del QR estático de tu billetera virtual (Mercado Pago, etc.). Si cambiás de billetera, solo reemplazá esta imagen — puede tardar unos segundos en subir.</div>
+      </div>
+
+      <div class="card mt-4">
+        <h3 class="serif text-xl mb-4">Datos de la cuenta destino</h3>
+        <p class="text-sm mb-4" style="color:var(--muted);">
+          Se muestran junto al QR para que el cliente pueda verificar que el pago va a la cuenta correcta — un segundo chequeo por si el QR se saltea o falla el escaneo.
+        </p>
+        <div class="grid-2">
+          <div><label class="lbl">Titular de la cuenta</label><input class="inp" data-field="config.pago.titular" placeholder="Ej: Juan Cattorini" /></div>
+          <div><label class="lbl">Banco</label><input class="inp" data-field="config.pago.banco" placeholder="Ej: Banco Galicia" /></div>
+        </div>
       </div>
     </div>
 
@@ -637,10 +659,10 @@
 'use strict';
 
 /* ============ Config ============ */
-const GH = { owner: 'cattorini', repo: 'cattorini.github.io', branch: 'main' };
-const FILE_PATH = 'productos.json';
-const SITEMAP_PATH = 'sitemap.xml';
-const IMG_PATH = 'img/';
+const GH = { owner: 'juliancarroccio', repo: 'pushcommerce', branch: 'main' };
+const FILE_PATH = 'pages/cattorini/productos.json';
+const SITEMAP_PATH = 'pages/cattorini/sitemap.xml';
+const IMG_PATH = 'pages/cattorini/img/';
 const URL_BASE = 'https://cattorini.github.io';
 
 const LS_EPAT = 'catt_epat';
@@ -1446,6 +1468,31 @@ function renderProductRow(cat, ci, p, pi) {
   descW.appendChild(dLbl); descW.appendChild(dInp);
   detail.appendChild(descW);
 
+  /* Guía de talles — es POR PRODUCTO, no por categoría: dos productos de la
+     misma categoría pueden tener cortes distintos (ej. "camisas corte
+     clásico" vs "camisas slim fit") con tablas de medidas distintas.
+     p.tipo_talle es el dueño real; si no está seteado (productos viejos,
+     de antes de este cambio) cae al tipo_talle de la categoría para no
+     romper nada. */
+  const tipoTalleW = document.createElement('div');
+  tipoTalleW.style.marginTop = '10px';
+  const ttLbl = document.createElement('label'); ttLbl.className = 'lbl'; ttLbl.textContent = 'Guía de talles';
+  const ttSel = document.createElement('select'); ttSel.className = 'inp';
+  const tiposDisponibles = Object.keys(data.guia_talles || {});
+  const tipoActual = p.tipo_talle || cat.tipo_talle || '';
+  if (!tiposDisponibles.includes(tipoActual) && tipoActual) {
+    const optFalta = document.createElement('option'); optFalta.value = tipoActual; optFalta.textContent = tipoActual + ' (no existe, elegí otra)';
+    ttSel.appendChild(optFalta);
+  }
+  tiposDisponibles.forEach(t => {
+    const opt = document.createElement('option'); opt.value = t; opt.textContent = t;
+    if (t === tipoActual) opt.selected = true;
+    ttSel.appendChild(opt);
+  });
+  ttSel.onchange = () => { p.tipo_talle = ttSel.value; markDirty(); renderCategorias(); };
+  tipoTalleW.appendChild(ttLbl); tipoTalleW.appendChild(ttSel);
+  detail.appendChild(tipoTalleW);
+
   /* Talles disponibles */
   const tallesW = document.createElement('div');
   tallesW.style.marginTop = '10px';
@@ -1453,8 +1500,8 @@ function renderProductRow(cat, ci, p, pi) {
   tallesW.appendChild(tLbl);
   const chips = document.createElement('div');
   chips.className = 'talles-check-grid';
-  const tipoTalles = cat.tipo_talle && data.guia_talles[cat.tipo_talle]
-    ? Object.keys(data.guia_talles[cat.tipo_talle].tabla)
+  const tipoTalles = tipoActual && data.guia_talles[tipoActual]
+    ? Object.keys(data.guia_talles[tipoActual].tabla)
     : [];
   p.talles_disponibles = p.talles_disponibles || [];
   tipoTalles.forEach(t => {
@@ -1473,7 +1520,7 @@ function renderProductRow(cat, ci, p, pi) {
   if (!tipoTalles.length) {
     const w = document.createElement('div');
     w.style.cssText = 'font-size:0.8rem;color:#900;';
-    w.textContent = 'No hay talles definidos para el tipo "' + (cat.tipo_talle || '?') + '". Configurá la guía de talles primero.';
+    w.textContent = 'No hay talles definidos para el tipo "' + (tipoActual || '?') + '". Configurá la guía de talles primero.';
     tallesW.appendChild(w);
   }
   tallesW.appendChild(chips);
@@ -1537,6 +1584,7 @@ function addProducto(ci) {
     descripcion: '',
     precio_minorista: 0,
     precio_mayorista: 0,
+    tipo_talle: cat.tipo_talle || '',
     talles_disponibles: [],
     disponible: true,
     destacado: false,
