@@ -699,6 +699,8 @@
     <!-- Honeypot -->
     <input type="text" name="website" id="hp-website" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
 
+    <div id="minimo-warning" style="display:none;background:#FDECEC;color:#900;padding:10px 12px;margin-bottom:10px;font-size:0.82rem;line-height:1.4;"></div>
+
     <button class="btn-primary" id="btn-send" onclick="sendOrder()">Confirmar pedido</button>
     <button class="btn-secondary" onclick="clearCart()">Vaciar carrito</button>
   </div>
@@ -1409,6 +1411,30 @@ function renderTotals() {
   r3.className = 'totals-row total';
   r3.innerHTML = `<span>Total ${entrega === 'retiro' ? 'estimado' : ''}</span><span>$${total.toLocaleString('es-AR')}</span>`;
   box.appendChild(r3);
+
+  actualizarMinimoMayorista(perfil, subtotal);
+}
+
+/* Mínimo de compra mayorista — si no llega, avisar y bloquear "Confirmar
+   pedido" (defensa real está en sendOrder, esto es solo UX). */
+function actualizarMinimoMayorista(perfil, subtotal) {
+  const warn = document.getElementById('minimo-warning');
+  const btn = document.getElementById('btn-send');
+  if (!warn || !btn) return;
+  const minimo = (DATA.config.mayoristas && DATA.config.mayoristas.minimo_compra) || 0;
+  if (perfil === 'mayorista' && minimo > 0 && subtotal < minimo) {
+    const falta = minimo - subtotal;
+    warn.textContent = `El pedido mínimo mayorista es $${minimo.toLocaleString('es-AR')}. Te faltan $${falta.toLocaleString('es-AR')} para poder confirmar.`;
+    warn.style.display = 'block';
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+  } else {
+    warn.style.display = 'none';
+    btn.disabled = false;
+    btn.style.opacity = '';
+    btn.style.cursor = '';
+  }
 }
 
 function setEntrega(modo) {
@@ -1594,6 +1620,15 @@ async function sendOrder() {
   const localidadPerfil = localStorage.getItem(LS_LOCALIDAD) || '';
 
   const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+
+  /* Mínimo de compra mayorista — el botón ya se deshabilita en renderTotals,
+     esto es la defensa real por si se saltea el UI (devtools, etc). */
+  const minimoMayo = (DATA.config.mayoristas && DATA.config.mayoristas.minimo_compra) || 0;
+  if (cart_perfil === 'mayorista' && minimoMayo > 0 && subtotal < minimoMayo) {
+    showToast(`El pedido mínimo mayorista es $${minimoMayo.toLocaleString('es-AR')}.`);
+    return;
+  }
+
   const env = DATA.config.envio;
   const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
   const total = subtotal + envio;
