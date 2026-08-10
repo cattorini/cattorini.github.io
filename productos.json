@@ -36,6 +36,10 @@
       "bonificacion_zonas_libres": 5,
       "mensaje_bonificacion": "En tu zona no tenemos distribuidor. Aplicamos 5% de descuento en tu compra.",
       "mensaje_zona_con_mayorista": "En tu zona contamos con un distribuidor autorizado. Te dejamos sus datos para que compres directamente con él y aproveches precios mejores."
+    },
+    "pago": {
+      "titular": "",
+      "banco": ""
     }
   },
   "zonas_mayoristas": [
