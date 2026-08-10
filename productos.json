@@ -203,16 +203,18 @@
         ]
       }
     },
-    "camisas Slim": {
+    "camisa_slim": {
       "unidad": "cm",
       "medidas": [
-        "Cintura",
-        "Largo"
+        "Pecho",
+        "Largo",
+        "prueba"
       ],
       "tabla": {
         "S": [
-          "90",
-          "80"
+          "70",
+          "70",
+          "70"
         ]
       }
     }
