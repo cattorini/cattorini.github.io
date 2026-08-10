@@ -379,13 +379,21 @@
 
     <div style="margin-bottom:12px;">
       <label class="lbl">Producto</label>
+      <input class="inp" id="m-prod-search" placeholder="Buscar producto por nombre..." oninput="filtrarManualProductos()" style="margin-bottom:6px;" />
       <select class="inp" id="m-producto"></select>
     </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:12px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px;">
       <div>
         <label class="lbl">Talle</label>
-        <select class="inp" id="m-talle"></select>
+        <select class="inp" id="m-talle" onchange="updateManualColores()"></select>
       </div>
+      <div id="m-color-wrap" style="display:none;">
+        <label class="lbl">Color</label>
+        <select class="inp" id="m-color" onchange="updateManualStockInfo()"></select>
+      </div>
+    </div>
+    <div id="m-stock-info" style="font-size:0.78rem;color:#666;margin-bottom:8px;"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:8px;margin-bottom:12px;">
       <div><label class="lbl">Cantidad</label><input type="number" class="inp" id="m-qty" min="1" value="1" /></div>
       <div><label class="lbl">Precio unit.</label><input type="number" class="inp" id="m-precio" /></div>
       <div style="align-self:end;"><button class="btn-ghost" onclick="addManualItem()">+ Agregar</button></div>
@@ -943,7 +951,9 @@ function openManual() {
   document.getElementById('m-cp').value = '';
   document.getElementById('m-nota').value = '';
   document.getElementById('m-qty').value = 1;
+  document.getElementById('m-prod-search').value = '';
   mayoristaElegido = null;
+  renderManualProductoOptions('');
   renderManualItems();
   setManualMod('retiro');
   setManualPerfil('minorista');
@@ -1028,14 +1038,54 @@ function setManualMod(m) {
   renderManualItems();
 }
 
+let manualProductosFlat = [];
+let manualStockDoc = null; // stock cargado del producto actualmente elegido
+
 function populateManualSelects() {
+  manualProductosFlat = [];
+  if (DATA) {
+    DATA.categorias.forEach(cat => {
+      (cat.productos || []).forEach(p => {
+        manualProductosFlat.push({ cat, p });
+      });
+    });
+    manualProductosFlat.sort((a, b) => a.p.nombre.localeCompare(b.p.nombre));
+  }
+  document.getElementById('m-prod-search').value = '';
+  renderManualProductoOptions('');
   const sel = document.getElementById('m-producto');
+  sel.onchange = updateManualTallesAndPrice;
+  updateManualTallesAndPrice();
+}
+
+/* Buscador simple sobre el <select> — filtra las opciones por nombre.
+   Con pocos productos no hace falta nada más sofisticado; si el catálogo
+   crece mucho, esto evita tener que scrollear un dropdown gigante. */
+function filtrarManualProductos() {
+  const q = document.getElementById('m-prod-search').value;
+  renderManualProductoOptions(q);
+  updateManualTallesAndPrice();
+}
+
+function renderManualProductoOptions(query) {
+  const sel = document.getElementById('m-producto');
+  const prev = sel.value;
   sel.innerHTML = '';
-  if (!DATA) return;
-  DATA.categorias.forEach(cat => {
+  const q = query.trim().toLowerCase();
+  const filtrados = manualProductosFlat.filter(({ p }) => !q || p.nombre.toLowerCase().includes(q));
+  if (!filtrados.length) {
+    sel.innerHTML = '<option value="">(ningún producto coincide)</option>';
+    return;
+  }
+  let porCategoria = new Map();
+  filtrados.forEach(({ cat, p }) => {
+    if (!porCategoria.has(cat.id)) porCategoria.set(cat.id, { cat, items: [] });
+    porCategoria.get(cat.id).items.push(p);
+  });
+  porCategoria.forEach(({ cat, items }) => {
     const og = document.createElement('optgroup');
     og.label = cat.nombre;
-    (cat.productos || []).forEach(p => {
+    items.forEach(p => {
       const op = document.createElement('option');
       op.value = `${cat.id}__${p.id}`;
       op.textContent = `${p.nombre} — $${p.precio_minorista.toLocaleString('es-AR')}`;
@@ -1043,18 +1093,23 @@ function populateManualSelects() {
     });
     sel.appendChild(og);
   });
-  sel.onchange = updateManualTallesAndPrice;
-  updateManualTallesAndPrice();
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
 }
 
-function updateManualTallesAndPrice() {
+function getManualProductoElegido() {
   const val = document.getElementById('m-producto').value;
-  if (!val || !DATA) return;
+  if (!val || !DATA) return null;
   const [catId, pid] = val.split('__');
   const cat = DATA.categorias.find(c => c.id === catId);
-  const p = (cat.productos || []).find(x => String(x.id) === pid);
-  if (!p) return;
+  const p = cat && (cat.productos || []).find(x => String(x.id) === pid);
+  return p ? { cat, p } : null;
+}
+
+async function updateManualTallesAndPrice() {
+  const found = getManualProductoElegido();
   const talleSel = document.getElementById('m-talle');
+  if (!found) { talleSel.innerHTML = ''; manualStockDoc = null; updateManualColores(); return; }
+  const { p } = found;
   talleSel.innerHTML = '';
   (p.talles_disponibles || []).forEach(t => {
     const op = document.createElement('option'); op.value = t; op.textContent = t;
@@ -1062,6 +1117,58 @@ function updateManualTallesAndPrice() {
   });
   const precio = manualPerfil === 'mayorista' ? p.precio_mayorista : p.precio_minorista;
   document.getElementById('m-precio').value = precio;
+
+  /* Stock (colores + cantidades) vive en Firestore, aparte del catálogo */
+  manualStockDoc = null;
+  if (db) {
+    try {
+      const snap = await db.collection('stock').doc(String(p.id)).get();
+      manualStockDoc = snap.exists ? snap.data() : { variantes: {} };
+    } catch (e) { manualStockDoc = { variantes: {} }; }
+  }
+  updateManualColores();
+}
+
+/* Colores disponibles para el talle elegido — si el producto no tiene
+   stock/color cargado (productos viejos), se oculta el selector y se
+   permite cargar el item igual, sin bloqueo (mismo criterio que la tienda). */
+function updateManualColores() {
+  const talle = document.getElementById('m-talle').value;
+  const wrap = document.getElementById('m-color-wrap');
+  const sel = document.getElementById('m-color');
+  sel.innerHTML = '';
+  const colores = (manualStockDoc && manualStockDoc.variantes && manualStockDoc.variantes[talle]) || {};
+  const nombres = Object.keys(colores);
+  if (!nombres.length) {
+    wrap.style.display = 'none';
+    updateManualStockInfo();
+    return;
+  }
+  wrap.style.display = 'block';
+  nombres.forEach(nombre => {
+    const cant = colores[nombre].cantidad || 0;
+    const op = document.createElement('option');
+    op.value = nombre;
+    op.textContent = `${nombre} (${cant} disponibles)`;
+    if (cant <= 0) op.disabled = true;
+    sel.appendChild(op);
+  });
+  updateManualStockInfo();
+}
+
+function updateManualStockInfo() {
+  const info = document.getElementById('m-stock-info');
+  const talle = document.getElementById('m-talle').value;
+  const colorWrap = document.getElementById('m-color-wrap');
+  if (colorWrap.style.display === 'none') {
+    info.textContent = 'Este producto no tiene stock/color cargado — se agrega sin control de stock.';
+    return;
+  }
+  const color = document.getElementById('m-color').value;
+  const colores = (manualStockDoc && manualStockDoc.variantes && manualStockDoc.variantes[talle]) || {};
+  const cant = (colores[color] && colores[color].cantidad) || 0;
+  info.textContent = `Stock disponible: ${cant}`;
+  info.style.color = cant <= 0 ? '#900' : '#666';
 }
 
 function actualizarPreciosCart() {
@@ -1079,18 +1186,33 @@ function actualizarPreciosCart() {
 }
 
 function addManualItem() {
-  const val = document.getElementById('m-producto').value;
-  if (!val || !DATA) return;
-  const [catId, pid] = val.split('__');
-  const cat = DATA.categorias.find(c => c.id === catId);
-  const p = (cat.productos || []).find(x => String(x.id) === pid);
-  if (!p) return;
+  const found = getManualProductoElegido();
+  if (!found) return;
+  const { cat, p } = found;
   const talle = document.getElementById('m-talle').value;
   const qty = parseInt(document.getElementById('m-qty').value, 10) || 1;
   const precio = parseFloat(document.getElementById('m-precio').value) || 0;
+
+  const tieneColores = document.getElementById('m-color-wrap').style.display !== 'none';
+  let color = null;
+  if (tieneColores) {
+    color = document.getElementById('m-color').value;
+    if (!color) { alert('Elegí un color.'); return; }
+    const colores = (manualStockDoc && manualStockDoc.variantes && manualStockDoc.variantes[talle]) || {};
+    const disponible = (colores[color] && colores[color].cantidad) || 0;
+    /* Sumar lo que ya está en el carrito para ese mismo talle/color, por si
+       lo agregan en más de una tanda */
+    const yaEnCarrito = manualCart.filter(i => i.id === p.id && i.talle === talle && i.color === color)
+      .reduce((s, i) => s + i.qty, 0);
+    if (yaEnCarrito + qty > disponible) {
+      alert(`Sin stock suficiente de "${p.nombre}" (talle ${talle}, ${color}): hay ${disponible}, ya cargaste ${yaEnCarrito} en este pedido.`);
+      return;
+    }
+  }
+
   manualCart.push({
     id: p.id, nombre: p.nombre, categoria: cat.nombre,
-    talle, qty, precio
+    talle, color, qty, precio
   });
   renderManualItems();
 }
@@ -1105,7 +1227,7 @@ function renderManualItems() {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;justify-content:space-between;padding:4px 0;';
       const l = document.createElement('span');
-      l.textContent = `${it.nombre} · T${it.talle} · x${it.qty} · $${(it.precio*it.qty).toLocaleString('es-AR')}`;
+      l.textContent = `${it.nombre} · T${it.talle}${it.color ? ' · ' + it.color : ''} · x${it.qty} · $${(it.precio*it.qty).toLocaleString('es-AR')}`;
       const del = document.createElement('button');
       del.className = 'btn-danger'; del.textContent = '×';
       del.style.cssText = 'padding:2px 8px;';
@@ -1115,8 +1237,9 @@ function renderManualItems() {
     });
   }
   const sub = manualCart.reduce((s, i) => s + (i.precio * i.qty), 0);
+  /* Mismo criterio que la tienda: envío gratis por monto es solo minorista */
   const env = (manualMod === 'envio' && DATA)
-    ? (sub >= DATA.config.envio.gratis_desde ? 0 : DATA.config.envio.costo_estandar)
+    ? ((manualPerfil !== 'mayorista' && sub >= DATA.config.envio.gratis_desde) ? 0 : DATA.config.envio.costo_estandar)
     : 0;
   document.getElementById('m-sub').textContent = sub.toLocaleString('es-AR');
   document.getElementById('m-env').textContent = env.toLocaleString('es-AR');
@@ -1180,13 +1303,53 @@ async function submitManual() {
 
   const nota = document.getElementById('m-nota').value.trim().slice(0, 400);
   const sub = manualCart.reduce((s, i) => s + (i.precio * i.qty), 0);
+  /* Mismo criterio que la tienda: envío gratis por monto es solo minorista */
   const env = manualMod === 'envio' && DATA
-    ? (sub >= DATA.config.envio.gratis_desde ? 0 : DATA.config.envio.costo_estandar)
+    ? ((manualPerfil !== 'mayorista' && sub >= DATA.config.envio.gratis_desde) ? 0 : DATA.config.envio.costo_estandar)
     : 0;
+
+  const code = genManualTrackingCode();
+
+  /* Descontar stock también en los pedidos manuales — un pedido tomado por
+     teléfono/mostrador consume el mismo stock real que uno online. Mismo
+     mecanismo atómico que usa la tienda; productos sin color/stock cargado
+     no se tocan (compatibilidad). */
+  const itemsConStock = manualCart.filter(i => i.color);
+  const resultantePorItem = {};
+  if (itemsConStock.length) {
+    try {
+      await db.runTransaction(async (tx) => {
+        const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
+        const refs = idsUnicos.map(id => db.collection('stock').doc(id));
+        const snaps = await Promise.all(refs.map(r => tx.get(r)));
+        const variantesPorId = {};
+        idsUnicos.forEach((id, idx) => {
+          variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
+        });
+        itemsConStock.forEach((i, idx) => {
+          const variantes = variantesPorId[String(i.id)];
+          const actual = ((variantes[i.talle] || {})[i.color] || {}).cantidad || 0;
+          if (actual < i.qty) {
+            throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}.`);
+          }
+          const restante = actual - i.qty;
+          variantes[i.talle] = variantes[i.talle] || {};
+          variantes[i.talle][i.color] = { ...(variantes[i.talle][i.color] || {}), cantidad: restante };
+          resultantePorItem[idx] = restante;
+        });
+        idsUnicos.forEach((id, idx) => {
+          tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+        });
+      });
+    } catch (e) {
+      alert(e.message);
+      return;
+    }
+  }
 
   try {
     await db.collection('pedidos').add({
-      codigo: genManualTrackingCode(),
+      codigo: code,
       creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
       cliente: cli,
       items: manualCart,
@@ -1199,6 +1362,19 @@ async function submitManual() {
       estado: 'pendiente',
       manual: true
     });
+
+    if (itemsConStock.length) {
+      const fecha = new Date().toISOString().split('T')[0];
+      itemsConStock.forEach((i, idx) => {
+        db.collection('stock').doc(String(i.id)).collection('movimientos').add({
+          talle: i.talle, color: i.color, delta: -i.qty,
+          cantidadResultante: resultantePorItem[idx] ?? null,
+          motivo: 'Venta manual #' + code, fecha,
+          ts: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(e => console.warn('No se pudo registrar movimiento de stock:', e.message));
+      });
+    }
+
     closeManual();
   } catch (e) {
     alert('Error: ' + e.message);
