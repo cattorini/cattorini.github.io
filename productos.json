@@ -309,7 +309,7 @@
             "camisa-oxford-blanca-1.jpg",
             "camisa-oxford-blanca-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 2,
@@ -329,7 +329,7 @@
             "camisa-oxford-celeste-1.jpg",
             "camisa-oxford-celeste-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 3,
@@ -349,7 +349,7 @@
             "camisa-grafa-1.jpg",
             "camisa-grafa-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 10,
@@ -367,7 +367,22 @@
           "imagenes": [
             "p10-1786037697183-asdw.jpeg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
+        },
+        {
+          "id": 11,
+          "nombre": "Camisa Slim J",
+          "descripcion": "Camisa Slim color llamativo",
+          "precio_minorista": 35000,
+          "precio_mayorista": 30000,
+          "tipo_talle": "camisa_slim",
+          "talles_disponibles": [
+            "S"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": []
         }
       ]
     },
@@ -398,7 +413,7 @@
             "pantalon-vestir-negro-1.jpg",
             "pantalon-vestir-negro-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 5,
@@ -419,7 +434,7 @@
             "pantalon-vestir-gris-1.jpg",
             "pantalon-vestir-gris-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 6,
@@ -440,7 +455,7 @@
             "pantalon-grafa-1.jpg",
             "pantalon-grafa-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         }
       ]
     },
@@ -471,7 +486,7 @@
             "jean-clasico-azul-1.jpg",
             "jean-clasico-azul-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 8,
@@ -491,7 +506,7 @@
             "jean-slim-negro-1.jpg",
             "jean-slim-negro-2.jpg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": false
         },
         {
           "id": 9,
