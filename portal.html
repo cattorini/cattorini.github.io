@@ -135,6 +135,22 @@
       background: #FFF; border: 1px solid #E5E5E5;
       padding: 16px; margin-bottom: 12px;
     }
+    /* Fila clickeable que expande/colapsa detalle (Catálogo, Stock) —
+       flecha bien visible para que quede claro que se puede hacer click
+       aunque no haya ningún otro control ahí. */
+    .expandable-head { cursor: pointer; user-select: none; }
+    .chevron {
+      font-size: 1rem; font-weight: 700; color: #0A0A0A;
+      width: 14px; flex-shrink: 0; display: inline-block;
+    }
+    /* Variante standalone (no comparte fila con otros controles): además
+       resalta el fondo al pasar el mouse, para reforzar la afordancia. */
+    .expandable-head-box {
+      display: flex; align-items: center; gap: 8px;
+      cursor: pointer; user-select: none;
+      margin: -8px -8px 0; padding: 8px;
+    }
+    .expandable-head-box:hover { background: #F5F5F5; }
     .msg-info {
       padding: 10px 14px; margin-bottom: 12px;
       font-size: 0.85rem;
@@ -524,11 +540,8 @@
       <div class="subtab-panel active" id="subtab-stock-editar">
         <div class="card">
           <h3 class="serif text-xl mb-4">Editar stock por talle y color</h3>
-          <div style="max-width:420px;margin-bottom:16px;">
-            <label class="lbl">Producto</label>
-            <select class="inp" id="stock-prod-select" onchange="renderStockEditor()"></select>
-          </div>
-          <div id="stock-editor"></div>
+          <input class="inp mb-4" id="stock-search" placeholder="Buscar producto por nombre..." oninput="stockSearchQuery = this.value; renderStockList();" />
+          <div id="stock-list"></div>
         </div>
       </div>
 
@@ -1373,10 +1386,11 @@ function renderProductRow(cat, ci, p, pi) {
   const head = document.createElement('div');
   head.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;';
   const title = document.createElement('div');
-  title.style.cssText = 'font-weight:500;cursor:pointer;display:flex;align-items:center;gap:6px;';
+  title.className = 'expandable-head';
+  title.style.cssText = 'font-weight:500;display:flex;align-items:center;gap:6px;';
   const chevron = document.createElement('span');
+  chevron.className = 'chevron';
   chevron.textContent = catExpandedIds.has(p.id) ? '▾' : '▸';
-  chevron.style.cssText = 'font-size:0.7rem;color:#999;';
   const titleTxt = document.createElement('span');
   titleTxt.textContent = `#${p.id} · ${p.nombre || '(sin nombre)'}`;
   title.appendChild(chevron); title.appendChild(titleTxt);
@@ -1670,23 +1684,22 @@ function flattenProductos() {
 
 function poblarSelectsStock() {
   const prods = flattenProductos();
-  ['stock-prod-select', 'stock-hist-select'].forEach(selId => {
-    const sel = document.getElementById(selId);
-    if (!sel) return;
+  const sel = document.getElementById('stock-hist-select');
+  if (sel) {
     const prev = sel.value;
     sel.innerHTML = '';
     if (!prods.length) {
       sel.innerHTML = '<option value="">(no hay productos todavía)</option>';
-      return;
+    } else {
+      prods.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id; opt.textContent = `#${p.id} · ${p.nombre}`;
+        sel.appendChild(opt);
+      });
+      if (prev && prods.some(p => String(p.id) === prev)) sel.value = prev;
     }
-    prods.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id; opt.textContent = `#${p.id} · ${p.nombre}`;
-      sel.appendChild(opt);
-    });
-    if (prev && prods.some(p => String(p.id) === prev)) sel.value = prev;
-  });
-  if (document.getElementById('subtab-stock-editar').classList.contains('active')) renderStockEditor();
+  }
+  if (document.getElementById('subtab-stock-editar').classList.contains('active')) renderStockList();
 }
 
 async function getStockDoc(productId) {
@@ -1747,21 +1760,64 @@ async function eliminarColorStock(productId, talle, color) {
       ts: firebase.firestore.FieldValue.serverTimestamp()
     });
   }
-  renderStockEditor();
+  renderStockList();
 }
 
-async function renderStockEditor() {
-  const sel = document.getElementById('stock-prod-select');
-  const cont = document.getElementById('stock-editor');
+let stockSearchQuery = '';
+let stockExpandedIds = new Set();
+
+/* Lista tipo acordeón, igual patrón que Catálogo: buscador + fila colapsada
+   por producto (solo nombre) que se despliega al click mostrando talle,
+   color y stock. La flechita dice si está desplegado o replegado. */
+function renderStockList() {
+  const cont = document.getElementById('stock-list');
   cont.innerHTML = '';
-  const productId = sel && sel.value;
-  if (!productId) { cont.textContent = 'Elegí un producto.'; return; }
+  const q = stockSearchQuery.trim().toLowerCase();
+  const prods = flattenProductos().filter(p => !q || p.nombre.toLowerCase().includes(q));
+
+  if (!prods.length) {
+    cont.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">' + (q ? 'Ningún producto coincide con la búsqueda.' : 'No hay productos todavía — cargalos primero en el tab Catálogo.') + '</div>';
+    return;
+  }
+
+  prods.forEach(({ id, nombre }) => {
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.style.marginBottom = '10px';
+
+    const head = document.createElement('div');
+    head.className = 'expandable-head-box';
+    head.style.fontWeight = '500';
+    const chevron = document.createElement('span');
+    chevron.className = 'chevron';
+    chevron.textContent = stockExpandedIds.has(id) ? '▾' : '▸';
+    const titleTxt = document.createElement('span');
+    titleTxt.textContent = `#${id} · ${nombre}`;
+    head.appendChild(chevron); head.appendChild(titleTxt);
+    head.onclick = () => {
+      if (stockExpandedIds.has(id)) stockExpandedIds.delete(id); else stockExpandedIds.add(id);
+      renderStockList();
+    };
+    row.appendChild(head);
+
+    if (stockExpandedIds.has(id)) {
+      const detail = document.createElement('div');
+      detail.style.marginTop = '12px';
+      detail.textContent = 'Cargando...';
+      row.appendChild(detail);
+      renderStockEditorInto(id, detail);
+    }
+
+    cont.appendChild(row);
+  });
+}
+
+async function renderStockEditorInto(productId, cont) {
   const prods = flattenProductos();
   const info = prods.find(p => String(p.id) === String(productId));
   const p = info && (info.cat.productos || []).find(x => String(x.id) === String(productId));
   if (!p) { cont.textContent = 'Producto no encontrado.'; return; }
 
-  cont.textContent = 'Cargando...';
   const stockDoc = await getStockDoc(productId);
   cont.innerHTML = '';
 
@@ -1789,7 +1845,7 @@ async function renderStockEditor() {
       const tdSw = document.createElement('td'); tdSw.style.cssText = 'padding:6px;width:28px;';
       const hexIn = document.createElement('input'); hexIn.type = 'color'; hexIn.value = v.hex || '#999999';
       hexIn.style.cssText = 'width:28px;height:28px;border:none;cursor:pointer;';
-      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value).then(renderStockEditor);
+      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value).then(renderStockList);
       tdSw.appendChild(hexIn); tr.appendChild(tdSw);
 
       const tdN = document.createElement('td'); tdN.style.padding = '6px'; tdN.textContent = color;
@@ -1803,7 +1859,7 @@ async function renderStockEditor() {
         if (delta === 0) return;
         try {
           await ajustarStock(productId, talle, color, delta, delta > 0 ? 'Ingreso manual' : 'Ajuste manual');
-          renderStockEditor();
+          renderStockList();
         } catch (e) { alert(e.message); qIn.value = v.cantidad || 0; }
       };
       tdQ.appendChild(qIn); tr.appendChild(tdQ);
@@ -1831,7 +1887,7 @@ async function renderStockEditor() {
       const cant = parseInt(qtyNew.value, 10) || 0;
       try {
         await ajustarStock(productId, talle, nombre, cant, 'Alta inicial', hexNew.value);
-        renderStockEditor();
+        renderStockList();
       } catch (e) { alert(e.message); }
     };
     addRow.appendChild(nameIn); addRow.appendChild(hexNew); addRow.appendChild(qtyNew); addRow.appendChild(addBtn);
@@ -1876,7 +1932,7 @@ async function importarStockCSV() {
   }
   statusEl.innerHTML = `${ok} movimiento(s) importado(s) correctamente.` +
     (errores.length ? `<br><span style="color:#900;">${errores.length} error(es):<br>${errores.map(e => '· ' + e).join('<br>')}</span>` : '');
-  if (ok > 0) renderStockEditor();
+  if (ok > 0) renderStockList();
 }
 
 /* ---- Historial ---- */
@@ -2778,7 +2834,7 @@ async function eliminarActivo(m) {
 document.querySelectorAll('.tab-btn').forEach(b => {
   b.addEventListener('click', () => {
     if (b.dataset.tab === 'mayoristas') setTimeout(initUbicacionesAM, 80);
-    if (b.dataset.tab === 'stock') renderStockEditor();
+    if (b.dataset.tab === 'stock') renderStockList();
   });
 });
 
@@ -2794,7 +2850,7 @@ document.querySelectorAll('.subtab-btn').forEach(b => {
     document.getElementById('subtab-' + b.dataset.subtab).classList.add('active');
     if (b.dataset.subtab === 'alta') setTimeout(initUbicacionesAM, 80);
     if (b.dataset.subtab === 'activos') loadActivos();
-    if (b.dataset.subtab === 'stock-editar') renderStockEditor();
+    if (b.dataset.subtab === 'stock-editar') renderStockList();
     if (b.dataset.subtab === 'stock-historial') renderStockHistorial();
   });
 });
