@@ -764,6 +764,11 @@
         Escaneá el QR con cualquier billetera virtual que ofrezca pagos QR (Mercado Pago, Cuenta DNI, etc.) para abonar tu pedido.
       </p>
       <img src="./img/qr-pago.jpg" alt="QR de pago" style="display:block;width:220px;height:220px;max-width:100%;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin:0 auto 14px;" />
+      <div id="confirm-pago-datos" style="font-size:0.82rem;line-height:1.6;margin-bottom:14px;display:none;">
+        <div style="color:#666;">Verificá que el pago sea a nombre de:</div>
+        <div id="confirm-pago-titular" style="font-weight:500;"></div>
+        <div id="confirm-pago-banco" style="color:#666;"></div>
+      </div>
       <p style="color:#666;font-size:0.82rem;line-height:1.5;">
         ¿Preferís pagar por otro medio? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
       </p>
@@ -1840,6 +1845,17 @@ async function sendOrder() {
     const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
     const waMsg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
     document.getElementById('confirm-wa-pago').href = `https://wa.me/${wa}?text=${waMsg}`;
+    /* Titular/banco: doble chequeo para el cliente en caso de que el QR
+       se saltee o falle el escaneo. */
+    const pago = DATA.config.pago || {};
+    const datosBox = document.getElementById('confirm-pago-datos');
+    if (pago.titular || pago.banco) {
+      datosBox.style.display = 'block';
+      document.getElementById('confirm-pago-titular').textContent = pago.titular || '';
+      document.getElementById('confirm-pago-banco').textContent = pago.banco || '';
+    } else {
+      datosBox.style.display = 'none';
+    }
   } else if (entrega === 'retiro') {
     qrBox.style.display = 'none';
     msgEl.textContent = 'Tu pedido queda a la espera de que lo confirmemos. Vas a abonarlo cuando pases a retirarlo por el local.';
