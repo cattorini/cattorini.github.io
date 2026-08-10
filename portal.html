@@ -1528,6 +1528,7 @@ function renderProductRow(cat, ci, p, pi) {
       else p.talles_disponibles.push(t);
       chip.classList.toggle('on');
       markDirty();
+      refreshColorStock();
     };
     chips.appendChild(chip);
   });
@@ -1539,6 +1540,24 @@ function renderProductRow(cat, ci, p, pi) {
   }
   tallesW.appendChild(chips);
   detail.appendChild(tallesW);
+
+  /* Colores y stock inicial — vive en Firestore (no en productos.json), no
+     hace falta publicar para que quede guardado. Integrado acá (mismo
+     mecanismo que el tab Stock) para no tener que cambiar de tab al cargar
+     un producto nuevo. */
+  const colorStockW = document.createElement('div');
+  colorStockW.style.marginTop = '14px';
+  const csLbl = document.createElement('label'); csLbl.className = 'lbl'; csLbl.textContent = 'Colores y stock inicial';
+  colorStockW.appendChild(csLbl);
+  const csBody = document.createElement('div');
+  colorStockW.appendChild(csBody);
+  detail.appendChild(colorStockW);
+
+  function refreshColorStock() {
+    csBody.textContent = 'Cargando...';
+    getStockDoc(p.id).then(stockDoc => renderColorStockBlock(p, stockDoc, csBody, refreshColorStock));
+  }
+  if (catExpandedIds.has(p.id)) refreshColorStock();
 
   /* Imágenes */
   const imgsW = document.createElement('div');
@@ -1760,7 +1779,6 @@ async function eliminarColorStock(productId, talle, color) {
       ts: firebase.firestore.FieldValue.serverTimestamp()
     });
   }
-  renderStockList();
 }
 
 let stockSearchQuery = '';
@@ -1819,11 +1837,20 @@ async function renderStockEditorInto(productId, cont) {
   if (!p) { cont.textContent = 'Producto no encontrado.'; return; }
 
   const stockDoc = await getStockDoc(productId);
-  cont.innerHTML = '';
+  renderColorStockBlock(p, stockDoc, cont, renderStockList);
+}
 
+/* Bloque de talle → colores → stock inicial, reutilizado en dos lugares:
+   el tab Stock (renderStockEditorInto) y el propio tab Catálogo, para que
+   al cargar un producto nuevo no haga falta cambiar de tab para asignarle
+   color y stock. onChange se llama después de cualquier alta/baja/edición,
+   para que cada lugar decida qué re-renderizar. */
+function renderColorStockBlock(p, stockDoc, cont, onChange) {
+  cont.innerHTML = '';
+  const productId = p.id;
   const talles = p.talles_disponibles || [];
   if (!talles.length) {
-    cont.innerHTML = '<div style="color:#900;font-size:0.85rem;">Este producto no tiene talles marcados en el tab Catálogo — marcá al menos uno antes de cargar stock.</div>';
+    cont.innerHTML = '<div style="color:#900;font-size:0.85rem;">Marcá al menos un talle arriba antes de cargar color y stock.</div>';
     return;
   }
 
@@ -1845,7 +1872,7 @@ async function renderStockEditorInto(productId, cont) {
       const tdSw = document.createElement('td'); tdSw.style.cssText = 'padding:6px;width:28px;';
       const hexIn = document.createElement('input'); hexIn.type = 'color'; hexIn.value = v.hex || '#999999';
       hexIn.style.cssText = 'width:28px;height:28px;border:none;cursor:pointer;';
-      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value).then(renderStockList);
+      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value).then(onChange);
       tdSw.appendChild(hexIn); tr.appendChild(tdSw);
 
       const tdN = document.createElement('td'); tdN.style.padding = '6px'; tdN.textContent = color;
@@ -1859,14 +1886,14 @@ async function renderStockEditorInto(productId, cont) {
         if (delta === 0) return;
         try {
           await ajustarStock(productId, talle, color, delta, delta > 0 ? 'Ingreso manual' : 'Ajuste manual');
-          renderStockList();
+          onChange();
         } catch (e) { alert(e.message); qIn.value = v.cantidad || 0; }
       };
       tdQ.appendChild(qIn); tr.appendChild(tdQ);
 
       const tdA = document.createElement('td'); tdA.style.padding = '6px';
       const delBtn = document.createElement('button'); delBtn.className = 'btn-danger'; delBtn.textContent = '×';
-      delBtn.onclick = () => eliminarColorStock(productId, talle, color);
+      delBtn.onclick = () => eliminarColorStock(productId, talle, color).then(onChange);
       tdA.appendChild(delBtn); tr.appendChild(tdA);
 
       tabla.appendChild(tr);
@@ -1887,7 +1914,7 @@ async function renderStockEditorInto(productId, cont) {
       const cant = parseInt(qtyNew.value, 10) || 0;
       try {
         await ajustarStock(productId, talle, nombre, cant, 'Alta inicial', hexNew.value);
-        renderStockList();
+        onChange();
       } catch (e) { alert(e.message); }
     };
     addRow.appendChild(nameIn); addRow.appendChild(hexNew); addRow.appendChild(qtyNew); addRow.appendChild(addBtn);
