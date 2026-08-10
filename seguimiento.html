@@ -166,6 +166,11 @@
 
       <div id="pago-qr-box" style="display:none;background:#F5F5F5;padding:20px;margin-bottom:16px;text-align:center;">
         <img src="./img/qr-pago.jpg" alt="QR de pago" style="display:block;width:220px;height:220px;max-width:100%;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin:0 auto 10px;" />
+        <div id="pago-qr-datos" style="font-size:0.82rem;line-height:1.6;margin-bottom:10px;display:none;">
+          <div style="color:#666;">Verificá que el pago sea a nombre de:</div>
+          <div id="pago-qr-titular" style="font-weight:500;"></div>
+          <div id="pago-qr-banco" style="color:#666;"></div>
+        </div>
         <p style="color:#666;font-size:0.82rem;line-height:1.5;">
           ¿Preferís pagar por otro medio? <a id="pago-qr-wa" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
         </p>
@@ -432,6 +437,15 @@ function renderPedido(doc) {
       const wa = DATA.negocio.whatsapp;
       const msg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
       document.getElementById('pago-qr-wa').href = `https://wa.me/${wa}?text=${msg}`;
+    }
+    const pago = (DATA && DATA.config && DATA.config.pago) || {};
+    const datosBox = document.getElementById('pago-qr-datos');
+    if (pago.titular || pago.banco) {
+      datosBox.style.display = 'block';
+      document.getElementById('pago-qr-titular').textContent = pago.titular || '';
+      document.getElementById('pago-qr-banco').textContent = pago.banco || '';
+    } else {
+      datosBox.style.display = 'none';
     }
   } else {
     pagoBox.style.display = 'none';
