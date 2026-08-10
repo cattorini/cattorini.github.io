@@ -304,7 +304,7 @@
             "XXL"
           ],
           "disponible": true,
-          "destacado": true,
+          "destacado": false,
           "imagenes": [
             "camisa-oxford-blanca-1.jpg",
             "camisa-oxford-blanca-2.jpg"
@@ -344,7 +344,7 @@
             "XXL"
           ],
           "disponible": true,
-          "destacado": true,
+          "destacado": false,
           "imagenes": [
             "camisa-grafa-1.jpg",
             "camisa-grafa-2.jpg"
@@ -393,7 +393,7 @@
             "48"
           ],
           "disponible": true,
-          "destacado": true,
+          "destacado": false,
           "imagenes": [
             "pantalon-vestir-negro-1.jpg",
             "pantalon-vestir-negro-2.jpg"
@@ -435,7 +435,7 @@
             "48"
           ],
           "disponible": true,
-          "destacado": true,
+          "destacado": false,
           "imagenes": [
             "pantalon-grafa-1.jpg",
             "pantalon-grafa-2.jpg"
@@ -466,7 +466,7 @@
             "38"
           ],
           "disponible": true,
-          "destacado": true,
+          "destacado": false,
           "imagenes": [
             "jean-clasico-azul-1.jpg",
             "jean-clasico-azul-2.jpg"
