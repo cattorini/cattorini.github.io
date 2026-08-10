@@ -848,6 +848,19 @@ function precioParaPerfil(p) {
   return { precio: p.precio_minorista, tipo: 'minorista' };
 }
 
+function renderInfoEnvio() {
+  const banner = document.getElementById('envio-info');
+  const env = DATA.config.envio;
+  const perfil = localStorage.getItem(LS_PERFIL);
+  if (perfil === 'mayorista') {
+    /* El envío gratis por monto es un beneficio exclusivo de minoristas —
+       para un mayorista el envío siempre corre por su cuenta. */
+    banner.textContent = `Envíos por ${env.transportista}. El costo de envío corre por tu cuenta en todos los casos.`;
+  } else {
+    banner.textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
+  }
+}
+
 /* =========== Render product =========== */
 function renderProduct() {
   document.getElementById('loading').style.display = 'none';
@@ -890,8 +903,7 @@ function renderProduct() {
   renderTalles();
   cargarStockProducto();
 
-  const env = DATA.config.envio;
-  document.getElementById('envio-info').textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
+  renderInfoEnvio();
 
   /* JSON-LD Product */
   document.getElementById('ld-product').textContent = JSON.stringify({
