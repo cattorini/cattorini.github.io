@@ -653,14 +653,37 @@
   <div class="drawer-footer" id="drawer-footer" style="display:none;">
     <div id="totals-box"></div>
 
+    <!-- Panel mayorista con datos precargados -->
+    <div id="mayorista-panel" style="display:none;margin-top:16px;padding:14px;background:#F5F5F5;border-left:3px solid #0A0A0A;">
+      <div style="font-size:0.72rem;letter-spacing:0.1em;text-transform:uppercase;color:#666;margin-bottom:6px;">Cuenta mayorista</div>
+      <div id="mayorista-nombre" style="font-size:0.95rem;font-weight:500;"></div>
+      <div id="mayorista-negocio" style="font-size:0.82rem;color:#666;margin-top:2px;"></div>
+      <div id="mayorista-dir" style="font-size:0.82rem;color:#666;margin-top:6px;"></div>
+    </div>
+
     <div style="margin-top:16px;">
       <div style="font-size:0.82rem;font-weight:500;margin-bottom:6px;">Entrega</div>
       <div class="delivery-toggle">
         <button id="tog-retiro" class="active" onclick="setEntrega('retiro')">Retiro en local</button>
         <button id="tog-envio" onclick="setEntrega('envio')">Envío a domicilio</button>
       </div>
+
+      <div id="retiro-pago-wrap" style="margin-top:10px;">
+        <div style="font-size:0.78rem;font-weight:500;margin-bottom:4px;">¿Cómo vas a pagar?</div>
+        <div class="delivery-toggle">
+          <button id="tog-pago-local" class="active" type="button" onclick="setPagaEnLocal(true)">Pago en el local</button>
+          <button id="tog-pago-qr" type="button" onclick="setPagaEnLocal(false)">Pago electrónico (QR)</button>
+        </div>
+        <p style="font-size:0.76rem;color:#666;margin-top:4px;" id="pago-local-hint">Vas a abonar cuando retires el pedido.</p>
+      </div>
+
       <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" />
       <div id="envio-wrap" style="display:none;">
+        <!-- Botón editar visible solo para mayoristas con datos pre-cargados -->
+        <div id="envio-mayo-header" style="display:none;justify-content:space-between;align-items:center;margin-top:4px;font-size:0.78rem;color:#666;">
+          <span>Enviamos a tu dirección registrada</span>
+          <button type="button" id="btn-editar-dir" onclick="toggleEditarDireccion()" style="background:transparent;border:1px solid #E5E5E5;padding:4px 10px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:#0A0A0A;font-family:inherit;">Editar</button>
+        </div>
         <input type="text" id="in-direccion" class="delivery-input" placeholder="Calle, número, piso" maxlength="120" />
         <select id="in-provincia-envio" class="delivery-input"></select>
         <div class="loc-wrap">
@@ -708,9 +731,26 @@
     <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
     <p style="color:#666;font-size:0.9rem;margin-bottom:8px;">Guardá este código para consultar el estado:</p>
     <div style="font-family:'Cormorant Garamond',serif;font-size:2.4rem;letter-spacing:0.15em;background:#F5F5F5;padding:16px 24px;margin:20px 0;" id="confirm-code">···</div>
-    <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;">
+    <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;" id="confirm-msg">
       Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.
     </p>
+
+    <div id="confirm-pago-qr" style="display:none;background:#F5F5F5;padding:20px;margin-bottom:20px;">
+      <p style="font-weight:500;font-size:0.9rem;margin-bottom:4px;">Pedido pendiente de pago</p>
+      <p style="color:#666;font-size:0.82rem;margin-bottom:14px;line-height:1.5;">
+        Escaneá el QR con cualquier billetera virtual que ofrezca pagos QR (Mercado Pago, Cuenta DNI, etc.) para abonar tu pedido.
+      </p>
+      <img src="./img/qr-pago.jpg" alt="QR de pago" style="display:block;width:220px;height:220px;max-width:100%;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin:0 auto 14px;" />
+      <div id="confirm-pago-datos" style="font-size:0.82rem;line-height:1.6;margin-bottom:14px;display:none;">
+        <div style="color:#666;">Verificá que el pago sea a nombre de:</div>
+        <div id="confirm-pago-titular" style="font-weight:500;"></div>
+        <div id="confirm-pago-banco" style="color:#666;"></div>
+      </div>
+      <p style="color:#666;font-size:0.82rem;line-height:1.5;">
+        ¿Preferís pagar por otro medio? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
+      </p>
+    </div>
+
     <a id="track-link" class="btn-primary" style="display:inline-block;padding:14px 28px;text-align:center;text-decoration:none;width:auto;">Ver estado del pedido</a>
     <button class="btn-secondary" onclick="closeConfirm()" style="margin-top:10px;">Seguir comprando</button>
   </div>
@@ -754,6 +794,11 @@ let stockVariantes = null;
 let stockLoadPromise = null;
 let mainImgIdx = 0;
 let entrega = 'retiro';
+/* Solo relevante para retiro — envío siempre necesita pago QR. */
+let pagaEnLocal = true;
+function necesitaQR() {
+  return entrega === 'envio' || (entrega === 'retiro' && !pagaEnLocal);
+}
 let lastSubmit = 0;
 
 /* =========== XSS-safe helpers =========== */
@@ -1160,12 +1205,94 @@ function unlockBodyScroll() {
   window.scrollTo(0, _scrollLockY);
 }
 
-function openCart() {
+async function openCart() {
   renderCart();
   document.getElementById('drawer').classList.add('open');
   document.getElementById('drawer-back').classList.add('open');
   lockBodyScroll();
-  initEnvioUbicaciones();
+  /* Cargar opciones de provincia ANTES de aplicar el modo mayorista
+     (sino el select está vacío y no se pueden pre-llenar los datos) */
+  await initEnvioUbicaciones();
+  aplicarModoMayorista();
+}
+
+function getMayoristaData() {
+  try {
+    const raw = localStorage.getItem('catt_mayorista_data');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function esMayoristaConDatos() {
+  return localStorage.getItem(LS_PERFIL) === 'mayorista' && !!getMayoristaData();
+}
+
+let direccionEditada = false;
+
+/* Si el usuario es mayorista con datos guardados:
+   - Muestra panel resumen arriba (nombre, negocio, contactos, dirección)
+   - Oculta el input de nombre (ya lo tenemos)
+   - Si tiene dirección, pre-llena los campos de envío y los deja readonly + botón "Editar"
+   - Si NO tiene dirección, deja los campos vacíos y editables
+   Si es minorista o mayorista con código master (sin datos), form normal. */
+function aplicarModoMayorista() {
+  const data = getMayoristaData();
+  const panel = document.getElementById('mayorista-panel');
+  if (!panel) return;
+  direccionEditada = false;
+
+  if (esMayoristaConDatos()) {
+    panel.style.display = 'block';
+    document.getElementById('mayorista-nombre').textContent = data.nombre + ' — ' + data.negocio;
+    document.getElementById('mayorista-negocio').textContent = [data.whatsapp && ('WA: ' + data.whatsapp), data.email].filter(Boolean).join(' · ');
+    const dirBits = [data.direccion, data.localidad, data.provincia, data.codigoPostal && ('CP ' + data.codigoPostal)].filter(Boolean);
+    document.getElementById('mayorista-dir').textContent = dirBits.length ? '📍 ' + dirBits.join(', ') : '(sin dirección registrada)';
+
+    document.getElementById('in-nombre').style.display = 'none';
+    document.getElementById('in-nombre').value = data.nombre || '';
+
+    document.getElementById('in-direccion').value = data.direccion || '';
+    document.getElementById('in-provincia-envio').value = data.provincia || '';
+    document.getElementById('in-localidad-envio').value = data.localidad || '';
+    document.getElementById('in-cp').value = data.codigoPostal || '';
+    aplicarReadonlyDireccion(true);
+  } else {
+    panel.style.display = 'none';
+    document.getElementById('in-nombre').style.display = '';
+    document.getElementById('envio-mayo-header').style.display = 'none';
+    aplicarReadonlyDireccion(false);
+  }
+}
+
+/* Habilita o deshabilita los inputs de dirección según modo */
+function aplicarReadonlyDireccion(readonly) {
+  const inputs = ['in-direccion', 'in-provincia-envio', 'in-localidad-envio', 'in-cp'];
+  inputs.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (readonly) {
+      el.setAttribute('disabled', 'disabled');
+      el.style.opacity = '0.7';
+      el.style.background = '#F5F5F5';
+      el.style.cursor = 'not-allowed';
+    } else {
+      el.removeAttribute('disabled');
+      el.style.opacity = '';
+      el.style.background = '';
+      el.style.cursor = '';
+    }
+  });
+  if (!readonly && !document.getElementById('in-provincia-envio').value) {
+    document.getElementById('in-localidad-envio').setAttribute('disabled', 'disabled');
+  }
+}
+
+/* Botón "Editar dirección": desbloquea los campos y oculta el header */
+function toggleEditarDireccion() {
+  direccionEditada = true;
+  aplicarReadonlyDireccion(false);
+  document.getElementById('envio-mayo-header').style.display = 'none';
+  document.getElementById('in-direccion').focus();
 }
 function closeCart() {
   document.getElementById('drawer').classList.remove('open');
@@ -1213,7 +1340,7 @@ function renderCart() {
     info.appendChild(name);
     const meta = document.createElement('div');
     meta.className = 'cart-item-meta';
-    meta.textContent = `${item.categoria} · Talle ${item.talle}`;
+    meta.textContent = `${item.categoria} · Talle ${item.talle}` + (item.color ? ` · ${item.color}` : '');
     info.appendChild(meta);
     const price = document.createElement('div');
     price.className = 'cart-item-price';
@@ -1250,9 +1377,12 @@ function renderTotals() {
   const cart = getCart();
   const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
   const env = DATA.config.envio;
+  const perfil = localStorage.getItem(LS_PERFIL);
   let envio = 0;
   if (entrega === 'envio') {
-    envio = subtotal >= env.gratis_desde ? 0 : env.costo_estandar;
+    /* El envío mayorista siempre corre por cuenta del comprador — el
+       envío gratis por monto es un beneficio exclusivo de minoristas. */
+    envio = (perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar;
   }
   const total = subtotal + envio;
 
@@ -1286,7 +1416,33 @@ function setEntrega(modo) {
   document.getElementById('tog-retiro').classList.toggle('active', modo === 'retiro');
   document.getElementById('tog-envio').classList.toggle('active', modo === 'envio');
   document.getElementById('envio-wrap').style.display = modo === 'envio' ? 'block' : 'none';
+  document.getElementById('retiro-pago-wrap').style.display = modo === 'retiro' ? 'block' : 'none';
+
+  if (modo === 'envio' && esMayoristaConDatos()) {
+    const data = getMayoristaData();
+    const tieneDir = data && data.direccion;
+    if (tieneDir && !direccionEditada) {
+      document.getElementById('envio-mayo-header').style.display = 'flex';
+      aplicarReadonlyDireccion(true);
+    } else {
+      document.getElementById('envio-mayo-header').style.display = 'none';
+      aplicarReadonlyDireccion(false);
+    }
+  } else {
+    document.getElementById('envio-mayo-header').style.display = 'none';
+    if (!esMayoristaConDatos()) aplicarReadonlyDireccion(false);
+  }
+
   renderTotals();
+}
+
+function setPagaEnLocal(val) {
+  pagaEnLocal = val;
+  document.getElementById('tog-pago-local').classList.toggle('active', val);
+  document.getElementById('tog-pago-qr').classList.toggle('active', !val);
+  document.getElementById('pago-local-hint').textContent = val
+    ? 'Vas a abonar cuando retires el pedido.'
+    : 'Vas a poder pagar con QR apenas confirmes la compra.';
 }
 
 function chgCartQty(idx, delta) {
@@ -1376,36 +1532,56 @@ async function sendOrder() {
   const cart = getCart();
   if (!cart.length) return;
 
-  const nombre = sanitizeInput(document.getElementById('in-nombre').value, 80);
-  if (!nombre) {
-    showToast('Ingresá tu nombre.');
-    document.getElementById('in-nombre').focus();
-    return;
-  }
+  const cart_perfil = localStorage.getItem(LS_PERFIL) || 'minorista';
+  const mayData = getMayoristaData();
+  const usarDatosMayorista = cart_perfil === 'mayorista' && !!mayData;
 
-  let direccion = '', localidad = '', provincia = '', cp = '';
-  if (entrega === 'envio') {
-    direccion = sanitizeInput(document.getElementById('in-direccion').value, 120);
-    provincia = sanitizeInput(document.getElementById('in-provincia-envio').value, 40);
-    localidad = sanitizeInput(document.getElementById('in-localidad-envio').value, 60);
-    cp = sanitizeInput(document.getElementById('in-cp').value, 10);
-    if (!direccion || !provincia || !localidad) {
-      showToast('Completá dirección, provincia y localidad.');
+  let nombre, direccion = '', localidad = '', provincia = '', cp = '', negocio = '', whatsapp = '', email = '', cuit = '';
+
+  if (usarDatosMayorista) {
+    nombre = mayData.nombre || '';
+    negocio = mayData.negocio || '';
+    whatsapp = mayData.whatsapp || '';
+    email = mayData.email || '';
+    cuit = mayData.cuit || '';
+    if (entrega === 'envio') {
+      direccion = sanitizeInput(document.getElementById('in-direccion').value, 120);
+      provincia = sanitizeInput(document.getElementById('in-provincia-envio').value, 40);
+      localidad = sanitizeInput(document.getElementById('in-localidad-envio').value, 60);
+      cp = sanitizeInput(document.getElementById('in-cp').value, 10);
+      if (!direccion || !provincia || !localidad) {
+        showToast('Completá dirección, provincia y localidad, o clickeá "Editar" para modificar.');
+        return;
+      }
+    }
+  } else {
+    nombre = sanitizeInput(document.getElementById('in-nombre').value, 80);
+    if (!nombre) {
+      showToast('Ingresá tu nombre.');
+      document.getElementById('in-nombre').focus();
       return;
     }
-    if (window.Ubicaciones) {
-      const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
-      if (!valida) {
-        showToast('Elegí una localidad de la lista sugerida.');
+    if (entrega === 'envio') {
+      direccion = sanitizeInput(document.getElementById('in-direccion').value, 120);
+      provincia = sanitizeInput(document.getElementById('in-provincia-envio').value, 40);
+      localidad = sanitizeInput(document.getElementById('in-localidad-envio').value, 60);
+      cp = sanitizeInput(document.getElementById('in-cp').value, 10);
+      if (!direccion || !provincia || !localidad) {
+        showToast('Completá dirección, provincia y localidad.');
         return;
+      }
+      if (window.Ubicaciones) {
+        const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
+        if (!valida) {
+          showToast('Elegí una localidad de la lista sugerida.');
+          return;
+        }
       }
     }
   }
 
-  const perfil = localStorage.getItem('catt_perfil') || 'minorista';
-
   /* Validación anti-fraude: minorista + envío no puede ir a zona bloqueada */
-  if (perfil === 'minorista' && entrega === 'envio') {
+  if (cart_perfil === 'minorista' && entrega === 'envio') {
     const zonaBloqueada = verificarZonaBloqueada(provincia, localidad);
     if (zonaBloqueada) {
       mostrarZonaBloqueadaCheckout(zonaBloqueada);
@@ -1414,12 +1590,12 @@ async function sendOrder() {
   }
 
   const nota = sanitizeInput(document.getElementById('cart-note').value, 400);
-  const zonaStatus = localStorage.getItem('catt_zona_status') || 'libre';
-  const localidadPerfil = localStorage.getItem('catt_localidad') || '';
+  const zonaStatus = localStorage.getItem(LS_ZONA_STATUS) || 'libre';
+  const localidadPerfil = localStorage.getItem(LS_LOCALIDAD) || '';
 
   const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
   const env = DATA.config.envio;
-  const envio = entrega === 'envio' ? (subtotal >= env.gratis_desde ? 0 : env.costo_estandar) : 0;
+  const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
   const total = subtotal + envio;
 
   const code = genTrackingCode();
@@ -1427,18 +1603,25 @@ async function sendOrder() {
     codigo: code,
     creadoEn: (db && firebase.firestore.FieldValue.serverTimestamp()) || new Date().toISOString(),
     cliente: {
-      nombre,
+      nombre: nombre || '',
+      negocio: negocio || '',
+      whatsapp: whatsapp || '',
+      email: email || '',
+      cuit: cuit || '',
       direccion: entrega === 'envio' ? direccion : '',
       provincia: entrega === 'envio' ? provincia : '',
       localidad: entrega === 'envio' ? localidad : '',
       codigoPostal: entrega === 'envio' ? cp : '',
-      perfil, zonaStatus, localidadPerfil
+      perfil: cart_perfil,
+      zonaStatus: zonaStatus || '',
+      localidadPerfil: localidadPerfil || ''
     },
     items: cart.map(i => ({
       id: i.id, nombre: i.nombre, categoria: i.categoria,
-      talle: i.talle, qty: i.qty, precio: i.precio
+      talle: i.talle, color: i.color || null, qty: i.qty, precio: i.precio
     })),
     modalidad: entrega,
+    pagaEnLocal: entrega === 'retiro' ? pagaEnLocal : false,
     subtotal, envio, total,
     nota,
     estado: 'pendiente'
@@ -1449,6 +1632,42 @@ async function sendOrder() {
     showToast('Sistema de pedidos no disponible. Recargá la página.');
     return;
   }
+
+  /* Descuento de stock atómico — solo para items con color (= bajo control
+     de stock). Productos viejos sin stock cargado (sin color) no se tocan. */
+  const itemsConStock = cart.filter(i => i.color);
+  const resultantePorItem = {};
+  if (itemsConStock.length) {
+    try {
+      await db.runTransaction(async (tx) => {
+        const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
+        const refs = idsUnicos.map(id => db.collection('stock').doc(id));
+        const snaps = await Promise.all(refs.map(r => tx.get(r)));
+        const variantesPorId = {};
+        idsUnicos.forEach((id, idx) => {
+          variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
+        });
+        itemsConStock.forEach(i => {
+          const variantes = variantesPorId[String(i.id)];
+          const actual = ((variantes[i.talle] || {})[i.color] || {}).cantidad || 0;
+          if (actual < i.qty) {
+            throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}. Ajustá la cantidad en el carrito.`);
+          }
+          const restante = actual - i.qty;
+          variantes[i.talle] = variantes[i.talle] || {};
+          variantes[i.talle][i.color] = { ...(variantes[i.talle][i.color] || {}), cantidad: restante };
+          resultantePorItem[i.key] = restante;
+        });
+        idsUnicos.forEach((id, idx) => {
+          tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+        });
+      });
+    } catch (e) {
+      showToast(e.message);
+      return;
+    }
+  }
+
   try {
     const ref = await db.collection('pedidos').add(payload);
     docId = ref.id;
@@ -1458,11 +1677,47 @@ async function sendOrder() {
     return;
   }
 
+  if (itemsConStock.length) {
+    const fecha = new Date().toISOString().split('T')[0];
+    itemsConStock.forEach(i => {
+      db.collection('stock').doc(String(i.id)).collection('movimientos').add({
+        talle: i.talle, color: i.color, delta: -i.qty,
+        cantidadResultante: resultantePorItem[i.key] ?? null,
+        motivo: 'Venta #' + code, fecha,
+        ts: firebase.firestore.FieldValue.serverTimestamp()
+      }).catch(e => console.warn('No se pudo registrar movimiento de stock:', e.message));
+    });
+  }
+
   lastSubmit = now;
   saveMyOrderCode(code, docId);
 
   document.getElementById('confirm-code').textContent = '#' + code;
   document.getElementById('track-link').href = `./seguimiento.html?code=${code}`;
+  const qrBox = document.getElementById('confirm-pago-qr');
+  const msgEl = document.getElementById('confirm-msg');
+  if (necesitaQR()) {
+    qrBox.style.display = 'block';
+    msgEl.textContent = 'Tu pedido queda pendiente de pago. Apenas lo recibamos, lo pasamos a preparación.';
+    const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
+    const waMsg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
+    document.getElementById('confirm-wa-pago').href = `https://wa.me/${wa}?text=${waMsg}`;
+    const pago = DATA.config.pago || {};
+    const datosBox = document.getElementById('confirm-pago-datos');
+    if (pago.titular || pago.banco) {
+      datosBox.style.display = 'block';
+      document.getElementById('confirm-pago-titular').textContent = pago.titular || '';
+      document.getElementById('confirm-pago-banco').textContent = pago.banco || '';
+    } else {
+      datosBox.style.display = 'none';
+    }
+  } else if (entrega === 'retiro') {
+    qrBox.style.display = 'none';
+    msgEl.textContent = 'Tu pedido queda a la espera de que lo confirmemos. Vas a abonarlo cuando pases a retirarlo por el local.';
+  } else {
+    qrBox.style.display = 'none';
+    msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.';
+  }
   document.getElementById('confirm-modal').style.display = 'flex';
 
   saveCart([]);
