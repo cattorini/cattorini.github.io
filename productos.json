@@ -29,7 +29,7 @@
     },
     "mayoristas": {
       "codigo_hash": "280cfbb74b55fca4baa3631bb025bd0c2b7edf87f000827e026569cbad7ccbfe",
-      "minimo_compra": 100000,
+      "minimo_compra": 100001,
       "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo."
     },
     "minoristas": {
