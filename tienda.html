@@ -1074,6 +1074,8 @@ function renderPerfilBadge() {
     showModal();
   };
   badge.appendChild(change);
+
+  renderInfoEnvio();
 }
 
 /* ---------- Zona bloqueada ---------- */
@@ -1162,7 +1164,15 @@ function renderCatStrip() {
 function renderInfoEnvio() {
   const banner = document.getElementById('info-envio');
   const env = DATA.config.envio;
-  banner.textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
+  const { perfil } = getPerfilActual();
+  if (perfil === 'mayorista') {
+    /* El envío gratis por monto es un beneficio exclusivo de minoristas —
+       mostrarle esa leyenda a un mayorista es directamente falso, porque
+       para él el envío siempre corre por su cuenta. */
+    banner.textContent = `Envíos por ${env.transportista}. El costo de envío corre por tu cuenta en todos los casos.`;
+  } else {
+    banner.textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
+  }
 }
 
 function precioParaPerfil(p) {
