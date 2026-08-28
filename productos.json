@@ -322,7 +322,9 @@
             "XL",
             "XXL",
             "XXXL",
-            "S"
+            "S",
+            "38",
+            "40"
           ],
           "disponible": true,
           "destacado": false,
@@ -334,7 +336,7 @@
             "p1-1787924222745-tmm1.jpeg"
           ],
           "fabricacion_propia": false,
-          "tipo_talle": "camisas"
+          "tipo_talle": "camisas confort"
         },
         {
           "id": 2,
