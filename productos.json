@@ -295,8 +295,8 @@
           "id": 1,
           "nombre": "Camisa de vestir con bolsillo. Confort",
           "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\n",
-          "precio_minorista": 69,
-          "precio_mayorista": 30.9,
+          "precio_minorista": 69000,
+          "precio_mayorista": 30900,
           "talles_disponibles": [
             "M",
             "L",
