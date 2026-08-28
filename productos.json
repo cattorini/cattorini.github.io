@@ -298,12 +298,6 @@
           "precio_minorista": 69,
           "precio_mayorista": 30.9,
           "talles_disponibles": [
-            "M",
-            "L",
-            "XL",
-            "XXL",
-            "XXXL",
-            "S",
             "38",
             "40",
             "42",
