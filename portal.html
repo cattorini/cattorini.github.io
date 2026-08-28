@@ -889,11 +889,29 @@ async function loadRemote() {
   raw = base64UnicodeDecode(meta.content);
   data = JSON.parse(raw);
   dataSha = meta.sha;
+  seedNextProductId();
   bindAll();
   renderAll();
   dirty = false;
   document.getElementById('save-bar').style.display = 'none';
   setStatus('Sincronizado', 'ok');
+}
+
+/* Semilla del contador de IDs ni bien se carga el catálogo — a propósito
+   ACÁ y no de forma perezosa dentro de nextProductId(). Si se calculara la
+   primera vez que se agrega un producto, un admin que borra el producto de
+   ID más alto y recién DESPUÉS agrega uno nuevo en la misma sesión
+   terminaría recalculando el máximo sobre el catálogo YA reducido —
+   reutilizando igual un ID que existió (aunque no sea el que se acaba de
+   borrar). Sembrando acá, el contador queda anclado al máximo real que
+   existía al abrir el portal, sin importar qué se borre después. */
+function seedNextProductId() {
+  data.meta = data.meta || {};
+  if (!data.meta.next_product_id) {
+    const allIds = [];
+    (data.categorias || []).forEach(c => (c.productos || []).forEach(p => allIds.push(p.id)));
+    data.meta.next_product_id = (allIds.length ? Math.max(...allIds) : 0) + 1;
+  }
 }
 
 function setStatus(txt, kind) {
@@ -908,8 +926,45 @@ function markDirty() {
   setStatus('Cambios sin publicar');
 }
 
+/* Bloquea "Publicar cambios" si un producto tiene un talle marcado como
+   disponible pero SIN ningún color cargado en Firestore — eso deja comprar
+   ese talle en la tienda sin ningún control de stock real (ver
+   producto.html renderColores: "sin colores" se trata como modo legado sin
+   límite). Solo se valida en productos que YA tienen algo de stock cargado
+   (algún talle con al menos un color) — un producto que nunca tocó stock
+   sigue en modo legado sin bloquear nada, a propósito, para no romper
+   catálogo viejo. Se ataca en el origen (portal) en vez de esconder el
+   talle en la tienda, para no ocultarle al cliente algo que el admin
+   marcó explícitamente como disponible sin avisar por qué. */
+async function validarStockAntesDePublicar() {
+  const problemas = [];
+  for (const cat of (data.categorias || [])) {
+    for (const p of (cat.productos || [])) {
+      if (!p.talles_disponibles || !p.talles_disponibles.length) continue;
+      const stockDoc = await getStockDoc(p.id);
+      const variantes = stockDoc.variantes || {};
+      const tieneAlgoDeStock = Object.values(variantes).some(colores => colores && Object.keys(colores).length > 0);
+      if (!tieneAlgoDeStock) continue;
+      const faltantes = p.talles_disponibles.filter(t => !variantes[t] || !Object.keys(variantes[t]).length);
+      if (faltantes.length) {
+        problemas.push(`#${p.id} · ${p.nombre}: talle${faltantes.length > 1 ? 's' : ''} ${faltantes.join(', ')} sin ningún color cargado`);
+      }
+    }
+  }
+  return problemas;
+}
+
 async function publishChanges() {
   try {
+    const problemasStock = await validarStockAntesDePublicar();
+    if (problemasStock.length) {
+      alert(
+        'No se puede publicar: hay talles marcados como disponibles sin ningún color cargado.\n\n' +
+        problemasStock.join('\n') +
+        '\n\nCargá al menos un color (con su stock) para cada talle en "Colores y stock inicial" (tab Catálogo o Stock), o destildá el talle si todavía no corresponde venderlo.'
+      );
+      return;
+    }
     setStatus('Publicando...');
     const content = JSON.stringify(data, null, 2);
 
@@ -1449,7 +1504,9 @@ function renderProductRow(cat, ci, p, pi) {
   del.className = 'btn-danger'; del.textContent = 'Eliminar';
   del.onclick = () => {
     if (!confirm('Eliminar producto?')) return;
+    const idEliminado = p.id;
     cat.productos.splice(pi, 1); markDirty(); renderCategorias(); poblarSelectsStock();
+    purgarStockProducto(idEliminado).catch(e => console.warn('Purga de stock al eliminar producto falló', idEliminado, e));
   };
   acts.appendChild(del);
   head.appendChild(title); head.appendChild(acts);
@@ -1492,16 +1549,28 @@ function renderProductRow(cat, ci, p, pi) {
   /* Guía de talles — es POR PRODUCTO, no por categoría: dos productos de la
      misma categoría pueden tener cortes distintos (ej. "camisas corte
      clásico" vs "camisas slim fit") con tablas de medidas distintas.
-     p.tipo_talle es el dueño real; si no está seteado (productos viejos,
-     de antes de este cambio) cae al tipo_talle de la categoría para no
-     romper nada. */
+     p.tipo_talle es el dueño real. El fallback al tipo_talle de la
+     categoría SOLO aplica cuando el campo directamente NO EXISTE (productos
+     viejos, de antes de que este campo existiera) — se chequea con
+     `!== undefined`, no con `||`, a propósito: un producto nuevo arranca
+     con tipo_talle = '' (string vacío, explícito, ver addProducto) y ESE
+     caso no debe caer a la categoría — si cayera, un producto recién creado
+     mostraría talles de una guía que el admin nunca eligió, y si después
+     elegía otra, esos talles iniciales quedaban imposibles de destildar
+     desde acá (no tienen chip en la guía nueva) pero seguían vivos en
+     talles_disponibles con su stock cargado en Firestore — el bug real que
+     reportó el cliente. */
   const tipoTalleW = document.createElement('div');
   tipoTalleW.style.marginTop = '10px';
   const ttLbl = document.createElement('label'); ttLbl.className = 'lbl'; ttLbl.textContent = 'Guía de talles';
   const ttSel = document.createElement('select'); ttSel.className = 'inp';
   const tiposDisponibles = Object.keys(data.guia_talles || {});
-  const tipoActual = p.tipo_talle || cat.tipo_talle || '';
-  if (!tiposDisponibles.includes(tipoActual) && tipoActual) {
+  const tipoActual = (p.tipo_talle !== undefined ? p.tipo_talle : cat.tipo_talle) || '';
+  if (!tipoActual) {
+    const optVacio = document.createElement('option');
+    optVacio.value = ''; optVacio.textContent = '— Elegí una guía de talles —'; optVacio.selected = true;
+    ttSel.appendChild(optVacio);
+  } else if (!tiposDisponibles.includes(tipoActual)) {
     const optFalta = document.createElement('option'); optFalta.value = tipoActual; optFalta.textContent = tipoActual + ' (no existe, elegí otra)';
     ttSel.appendChild(optFalta);
   }
@@ -1510,7 +1579,13 @@ function renderProductRow(cat, ci, p, pi) {
     if (t === tipoActual) opt.selected = true;
     ttSel.appendChild(opt);
   });
-  ttSel.onchange = () => { p.tipo_talle = ttSel.value; markDirty(); renderCategorias(); };
+  ttSel.onchange = () => {
+    p.tipo_talle = ttSel.value;
+    const tallesNuevos = data.guia_talles[ttSel.value] ? Object.keys(data.guia_talles[ttSel.value].tabla) : [];
+    reconciliarTalles(p, tallesNuevos, 'Guía de talles cambiada');
+    markDirty();
+    renderCategorias();
+  };
   tipoTalleW.appendChild(ttLbl); tipoTalleW.appendChild(ttSel);
   detail.appendChild(tipoTalleW);
 
@@ -1531,8 +1606,12 @@ function renderProductRow(cat, ci, p, pi) {
     chip.textContent = t;
     chip.onclick = () => {
       const idx = p.talles_disponibles.indexOf(t);
-      if (idx >= 0) p.talles_disponibles.splice(idx, 1);
-      else p.talles_disponibles.push(t);
+      if (idx >= 0) {
+        p.talles_disponibles.splice(idx, 1);
+        purgarTalleStock(p.id, t, 'Talle deseleccionado en Catálogo').catch(e => console.warn('Purga de talle falló', t, e));
+      } else {
+        p.talles_disponibles.push(t);
+      }
       chip.classList.toggle('on');
       markDirty();
       refreshColorStock();
@@ -1542,7 +1621,9 @@ function renderProductRow(cat, ci, p, pi) {
   if (!tipoTalles.length) {
     const w = document.createElement('div');
     w.style.cssText = 'font-size:0.8rem;color:#900;';
-    w.textContent = 'No hay talles definidos para el tipo "' + (tipoActual || '?') + '". Configurá la guía de talles primero.';
+    w.textContent = tipoActual
+      ? 'No hay talles definidos para el tipo "' + tipoActual + '". Configurá la guía de talles primero.'
+      : 'Elegí una guía de talles arriba antes de marcar talles disponibles.';
     tallesW.appendChild(w);
   }
   tallesW.appendChild(chips);
@@ -1612,11 +1693,24 @@ function addCategoria() {
   markDirty(); renderCategorias();
 }
 
+/* ID auto-incremental que NUNCA se reutiliza — se persiste en
+   data.meta.next_product_id (viaja en productos.json, sobrevive a publish).
+   Antes se recalculaba como max(ids actuales)+1 en cada alta: si se
+   borraba el producto con el ID más alto, ese ID quedaba libre y el
+   próximo producto lo heredaba junto con el stock huérfano en Firestore
+   del que se había borrado (stock/{id} nunca se limpiaba solo). La primera
+   vez que corre esta función (productos.json viejo, sin data.meta todavía)
+   arranca el contador en base a los IDs que ya existen, para no pisar nada. */
+function nextProductId() {
+  seedNextProductId(); // no-op si ya se sembró en loadRemote — defensivo, ej. tests que arman `data` a mano
+  const id = data.meta.next_product_id;
+  data.meta.next_product_id = id + 1;
+  return id;
+}
+
 function addProducto(ci) {
   const cat = data.categorias[ci];
-  const allIds = [];
-  data.categorias.forEach(c => (c.productos || []).forEach(p => allIds.push(p.id)));
-  const nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
+  const nextId = nextProductId();
   cat.productos = cat.productos || [];
   cat.productos.push({
     id: nextId,
@@ -1624,7 +1718,12 @@ function addProducto(ci) {
     descripcion: '',
     precio_minorista: 0,
     precio_mayorista: 0,
-    tipo_talle: cat.tipo_talle || '',
+    /* Sin guía de talles por defecto: antes heredaba la de la categoría
+       automáticamente, así que el admin podía tildar talles sin haber
+       elegido guía a propósito — y si después cambiaba de guía, esos
+       talles viejos quedaban huérfanos (ver reconciliarTalles). Ahora
+       arranca vacío y obliga a elegir la guía primero. */
+    tipo_talle: '',
     talles_disponibles: [],
     disponible: true,
     destacado: false,
@@ -1786,6 +1885,65 @@ async function eliminarColorStock(productId, talle, color) {
       ts: firebase.firestore.FieldValue.serverTimestamp()
     });
   }
+}
+
+/* Purga TODOS los colores de un talle puntual — se usa cuando ese talle deja
+   de estar disponible para el producto (se destilda a mano, o cambia la
+   guía de talles y ese talle ya no pertenece a la nueva). Sin esto, el
+   stock queda huérfano en Firestore: invisible en la UI (nada lo vuelve a
+   mostrar porque ya no está en talles_disponibles) pero listo para
+   resucitar si algún día un talle con el mismo nombre vuelve a existir
+   para ese producto — que es exactamente lo que reportó el cliente. */
+async function purgarTalleStock(productId, talle, motivo) {
+  const okAuth = await esperarAuth();
+  if (!okAuth) return; // best-effort: no bloqueamos la edición del catálogo por esto
+  const ref = fbDb.collection('stock').doc(String(productId));
+  let coloresEliminados = null;
+  await fbDb.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    if (!doc.exists) return;
+    const variantes = doc.data().variantes || {};
+    if (!variantes[talle]) return;
+    coloresEliminados = variantes[talle];
+    delete variantes[talle];
+    tx.set(ref, { variantes, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+  });
+  if (coloresEliminados) {
+    const fecha = new Date().toISOString().split('T')[0];
+    for (const [color, v] of Object.entries(coloresEliminados)) {
+      const cantidad = (v && v.cantidad) || 0;
+      if (cantidad === 0) continue;
+      try {
+        await ref.collection('movimientos').add({
+          talle, color, delta: -cantidad, cantidadResultante: 0,
+          motivo: motivo || 'Talle eliminado', fecha,
+          ts: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (e) { console.warn('No se pudo registrar el movimiento de purga', e); }
+    }
+  }
+}
+
+/* Filtra talles_disponibles contra la guía de talles vigente y purga en
+   Firestore lo que quede afuera. Se llama tanto al cambiar de guía como al
+   destildar un talle a mano — es el mismo problema en los dos casos. */
+function reconciliarTalles(p, tallesValidos, motivo) {
+  const validos = new Set(tallesValidos);
+  const actuales = p.talles_disponibles || [];
+  const eliminados = actuales.filter(t => !validos.has(t));
+  p.talles_disponibles = actuales.filter(t => validos.has(t));
+  eliminados.forEach(t => purgarTalleStock(p.id, t, motivo).catch(e => console.warn('Purga de talle falló', t, e)));
+}
+
+/* Purga el doc de stock completo — se usa al eliminar un producto entero.
+   Sin esto, si se reutiliza el ID (ver nextProductId) el próximo producto
+   que lo herede resucita el stock del que se borró. */
+async function purgarStockProducto(productId) {
+  const okAuth = await esperarAuth();
+  if (!okAuth) return;
+  try {
+    await fbDb.collection('stock').doc(String(productId)).delete();
+  } catch (e) { console.warn('No se pudo purgar el stock del producto eliminado', productId, e); }
 }
 
 let stockSearchQuery = '';
