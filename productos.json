@@ -292,8 +292,8 @@
       "productos": [
         {
           "id": 1,
-          "nombre": "Camisa Oxford Blanca X",
-          "descripcion": "Camisa de vestir en algodón Oxford 100%. Corte regular fit, cuello con botones, puños ajustables. Ideal para uniforme corporativo o uso diario.",
+          "nombre": "Camisa de vestir con bolsillo. Confort",
+          "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\n",
           "precio_minorista": 30000,
           "precio_mayorista": 14499,
           "talles_disponibles": [
@@ -301,15 +301,20 @@
             "M",
             "L",
             "XL",
-            "XXL"
+            "XXL",
+            "XXXL"
           ],
           "disponible": true,
           "destacado": false,
           "imagenes": [
-            "camisa-oxford-blanca-1.jpg",
-            "camisa-oxford-blanca-2.jpg"
+            "p1-1787924131119-15iq.jpeg",
+            "p1-1787924203572-bl39.jpeg",
+            "p1-1787924208436-az25.jpeg",
+            "p1-1787924213629-jred.jpeg",
+            "p1-1787924222745-tmm1.jpeg"
           ],
-          "fabricacion_propia": false
+          "fabricacion_propia": false,
+          "tipo_talle": "camisas"
         },
         {
           "id": 2,
