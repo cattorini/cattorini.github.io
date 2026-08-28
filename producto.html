@@ -974,8 +974,10 @@ function renderTalles() {
   grid.innerHTML = '';
   /* La guía de talles es por producto (no por categoría) — dos productos de
      la misma categoría pueden tener cortes distintos. Fallback al tipo de
-     la categoría para productos cargados antes de este cambio. */
-  const tipoTalle = PRODUCT.tipo_talle || CATEGORIA.tipo_talle;
+     la categoría solo si el campo NO EXISTE (productos cargados antes de
+     este cambio) — un producto nuevo con tipo_talle explícitamente vacío
+     ('', ver portal.html addProducto) no debe heredar la de la categoría. */
+  const tipoTalle = PRODUCT.tipo_talle !== undefined ? PRODUCT.tipo_talle : CATEGORIA.tipo_talle;
   const talles = DATA.guia_talles[tipoTalle] ? Object.keys(DATA.guia_talles[tipoTalle].tabla) : (PRODUCT.talles_disponibles || []);
   const disponibles = PRODUCT.talles_disponibles || [];
 
@@ -1105,7 +1107,7 @@ function updateStockInfo() {
 
 /* =========== Guía modal =========== */
 function openGuia() {
-  const tipo = PRODUCT.tipo_talle || CATEGORIA.tipo_talle;
+  const tipo = PRODUCT.tipo_talle !== undefined ? PRODUCT.tipo_talle : CATEGORIA.tipo_talle;
   const guia = DATA.guia_talles[tipo];
   if (!guia) return;
 
