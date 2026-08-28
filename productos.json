@@ -217,6 +217,26 @@
           "70"
         ]
       }
+    },
+    "camisas confort": {
+      "unidad": "cm",
+      "medidas": [
+        "Cuello",
+        "Largo",
+        "Espalda"
+      ],
+      "tabla": {
+        "38": [
+          "70",
+          "80",
+          "80"
+        ],
+        "40": [
+          "90",
+          "100",
+          "100"
+        ]
+      }
     }
   },
   "horarios": {
@@ -297,12 +317,12 @@
           "precio_minorista": 30000,
           "precio_mayorista": 14499,
           "talles_disponibles": [
-            "S",
             "M",
             "L",
             "XL",
             "XXL",
-            "XXXL"
+            "XXXL",
+            "S"
           ],
           "disponible": true,
           "destacado": false,
