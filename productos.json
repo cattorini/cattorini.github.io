@@ -422,7 +422,15 @@
             "42",
             "44",
             "46",
-            "48"
+            "48",
+            "50",
+            "52",
+            "54",
+            "56",
+            "58",
+            "60",
+            "62",
+            "64"
           ],
           "disponible": true,
           "destacado": true,
@@ -528,27 +536,6 @@
             "jean-slim-negro-2.jpg"
           ],
           "fabricacion_propia": false
-        },
-        {
-          "id": 9,
-          "nombre": "Jean Trabajo Reforzado",
-          "descripcion": "Jean pensado para uso industrial. Denim de 14 onzas, costuras dobles, bolsillos reforzados. Larga duración.",
-          "precio_minorista": 36000,
-          "precio_mayorista": 23500,
-          "talles_disponibles": [
-            "30",
-            "32",
-            "34",
-            "36",
-            "38"
-          ],
-          "disponible": true,
-          "destacado": true,
-          "imagenes": [
-            "jean-trabajo-1.jpg",
-            "jean-trabajo-2.jpg"
-          ],
-          "fabricacion_propia": true
         }
       ]
     }
