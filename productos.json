@@ -341,7 +341,15 @@
           ],
           "disponible": true,
           "destacado": true,
-          "imagenes": [],
+          "imagenes": [
+            "p2-1788188086208-k9xy.jpeg",
+            "p2-1788188090378-l27d.jpeg",
+            "p2-1788188096545-84rx.jpeg",
+            "p2-1788188100045-xkz8.jpeg",
+            "p2-1788188105488-79l7.jpeg",
+            "p2-1788188108876-tavs.jpeg",
+            "p2-1788188112472-5bcr.jpeg"
+          ],
           "fabricacion_propia": true,
           "tipo_talle": "camisas confort"
         }
