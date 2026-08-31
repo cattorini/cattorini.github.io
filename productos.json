@@ -113,6 +113,54 @@
           "116",
           "80",
           "107"
+        ],
+        "50": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "52": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "54": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "56": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "58": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "60": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "62": [
+          "",
+          "",
+          "",
+          ""
+        ],
+        "64": [
+          "",
+          "",
+          "",
+          ""
         ]
       }
     },
@@ -356,16 +404,16 @@
       ]
     },
     {
-      "id": "pantalones",
+      "id": "Pantalones",
       "nombre": "Pantalones",
-      "descripcion": "Pantalones de vestir, de trabajo y sport en distintas telas y colores.",
+      "descripcion": "Pantalones de vestir y sport en distintas telas y colores.",
       "tipo_talle": "pantalones",
       "imagen": "cat-pantalones.jpg",
       "productos": [
         {
           "id": 4,
-          "nombre": "Pantalón de Vestir Negro",
-          "descripcion": "Pantalón clásico de vestir en gabardina de poliéster y viscosa. Corte recto, pinzas, dos bolsillos laterales y uno trasero.",
+          "nombre": "Pantalón Sport Confort elastizado. Gabardina 100 % algodon",
+          "descripcion": "Pantalón sport confort de gabardina 100% algodon. Corte chino",
           "precio_minorista": 28000,
           "precio_mayorista": 18500,
           "talles_disponibles": [
@@ -377,12 +425,14 @@
             "48"
           ],
           "disponible": true,
-          "destacado": false,
+          "destacado": true,
           "imagenes": [
             "pantalon-vestir-negro-1.jpg",
-            "pantalon-vestir-negro-2.jpg"
+            "pantalon-vestir-negro-2.jpg",
+            "p4-1788190419065-uy26.jpeg",
+            "p4-1788190423344-ja35.jpeg"
           ],
-          "fabricacion_propia": false
+          "fabricacion_propia": true
         },
         {
           "id": 5,
@@ -400,8 +450,10 @@
           "disponible": true,
           "destacado": false,
           "imagenes": [
-            "pantalon-vestir-gris-1.jpg",
-            "pantalon-vestir-gris-2.jpg"
+            "p5-1788191086030-rgy6.jpeg",
+            "p5-1788191090966-flub.jpeg",
+            "p5-1788191096574-idc7.jpeg",
+            "p5-1788191100555-vc0u.jpeg"
           ],
           "fabricacion_propia": false
         },
