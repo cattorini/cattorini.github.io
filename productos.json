@@ -295,18 +295,18 @@
           "id": 1,
           "nombre": "Camisa de vestir con bolsillo. Confort",
           "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\n",
-          "precio_minorista": 74,
+          "precio_minorista": 69000,
           "precio_mayorista": 30.9,
           "talles_disponibles": [
             "38",
             "40",
-            "42",
             "44",
             "46",
             "48",
             "50",
             "52",
-            "54"
+            "54",
+            "42"
           ],
           "disponible": true,
           "destacado": true,
@@ -324,76 +324,26 @@
         },
         {
           "id": 2,
-          "nombre": "Camisa Oxford Celeste",
-          "descripcion": "Versión celeste de nuestra clásica Oxford. Algodón 100%, corte regular, ideal para look formal.",
-          "precio_minorista": 22000,
-          "precio_mayorista": 14500,
+          "nombre": "Camisa vestir sin bolsillo",
+          "descripcion": "Camisa de vestir confort sin bolsillo. batista lisa. 65% Pol 35% Alg",
+          "precio_minorista": 69000,
+          "precio_mayorista": 30900,
           "talles_disponibles": [
-            "S",
-            "M",
-            "L",
-            "XL"
+            "38",
+            "40",
+            "42",
+            "44",
+            "46",
+            "48",
+            "50",
+            "52",
+            "54"
           ],
           "disponible": true,
-          "destacado": false,
-          "imagenes": [
-            "camisa-oxford-celeste-1.jpg",
-            "camisa-oxford-celeste-2.jpg"
-          ],
-          "fabricacion_propia": false
-        },
-        {
-          "id": 3,
-          "nombre": "Camisa Trabajo Grafa",
-          "descripcion": "Camisa industrial en grafa reforzada. Diseñada para uso intensivo, cuello camisero, bolsillos con solapa.",
-          "precio_minorista": 18500,
-          "precio_mayorista": 12000,
-          "talles_disponibles": [
-            "M",
-            "L",
-            "XL",
-            "XXL"
-          ],
-          "disponible": true,
-          "destacado": false,
-          "imagenes": [
-            "camisa-grafa-1.jpg",
-            "camisa-grafa-2.jpg"
-          ],
-          "fabricacion_propia": false
-        },
-        {
-          "id": 10,
-          "nombre": "Camisa Strong",
-          "descripcion": "Descripccion de camisa strong",
-          "precio_minorista": 35000,
-          "precio_mayorista": 20001,
-          "talles_disponibles": [
-            "L",
-            "XL",
-            "XXL"
-          ],
-          "disponible": true,
-          "destacado": false,
-          "imagenes": [
-            "p10-1786037697183-asdw.jpeg"
-          ],
-          "fabricacion_propia": false
-        },
-        {
-          "id": 11,
-          "nombre": "Camisa Slim J",
-          "descripcion": "Camisa Slim color llamativo",
-          "precio_minorista": 35000,
-          "precio_mayorista": 30000,
-          "tipo_talle": "camisa_slim",
-          "talles_disponibles": [
-            "S"
-          ],
-          "disponible": true,
-          "destacado": false,
+          "destacado": true,
+          "imagenes": [],
           "fabricacion_propia": true,
-          "imagenes": []
+          "tipo_talle": "camisas confort"
         }
       ]
     },
