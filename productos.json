@@ -311,11 +311,13 @@
           "disponible": true,
           "destacado": true,
           "imagenes": [
-            "p1-1787924131119-15iq.jpeg",
-            "p1-1787924203572-bl39.jpeg",
-            "p1-1787924208436-az25.jpeg",
-            "p1-1787924213629-jred.jpeg",
-            "p1-1787924222745-tmm1.jpeg"
+            "p1-1788180429848-nphh.jpeg",
+            "p1-1788180452688-9vog.jpeg",
+            "p1-1788180459955-laz7.jpeg",
+            "p1-1788180466504-80if.jpeg",
+            "p1-1788180471994-8ymn.jpeg",
+            "p1-1788180476338-3dkq.jpeg",
+            "p1-1788180481670-cwzp.jpeg"
           ],
           "fabricacion_propia": true,
           "tipo_talle": "camisas confort"
@@ -597,5 +599,8 @@
     "keywords": "Cattorini, camisas Las Flores, pantalones Las Flores, jeans Las Flores, fábrica textil Argentina, mayorista textil, camisas mayorista, pantalones mayorista, jeans mayorista, indumentaria Las Flores, Buenos Aires",
     "author": "Cattorini",
     "url_base": "https://cattorini.github.io"
+  },
+  "meta": {
+    "next_product_id": 12
   }
 }
