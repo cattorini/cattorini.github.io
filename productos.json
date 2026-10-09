@@ -602,8 +602,8 @@
           "id": 4,
           "nombre": "Pantalón Sport Confort elastizado. Gabardina 100 % algodon",
           "descripcion": "Pantalón sport confort de gabardina 100% algodon. Corte chino",
-          "precio_minorista": 28000,
-          "precio_mayorista": 18500,
+          "precio_minorista": 55,
+          "precio_mayorista": 33.9,
           "talles_disponibles": [
             "38",
             "40",
@@ -632,8 +632,8 @@
           "id": 5,
           "nombre": "Pantalón de Vestir Alpaca",
           "descripcion": "Pantalon de vestir Alpaca. Sin pinzas\n",
-          "precio_minorista": 28000,
-          "precio_mayorista": 18500,
+          "precio_minorista": 77,
+          "precio_mayorista": 33.9,
           "talles_disponibles": [
             "38",
             "40",
@@ -661,41 +661,20 @@
           ],
           "fabricacion_propia": true,
           "tipo_talle": "Pantalon vestir"
-        },
-        {
-          "id": 6,
-          "nombre": "Pantalón Trabajo Grafa",
-          "descripcion": "Pantalón de trabajo en grafa reforzada. Bolsillos amplios, cintura con elástico lateral y presillas anchas.",
-          "precio_minorista": 24000,
-          "precio_mayorista": 15500,
-          "talles_disponibles": [
-            "40",
-            "42",
-            "44",
-            "46",
-            "48"
-          ],
-          "disponible": true,
-          "destacado": false,
-          "imagenes": [
-            "pantalon-grafa-1.jpg",
-            "pantalon-grafa-2.jpg"
-          ],
-          "fabricacion_propia": false
         }
       ]
     },
     {
-      "id": "jeans",
+      "id": "Jeans",
       "nombre": "Jeans",
-      "descripcion": "Jeans clásicos, corte recto y slim, denim de calidad.",
-      "tipo_talle": "jeans",
+      "descripcion": "Jeans 5 bolsillos.",
+      "tipo_talle": "Jeans",
       "imagen": "cat-jeans.jpg",
       "productos": [
         {
           "id": 7,
           "nombre": "Jean Clásico Recto Azul",
-          "descripcion": "Jean de corte recto en denim de 12 onzas. Cinco bolsillos, tiro medio, remaches metálicos. El clásico que nunca falla.",
+          "descripcion": "Jeans 5 bolsillos.  Slim fit denim elastzado blue.",
           "precio_minorista": 32000,
           "precio_mayorista": 21000,
           "talles_disponibles": [
@@ -707,12 +686,12 @@
             "38"
           ],
           "disponible": true,
-          "destacado": false,
+          "destacado": true,
           "imagenes": [
             "jean-clasico-azul-1.jpg",
             "jean-clasico-azul-2.jpg"
           ],
-          "fabricacion_propia": false
+          "fabricacion_propia": true
         },
         {
           "id": 8,
