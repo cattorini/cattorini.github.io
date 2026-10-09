@@ -680,11 +680,32 @@
           "talles_disponibles": [
             "38",
             "40",
-            "42"
+            "42",
+            "44",
+            "46",
+            "48",
+            "50",
+            "52",
+            "54",
+            "56",
+            "58",
+            "60",
+            "62",
+            "64",
+            "66",
+            "68",
+            "70",
+            "72",
+            "74",
+            "76",
+            "78",
+            "80"
           ],
           "disponible": true,
           "destacado": true,
-          "imagenes": [],
+          "imagenes": [
+            "p7-1791558513090-6408.jpeg"
+          ],
           "fabricacion_propia": true,
           "tipo_talle": "Jeans Catto\"s"
         },
