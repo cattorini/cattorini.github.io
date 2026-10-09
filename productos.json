@@ -521,9 +521,9 @@
   },
   "categorias": [
     {
-      "id": "camisas",
+      "id": "Camisas",
       "nombre": "Camisas",
-      "descripcion": "Camisas de vestir e industriales, algodón y mezclas.",
+      "descripcion": "Camisas sport y vestir. Confort y slim fit",
       "tipo_talle": "camisas",
       "imagen": "cat-camisas.jpg",
       "productos": [
