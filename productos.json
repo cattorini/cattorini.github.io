@@ -615,20 +615,18 @@
             "52",
             "54",
             "56",
-            "58",
-            "60",
-            "62",
-            "64"
+            "58"
           ],
           "disponible": true,
           "destacado": true,
           "imagenes": [
-            "pantalon-vestir-negro-1.jpg",
-            "pantalon-vestir-negro-2.jpg",
             "p4-1788190419065-uy26.jpeg",
-            "p4-1788190423344-ja35.jpeg"
+            "p4-1788190423344-ja35.jpeg",
+            "p4-1791553332679-h2tj.jpeg",
+            "p4-1791553362361-297n.jpeg"
           ],
-          "fabricacion_propia": true
+          "fabricacion_propia": true,
+          "tipo_talle": "Pantalon confort"
         },
         {
           "id": 5,
