@@ -630,8 +630,8 @@
         },
         {
           "id": 5,
-          "nombre": "Pantalón de Vestir Gris",
-          "descripcion": "Mismo modelo clásico en gris antracita. Gabardina de poliéster y viscosa, corte recto con pinzas.",
+          "nombre": "Pantalón de Vestir Alpaca",
+          "descripcion": "Pantalon de vestir Alpaca. Sin pinzas\n",
           "precio_minorista": 28000,
           "precio_mayorista": 18500,
           "talles_disponibles": [
@@ -639,17 +639,28 @@
             "40",
             "42",
             "44",
-            "46"
+            "46",
+            "48",
+            "50",
+            "52",
+            "54",
+            "56",
+            "58",
+            "60",
+            "62",
+            "64",
+            "66"
           ],
           "disponible": true,
-          "destacado": false,
+          "destacado": true,
           "imagenes": [
             "p5-1788191086030-rgy6.jpeg",
             "p5-1788191090966-flub.jpeg",
             "p5-1788191096574-idc7.jpeg",
             "p5-1788191100555-vc0u.jpeg"
           ],
-          "fabricacion_propia": false
+          "fabricacion_propia": true,
+          "tipo_talle": "Pantalon vestir"
         },
         {
           "id": 6,
