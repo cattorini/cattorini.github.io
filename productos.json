@@ -666,7 +666,7 @@
     },
     {
       "id": "Jeans Cattos",
-      "nombre": "Cattos",
+      "nombre": "Jean Cattos",
       "descripcion": "Denim 5 bolsillos.",
       "tipo_talle": "Jeans",
       "imagen": "cat-jeans.jpg",
@@ -711,7 +711,7 @@
         },
         {
           "id": 8,
-          "nombre": "Jean Cattos lavado intermedio",
+          "nombre": "Jean Cattos",
           "descripcion": "Jean 5 bolsillos Slim fit, denim elastizado lavado intermedio.",
           "precio_minorista": 36000,
           "precio_mayorista": 26900,
