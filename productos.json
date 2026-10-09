@@ -592,7 +592,7 @@
       ]
     },
     {
-      "id": "Pantalones",
+      "id": "Pantalones Cattorini",
       "nombre": "Pantalones",
       "descripcion": "Pantalones de vestir y sport en distintas telas y colores.",
       "tipo_talle": "pantalones",
@@ -602,8 +602,8 @@
           "id": 4,
           "nombre": "Pantalón Sport Confort elastizado. Gabardina 100 % algodon",
           "descripcion": "Pantalón sport confort de gabardina 100% algodon. Corte chino",
-          "precio_minorista": 55,
-          "precio_mayorista": 33.9,
+          "precio_minorista": 55000,
+          "precio_mayorista": 33900,
           "talles_disponibles": [
             "38",
             "40",
@@ -632,8 +632,8 @@
           "id": 5,
           "nombre": "Pantalón de Vestir Alpaca",
           "descripcion": "Pantalon de vestir Alpaca. Sin pinzas\n",
-          "precio_minorista": 77,
-          "precio_mayorista": 33.9,
+          "precio_minorista": 77000,
+          "precio_mayorista": 33900,
           "talles_disponibles": [
             "38",
             "40",
@@ -665,33 +665,28 @@
       ]
     },
     {
-      "id": "Jeans",
-      "nombre": "Jeans",
-      "descripcion": "Jeans 5 bolsillos.",
+      "id": "Jeans Cattos",
+      "nombre": "Cattos",
+      "descripcion": "Denim 5 bolsillos.",
       "tipo_talle": "Jeans",
       "imagen": "cat-jeans.jpg",
       "productos": [
         {
           "id": 7,
-          "nombre": "Jean Clásico Recto Azul",
-          "descripcion": "Jeans 5 bolsillos.  Slim fit denim elastzado blue.",
-          "precio_minorista": 32000,
-          "precio_mayorista": 21000,
+          "nombre": "Jean Cattos Clásico Recto Azul",
+          "descripcion": "Jeans 5 bolsillos.  Slim fit denim elastizado blue.",
+          "precio_minorista": 36000,
+          "precio_mayorista": 26900,
           "talles_disponibles": [
-            "28",
-            "30",
-            "32",
-            "34",
-            "36",
-            "38"
+            "38",
+            "40",
+            "42"
           ],
           "disponible": true,
           "destacado": true,
-          "imagenes": [
-            "jean-clasico-azul-1.jpg",
-            "jean-clasico-azul-2.jpg"
-          ],
-          "fabricacion_propia": true
+          "imagenes": [],
+          "fabricacion_propia": true,
+          "tipo_talle": "Jeans Catto\"s"
         },
         {
           "id": 8,
