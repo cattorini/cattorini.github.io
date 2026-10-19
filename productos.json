@@ -522,14 +522,14 @@
   "categorias": [
     {
       "id": "Camisas",
-      "nombre": "Camisas",
+      "nombre": "Camisas Cattorini",
       "descripcion": "Camisas sport y vestir. Confort y slim fit",
       "tipo_talle": "camisas",
       "imagen": "cat-camisas.jpg",
       "productos": [
         {
           "id": 1,
-          "nombre": "Camisa de vestir con bolsillo. Confort",
+          "nombre": "Camisa de vestir con bolsillo. Confort. Cattorini",
           "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\n",
           "precio_minorista": 79000,
           "precio_mayorista": 30.9,
@@ -588,6 +588,19 @@
           ],
           "fabricacion_propia": true,
           "tipo_talle": "camisas confort"
+        },
+        {
+          "id": 12,
+          "nombre": "Producto nuevo",
+          "descripcion": "",
+          "precio_minorista": 0,
+          "precio_mayorista": 0,
+          "tipo_talle": "",
+          "talles_disponibles": [],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": []
         }
       ]
     },
@@ -796,6 +809,6 @@
     "url_base": "https://cattorini.github.io"
   },
   "meta": {
-    "next_product_id": 12
+    "next_product_id": 13
   }
 }
