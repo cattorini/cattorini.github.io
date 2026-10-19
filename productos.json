@@ -22,7 +22,7 @@
   },
   "config": {
     "envio": {
-      "gratis_desde": 0,
+      "gratis_desde": 100000,
       "costo_estandar": 4500,
       "transportista": "Vía Cargo, Correo Argentino",
       "leyenda": "Enviamos a todo el país por Vía Cargo. Envío gratis en compras minoristas.\nPor compras mayoristas coordinar con el cliente."
@@ -746,7 +746,7 @@
     },
     "fabrica": {
       "titulo": "Nuestra Producción",
-      "texto": "Más de sesenta años vistiendo a los florenses  y abasteciendo a comercios de todo el país.\nNuestra marca insignia es CATTORINI. Se inició el 5 de Octubre de 1959 por iniciativa de Osvaldo J. Cattorini que con su creatividad y empuje desarrolló un proyecto que introdujo continuamente innovaciones en su propuesta. Luego se agregaron las etiquetas CATTO'S, LAWRENCE y STRONG ampliando la cobertura de diferentes segmentos en el mercado. \nSeleccionamos cada prenda con el mismo criterio desde 1959: buena tela, excelente terminación y el respeto por los plazos de entrega."
+      "texto": "Más de sesenta años vistiendo a los florenses y abasteciendo a comercios de todo el país.\nNuestra marca insignia es CATTORINI. Se inició el 5 de Octubre de 1959 por iniciativa de Osvaldo J. Cattorini que con su creatividad y empuje desarrolló un proyecto que introdujo continuamente innovaciones en su propuesta. Luego se agregaron las etiquetas CATTO'S, LAWRENCE y STRONG ampliando la cobertura de diferentes segmentos en el mercado. \nSeleccionamos cada prenda con el mismo criterio desde 1959: buena tela, excelente terminación y el respeto por los plazos de entrega."
     },
     "local": {
       "titulo": "Visitá el local",
