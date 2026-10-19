@@ -522,14 +522,14 @@
   "categorias": [
     {
       "id": "Camisas",
-      "nombre": "Camisas Cattorini",
+      "nombre": "Camisas",
       "descripcion": "Camisas sport y vestir. Confort y slim fit",
       "tipo_talle": "camisas",
       "imagen": "cat-camisas.jpg",
       "productos": [
         {
           "id": 1,
-          "nombre": "Camisa de vestir con bolsillo. Confort. Cattorini",
+          "nombre": "Camisa de vestir con bolsillo. Confort",
           "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\n",
           "precio_minorista": 79000,
           "precio_mayorista": 30.9,
@@ -591,11 +591,11 @@
         },
         {
           "id": 12,
-          "nombre": "Producto nuevo",
-          "descripcion": "",
+          "nombre": "Camisa Lawrence. ",
+          "descripcion": "Camisa sport marca Lawrence, cuadros, dos bolsillos con tapa al bies. Slime fit",
           "precio_minorista": 0,
           "precio_mayorista": 0,
-          "tipo_talle": "",
+          "tipo_talle": "camisas confort",
           "talles_disponibles": [],
           "disponible": true,
           "destacado": false,
