@@ -22,10 +22,10 @@
   },
   "config": {
     "envio": {
-      "gratis_desde": 80000,
+      "gratis_desde": 0,
       "costo_estandar": 4500,
-      "transportista": "Vía Cargo",
-      "leyenda": "Enviamos a todo el país por Vía Cargo. Envío gratis en compras superiores a $80.000."
+      "transportista": "Vía Cargo, Correo Argentino",
+      "leyenda": "Enviamos a todo el país por Vía Cargo. Envío gratis en compras minoristas.\nPor compras mayoristas coordinar con el cliente."
     },
     "mayoristas": {
       "codigo_hash": "280cfbb74b55fca4baa3631bb025bd0c2b7edf87f000827e026569cbad7ccbfe",
