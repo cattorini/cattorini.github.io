@@ -596,7 +596,12 @@
           "precio_minorista": 0,
           "precio_mayorista": 0,
           "tipo_talle": "camisas confort",
-          "talles_disponibles": [],
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
           "disponible": true,
           "destacado": false,
           "fabricacion_propia": true,
