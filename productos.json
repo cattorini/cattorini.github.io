@@ -624,7 +624,7 @@
       "productos": [
         {
           "id": 4,
-          "nombre": "Pantalón Sport Confort elastizado. Gabardina 100 % algodon",
+          "nombre": "Pantalón Cattorini, Sport Confort elastizado. Gabardina 100 % algodon",
           "descripcion": "Pantalón sport confort de gabardina 100% algodon. Corte chino",
           "precio_minorista": 55000,
           "precio_mayorista": 33900,
@@ -654,7 +654,7 @@
         },
         {
           "id": 5,
-          "nombre": "Pantalón de Vestir Alpaca",
+          "nombre": "Pantalón Cattorini de Vestir Alpaca",
           "descripcion": "Pantalon de vestir Alpaca. Sin pinzas\n",
           "precio_minorista": 77000,
           "precio_mayorista": 33900,
@@ -752,11 +752,11 @@
             "56"
           ],
           "disponible": true,
-          "destacado": false,
+          "destacado": true,
           "imagenes": [
             "p8-1791559030263-2hzp.jpeg"
           ],
-          "fabricacion_propia": false,
+          "fabricacion_propia": true,
           "tipo_talle": "Jeans Catto\"s"
         }
       ]
