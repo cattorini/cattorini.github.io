@@ -1,15 +1,26 @@
 /**
  * Datos de prueba reutilizables.
- * Hash del código master "CATT2024" precalculado.
+ *
+ * IMPORTANTE: el código master de acá es SOLO de test. Los tests sirven
+ * fixtures/productos.fixture.json (no el productos.json real), cuyo
+ * config.mayoristas.codigo_hash es el hash de este código. Nunca poner acá
+ * un código real: la carpeta tests/ se publica en GitHub Pages.
  */
 
-export const CODIGO_MASTER = 'CATT2024';
-export const CODIGO_MASTER_HASH = '280cfbb74b55fca4baa3631bb025bd0c2b7edf87f000827e026569cbad7ccbfe';
+export const CODIGO_MASTER = 'TEST-MASTER-0001';
+/** SHA-256 hex de "TEST-MASTER-0001" (= config.mayoristas.codigo_hash del fixture) */
+export const CODIGO_MASTER_HASH = 'bcb1625dafeeb125eff030c86dff6e5786a9466740ce91418f2738cdc3a35294';
+
+/** Usuario de staff de PRUEBA (Firebase Auth email/contraseña, solo existe en
+ *  el mock — setupPage lo registra por default en firebase.authUsers). Es el
+ *  mismo email que usa la allowlist de tests/rules/reference. */
+export const STAFF_EMAIL = 'staff@cattorini.test';
+export const STAFF_PASS = 'staff-test-pass-123';
 
 /** Código individual de mayorista para tests */
 export const CODIGO_MAYO_INDIVIDUAL = 'CATT-TEST01';
-/** SHA-256 hex de "CATT-TEST01" — precalculado */
-export const CODIGO_MAYO_INDIVIDUAL_HASH = '2b78d3a8b5b8ff02c3eb8f2cd82ff02c34fd12a7a89dc0bb1cd0bfec9e0abd5f';
+/** SHA-256 hex de "CATT-TEST01" */
+export const CODIGO_MAYO_INDIVIDUAL_HASH = '58a5cebc72d33ba18f32cc265a084d74542bff3c6c339566183d93bfad453034';
 
 export const mayoristaSample = {
   nombre: 'Juan Pérez',

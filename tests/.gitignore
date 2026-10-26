@@ -3,3 +3,6 @@ test-results/
 playwright-report/
 playwright/.cache/
 *.log
+
+rules/.generated/
+*-debug.log
