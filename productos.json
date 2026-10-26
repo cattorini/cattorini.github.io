@@ -28,7 +28,7 @@
       "leyenda": "Enviamos a todo el país por Vía Cargo. Envío gratis en compras minoristas.\nPor compras mayoristas coordinar con el cliente."
     },
     "mayoristas": {
-      "codigo_hash": "280cfbb74b55fca4baa3631bb025bd0c2b7edf87f000827e026569cbad7ccbfe",
+      "codigo_hash": "",
       "minimo_compra": 130000,
       "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo."
     },
