@@ -8,4 +8,4 @@ Disallow: /portal.html
 Disallow: /pedidos.html
 Disallow: /qr.html
 
-Sitemap: https://cattorini.github.io/sitemap.xml
+Sitemap: https://cattorinioriginal.com/sitemap.xml

@@ -9,13 +9,13 @@
   <title id="page-title">Producto — Cattorini</title>
   <meta name="description" id="page-desc" content="Producto de Cattorini. Camisas, pantalones y jeans de fabricación argentina." />
   <meta name="robots" content="index, follow, max-image-preview:large" />
-  <link rel="canonical" id="page-canonical" href="https://cattorini.github.io/producto.html" />
+  <link rel="canonical" id="page-canonical" href="https://cattorinioriginal.com/producto.html" />
 
   <meta property="og:type" content="product" />
   <meta property="og:site_name" content="Cattorini" />
   <meta property="og:title" id="og-title" content="Producto Cattorini" />
   <meta property="og:description" id="og-desc" content="Comprá este producto en Cattorini." />
-  <meta property="og:image" id="og-image" content="https://cattorini.github.io/img/og-image.jpg" />
+  <meta property="og:image" id="og-image" content="https://cattorinioriginal.com/img/og-image.jpg" />
   <meta property="og:locale" content="es_AR" />
 
   <link rel="icon" href="./img/logo.jpeg" type="image/png" />
@@ -897,11 +897,11 @@ function renderProduct() {
 
   document.getElementById('page-title').textContent = `${PRODUCT.nombre} — Cattorini`;
   document.getElementById('page-desc').setAttribute('content', PRODUCT.descripcion || `Comprá ${PRODUCT.nombre} en Cattorini.`);
-  document.getElementById('page-canonical').setAttribute('href', `https://cattorini.github.io/producto.html?id=${PRODUCT.id}`);
+  document.getElementById('page-canonical').setAttribute('href', `https://cattorinioriginal.com/producto.html?id=${PRODUCT.id}`);
   document.getElementById('og-title').setAttribute('content', PRODUCT.nombre);
   document.getElementById('og-desc').setAttribute('content', PRODUCT.descripcion || '');
   if (PRODUCT.imagenes && PRODUCT.imagenes.length && imgSrc(PRODUCT.imagenes[0])) {
-    document.getElementById('og-image').setAttribute('content', 'https://cattorini.github.io/' + imgSrc(PRODUCT.imagenes[0]).slice(2));
+    document.getElementById('og-image').setAttribute('content', 'https://cattorinioriginal.com/' + imgSrc(PRODUCT.imagenes[0]).slice(2));
   }
 
   document.getElementById('bc-cat').textContent = CATEGORIA.nombre;
@@ -942,10 +942,10 @@ function renderProduct() {
     "description": PRODUCT.descripcion || '',
     "sku": String(PRODUCT.id),
     "brand": { "@type": "Brand", "name": "Cattorini" },
-    "image": (PRODUCT.imagenes || []).filter(i => imgSrc(i)).map(i => 'https://cattorini.github.io/' + imgSrc(i).slice(2)),
+    "image": (PRODUCT.imagenes || []).filter(i => imgSrc(i)).map(i => 'https://cattorinioriginal.com/' + imgSrc(i).slice(2)),
     "offers": {
       "@type": "Offer",
-      "url": `https://cattorini.github.io/producto.html?id=${PRODUCT.id}`,
+      "url": `https://cattorinioriginal.com/producto.html?id=${PRODUCT.id}`,
       "priceCurrency": "ARS",
       "price": String(pricing.precio),
       "availability": PRODUCT.disponible ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
@@ -957,10 +957,10 @@ function renderProduct() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     "itemListElement": [
-      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://cattorini.github.io/index.html" },
-      { "@type": "ListItem", "position": 2, "name": "Tienda", "item": "https://cattorini.github.io/tienda.html" },
-      { "@type": "ListItem", "position": 3, "name": CATEGORIA.nombre, "item": `https://cattorini.github.io/tienda.html?cat=${encodeURIComponent(CATEGORIA.id)}` },
-      { "@type": "ListItem", "position": 4, "name": PRODUCT.nombre, "item": `https://cattorini.github.io/producto.html?id=${PRODUCT.id}` }
+      { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://cattorinioriginal.com/index.html" },
+      { "@type": "ListItem", "position": 2, "name": "Tienda", "item": "https://cattorinioriginal.com/tienda.html" },
+      { "@type": "ListItem", "position": 3, "name": CATEGORIA.nombre, "item": `https://cattorinioriginal.com/tienda.html?cat=${encodeURIComponent(CATEGORIA.id)}` },
+      { "@type": "ListItem", "position": 4, "name": PRODUCT.nombre, "item": `https://cattorinioriginal.com/producto.html?id=${PRODUCT.id}` }
     ]
   });
 }
