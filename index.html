@@ -258,7 +258,8 @@
       font-weight: 500;
       border: 1px solid var(--fg);
       cursor: pointer;
-      transition: all .25s;
+      /* Solo colores: si incluye opacity/transform pelea con las animaciones de GSAP y los botones quedan invisibles. */
+      transition: background-color .25s, color .25s, border-color .25s;
       text-decoration: none;
       background: var(--fg);
       color: var(--bg);
