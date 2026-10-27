@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="no-referrer" />
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com;" />
+  <!-- CSP sin comodines: solo Firestore y Firebase Auth email/contraseña -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none';" />
   <title>Pedidos Cattorini</title>
   <link rel="icon" href="./img/logo.jpeg" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -107,6 +108,8 @@
     .card-pago { font-size: 0.68rem; letter-spacing: 0.04em; padding: 2px 7px; margin-top: 4px; display: inline-block; }
     .card-pago.local { background: #E7F5E7; color: #1A6B1A; }
     .card-pago.qr { background: #FFF7E0; color: #7A5000; }
+    .card-aviso { font-size: 0.68rem; padding: 2px 7px; margin-top: 4px; display: inline-block; background: #FDECEC; color: #900; }
+    .item-aviso { color: #900; font-size: 0.75rem; }
 
     .filters {
       display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
@@ -225,12 +228,17 @@
       <img src="./img/logo.jpeg" alt="Cattorini" style="height:32px;width:auto;margin:0 auto 12px;display:block;" />
       <div style="font-size:0.72rem;letter-spacing:0.15em;text-transform:uppercase;color:#666;">Cola de pedidos</div>
     </div>
+    <div style="font-size:0.82rem;color:#666;margin-bottom:12px;">Iniciá sesión con tu cuenta de staff. Queda guardada en este dispositivo.</div>
     <div class="mb-3">
-      <label class="lbl">Contraseña</label>
-      <input type="password" id="in-pass" class="inp" placeholder="Ingresá tu contraseña" autocomplete="current-password" />
+      <label class="lbl" for="staff-email">Email</label>
+      <input type="email" id="staff-email" class="inp" autocomplete="username" />
+    </div>
+    <div class="mb-3">
+      <label class="lbl" for="staff-pass">Contraseña</label>
+      <input type="password" id="staff-pass" class="inp" autocomplete="current-password" />
     </div>
     <div id="err-auth" style="display:none;padding:10px 14px;background:#FDECEC;border-left:3px solid #C00;color:#900;font-size:0.85rem;margin-bottom:10px;"></div>
-    <button class="btn" style="width:100%;padding:12px;" onclick="doAuth()">Entrar</button>
+    <button class="btn" id="staff-btn" style="width:100%;padding:12px;" onclick="doStaffLogin()">Iniciar sesión</button>
     <button class="btn-ghost" style="width:100%;margin-top:8px;padding:10px;" onclick="location.href='./portal.html'">← Volver al portal</button>
   </div>
 </div>
@@ -246,7 +254,7 @@
       <span id="rt-badge" style="font-size:0.72rem;padding:4px 10px;background:rgba(255,255,255,0.1);">···</span>
       <button onclick="location.href='./portal.html'">Portal</button>
       <button onclick="openManual()">+ Manual</button>
-      <button onclick="doLogout()">Salir</button>
+      <button onclick="doLogout()" title="Cierra la sesión de staff en este dispositivo">Cerrar sesión</button>
     </div>
   </header>
 
@@ -429,11 +437,9 @@ let db = null;
 let auth = null;
 
 /* =========== Constants =========== */
-const LS_EPAT = 'catt_epat';
-const LS_META = 'catt_epat_meta';
-const SESSION_PAT = 'catt_pat_session';
-const SESSION_PEDIDOS = 'catt_pedidos_session';
-const PBKDF2_ITER = 300000;
+const SS_STAFF_MSG = 'catt_staff_msg';
+/* Sin 0/O ni 1/I/L — mismo alfabeto que tienda-core.js y el portal */
+const ALFABETO_CODIGOS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 
 let DATA = null;
 let orders = {};
@@ -441,6 +447,7 @@ let filter = 'todos';
 let unsubscribe = null;
 let manualCart = [];
 let manualMod = 'retiro';
+let appIniciada = false;
 
 /* =========== XSS-safe =========== */
 function esc(s) {
@@ -448,98 +455,143 @@ function esc(s) {
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 }
 
-/* =========== Crypto (misma lógica que portal) =========== */
-async function deriveKey(password, salt) {
-  const enc = new TextEncoder();
-  const keyMaterial = await crypto.subtle.importKey(
-    'raw', enc.encode(password), 'PBKDF2', false, ['deriveKey']
-  );
-  return crypto.subtle.deriveKey(
-    { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
-    keyMaterial,
-    { name: 'AES-GCM', length: 256 },
-    false, ['encrypt', 'decrypt']
-  );
-}
-async function decryptToken(payload, password) {
-  const salt = new Uint8Array(payload.salt);
-  const iv = new Uint8Array(payload.iv);
-  const ct = new Uint8Array(payload.ct);
-  const key = await deriveKey(password, salt);
-  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
-  return new TextDecoder().decode(pt);
+function serverTs() { return firebase.firestore.FieldValue.serverTimestamp(); }
+function hoyISO() { return new Date().toISOString().split('T')[0]; }
+
+function genCodigoSeguro(largo) {
+  const out = [];
+  while (out.length < largo) {
+    const buf = new Uint8Array(largo * 2);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < buf.length && out.length < largo; i++) {
+      if (buf[i] < 248) out.push(ALFABETO_CODIGOS[buf[i] % ALFABETO_CODIGOS.length]);
+    }
+  }
+  return out.join('');
 }
 
-/* =========== Auth =========== */
-function checkAuth() {
-  /* Session from portal */
-  if (sessionStorage.getItem(SESSION_PEDIDOS) === 'ok') {
-    bootApp();
-    return;
-  }
-  /* Or PBKDF2 password */
-  const enc = localStorage.getItem(LS_EPAT);
-  if (!enc) {
-    document.getElementById('err-auth').style.display = 'block';
-    document.getElementById('err-auth').textContent = 'Primero configurá el acceso desde el portal.';
-    return;
-  }
+/* =========== Auth: sesión de staff (Firebase email/contraseña) ===========
+   Sin sesión de staff no se lee NADA (las reglas tampoco lo permiten). Ya no
+   existe el atajo sessionStorage 'catt_pedidos_session'. */
+function esCuentaPassword(u) {
+  return !!u && !u.isAnonymous && (u.providerData || []).some(p => p && p.providerId === 'password');
+}
+
+function mostrarLogin(msg) {
+  if (unsubscribe) { try { unsubscribe(); } catch (e) {} unsubscribe = null; }
+  orders = {};
+  document.getElementById('app-screen').style.display = 'none';
   document.getElementById('auth-screen').style.display = 'flex';
+  closeDetail();
+  closeManual();
+  const m = msg || sessionStorage.getItem(SS_STAFF_MSG);
+  sessionStorage.removeItem(SS_STAFF_MSG);
+  const err = document.getElementById('err-auth');
+  if (m) { err.textContent = m; err.style.display = 'block'; }
 }
 
-async function doAuth() {
+function initFirebase() {
+  if (typeof firebase === 'undefined') {
+    mostrarLogin('No se pudo cargar Firebase. Revisá tu conexión y recargá la página.');
+    return;
+  }
+  try {
+    firebase.initializeApp(FIREBASE_CONFIG);
+    db = firebase.firestore();
+    auth = firebase.auth();
+    try { auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {}); } catch (e) {}
+    auth.onAuthStateChanged(u => { onAuthCambio(u); });
+  } catch (e) {
+    console.warn('Firebase init failed:', e.message);
+    mostrarLogin('No se pudo iniciar Firebase: ' + e.message);
+  }
+}
+
+async function onAuthCambio(u) {
+  if (u && !esCuentaPassword(u)) { try { await auth.signOut(); } catch (e) {} return; }
+  if (!u) { mostrarLogin(); return; }
+  /* La allowlist vive en las reglas: una cuenta sin permiso recibe
+     permission-denied y se le cierra la sesión con un mensaje claro. */
+  try {
+    await db.collection('pedidos').orderBy('creadoEn', 'desc').limit(1).get();
+  } catch (e) {
+    if (e && e.code === 'permission-denied') {
+      await cerrarSesion('Esta cuenta no tiene permiso para ver los pedidos. Iniciá sesión con la cuenta del staff de Cattorini.');
+      return;
+    }
+    console.warn('No se pudo verificar la cuenta (¿sin conexión?):', e && e.message);
+  }
+  bootApp();
+}
+
+function mensajeErrorLogin(e) {
+  const c = (e && e.code) || '';
+  if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-login-credentials'].includes(c)) {
+    return 'Email o contraseña incorrectos.';
+  }
+  if (c === 'auth/invalid-email') return 'El email no es válido.';
+  if (c === 'auth/too-many-requests') return 'Demasiados intentos fallidos. Esperá unos minutos y probá de nuevo.';
+  if (c === 'auth/user-disabled') return 'Esta cuenta está deshabilitada.';
+  if (c === 'auth/network-request-failed') return 'Sin conexión. Revisá tu internet y probá de nuevo.';
+  if (c === 'auth/operation-not-allowed') return 'El inicio de sesión con email y contraseña no está habilitado en Firebase (Authentication → Método de acceso).';
+  return 'No se pudo iniciar sesión' + (c ? ' (' + c + ')' : '') + '.';
+}
+
+async function doStaffLogin() {
   const err = document.getElementById('err-auth');
   err.style.display = 'none';
-  const pass = document.getElementById('in-pass').value;
-  if (!pass) return;
+  const email = document.getElementById('staff-email').value.trim();
+  const pass = document.getElementById('staff-pass').value;
+  if (!email || !pass) { err.textContent = 'Completá email y contraseña.'; err.style.display = 'block'; return; }
+  if (!auth) { err.textContent = 'No se pudo cargar Firebase. Revisá tu conexión y recargá la página.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('staff-btn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
   try {
-    const enc = JSON.parse(localStorage.getItem(LS_EPAT));
-    const pat = await decryptToken(enc, pass);
-    sessionStorage.setItem(SESSION_PAT, pat);
-    sessionStorage.setItem(SESSION_PEDIDOS, 'ok');
-    bootApp();
+    await auth.signInWithEmailAndPassword(email, pass);
+    document.getElementById('staff-pass').value = '';
   } catch (e) {
+    err.textContent = mensajeErrorLogin(e);
     err.style.display = 'block';
-    err.textContent = 'Contraseña incorrecta.';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Iniciar sesión';
   }
 }
+document.getElementById('staff-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doStaffLogin(); });
 
-function doLogout() {
-  sessionStorage.removeItem(SESSION_PEDIDOS);
-  sessionStorage.removeItem(SESSION_PAT);
-  if (unsubscribe) unsubscribe();
-  location.reload();
+async function cerrarSesion(msg) {
+  if (msg) sessionStorage.setItem(SS_STAFF_MSG, msg);
+  try { if (auth) await auth.signOut(); } catch (e) {}
+  mostrarLogin();
 }
 
-/* =========== Boot =========== */
+function doLogout() { cerrarSesion(''); }
+
+/* permission-denied = la cuenta no es (o dejó de ser) staff */
+function manejarErrorStaff(e) {
+  if (e && e.code === 'permission-denied') {
+    cerrarSesion('Tu cuenta no tiene permiso para esta operación (o la sesión venció). Iniciá sesión de nuevo con la cuenta del staff.');
+    return true;
+  }
+  return false;
+}
+
+/* =========== Boot (solo con sesión de staff) =========== */
 async function bootApp() {
   document.getElementById('auth-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-
-  try {
-    const res = await fetch('./productos.json', { cache: 'no-cache' });
-    DATA = await res.json();
-  } catch { DATA = null; }
-
-  populateManualSelects();
-
-  /* Firebase */
-  if (typeof firebase !== 'undefined') {
+  if (!appIniciada) {
+    appIniciada = true;
     try {
-      firebase.initializeApp(FIREBASE_CONFIG);
-      db = firebase.firestore();
-      auth = firebase.auth();
-      await auth.signInAnonymously();
-      startListener();
-      setRT('En vivo ●', '#0F0');
-    } catch (e) {
-      setRT('Firebase no configurado', '#F80');
-      console.warn('Firebase init failed:', e.message);
-    }
-  } else {
-    setRT('Firebase no configurado', '#F80');
-    document.getElementById('body-pend').innerHTML = '<div class="empty">Firebase no configurado. Editá pedidos.html y tienda.html con la config real.</div>';
+      const res = await fetch('./productos.json', { cache: 'no-cache' });
+      DATA = await res.json();
+    } catch { DATA = null; }
+    populateManualSelects();
   }
+  startListener();
+  setRT('En vivo ●', '#0F0');
 }
 
 function setRT(text, color) {
@@ -550,6 +602,8 @@ function setRT(text, color) {
 
 /* =========== Firestore listener =========== */
 function startListener() {
+  if (unsubscribe) unsubscribe();
+  orders = {};
   unsubscribe = db.collection('pedidos').orderBy('creadoEn', 'desc').limit(500)
     .onSnapshot(snap => {
       snap.docChanges().forEach(change => {
@@ -563,6 +617,7 @@ function startListener() {
       render();
     }, err => {
       console.error('Listener error:', err);
+      if (manejarErrorStaff(err)) return;
       setRT('Error de conexión', '#F00');
     });
 }
@@ -589,6 +644,35 @@ function pagoInfo(o) {
   if (o.estado !== 'pendiente') return null;
   if (o.modalidad === 'retiro' && o.pagaEnLocal) return { texto: '🏬 Paga en el local', clase: 'local' };
   return { texto: '💳 Pendiente de pago', clase: 'qr' };
+}
+
+/* Precio(s) válidos HOY para un item según el catálogo publicado y el perfil
+   del cliente. null si no se puede saber (producto que ya no existe, sin
+   catálogo). Minorista de zona libre puede tener la bonificación. */
+function preciosCatalogo(o, it) {
+  if (!DATA || !it) return null;
+  let p = null;
+  for (const cat of (DATA.categorias || [])) {
+    p = (cat.productos || []).find(x => String(x.id) === String(it.id));
+    if (p) break;
+  }
+  if (!p) return null;
+  const cli = o.cliente || {};
+  if (cli.perfil === 'mayorista') return [Number(p.precio_mayorista)];
+  const out = [Number(p.precio_minorista)];
+  const bonif = (DATA.config && DATA.config.minoristas && DATA.config.minoristas.bonificacion_zonas_libres) || 0;
+  if (bonif > 0) out.push(Math.round(p.precio_minorista * (1 - bonif / 100)));
+  return out;
+}
+
+/* Items cuyo precio no coincide con el catálogo actual. Los pedidos manuales
+   se saltean: el staff puede poner el precio que acordó. */
+function itemsConPrecioDistinto(o) {
+  if (o.manual) return [];
+  return (o.items || []).filter(it => {
+    const validos = preciosCatalogo(o, it);
+    return validos && !validos.includes(Number(it.precio));
+  });
 }
 
 function renderKanban(list) {
@@ -666,6 +750,15 @@ function mkCard(o) {
     pagoEl.className = 'card-pago ' + pago.clase;
     pagoEl.textContent = pago.texto;
     c.appendChild(pagoEl);
+  }
+
+  const distintos = itemsConPrecioDistinto(o);
+  if (distintos.length) {
+    const av = document.createElement('div');
+    av.className = 'card-aviso';
+    av.textContent = '⚠ Precio distinto al catálogo actual (' + distintos.length + ' item' + (distintos.length === 1 ? '' : 's') + ')';
+    av.title = 'El precio cobrado no coincide con el del catálogo publicado hoy. Puede ser un cambio de precio posterior o un pedido manipulado: revisalo antes de prepararlo.';
+    c.appendChild(av);
   }
 
   const total = document.createElement('div');
@@ -746,13 +839,21 @@ function showDetail(o) {
   /* Items */
   const iBox = document.createElement('div');
   iBox.style.marginBottom = '12px';
+  const distintos = itemsConPrecioDistinto(o);
   (o.items || []).forEach(it => {
     const r = document.createElement('div');
     r.className = 'item-line';
     const left = document.createElement('span');
     left.textContent = `${it.nombre} · Talle ${it.talle}` + (it.color ? ` · ${it.color}` : '') + ` · x${it.qty}`;
+    if (distintos.includes(it)) {
+      const av = document.createElement('div');
+      av.className = 'item-aviso';
+      const validos = preciosCatalogo(o, it) || [];
+      av.textContent = `⚠ Cobrado $${Number(it.precio).toLocaleString('es-AR')} c/u; en el catálogo actual: $${validos.map(v => Number(v).toLocaleString('es-AR')).join(' o $')}`;
+      left.appendChild(av);
+    }
     const right = document.createElement('span');
-    right.textContent = '$' + (it.precio * it.qty).toLocaleString('es-AR');
+    right.textContent = '$' + (Number(it.precio) * Number(it.qty)).toLocaleString('es-AR');
     r.appendChild(left); r.appendChild(right);
     iBox.appendChild(r);
   });
@@ -783,26 +884,43 @@ function showDetail(o) {
     cont.appendChild(n);
   }
 
-  /* State buttons */
-  const st = document.createElement('div');
-  st.className = 'state-btns';
-  const estadoLabels = { pendiente: 'Pendiente de pago', preparando: 'Preparando', listo: 'Listo', enviado: 'Enviado' };
-  ['pendiente','preparando','listo','enviado'].forEach(estado => {
-    const b = document.createElement('button');
-    b.className = 'state-btn' + (o.estado === estado ? ' active' : '');
-    b.textContent = estadoLabels[estado];
-    b.onclick = () => setEstado(o.id, estado);
-    st.appendChild(b);
-  });
-  cont.appendChild(st);
+  if (o.estado === 'cancelado') {
+    const canc = document.createElement('div');
+    canc.style.cssText = 'margin:16px 0;padding:10px;background:#FDECEC;color:#900;font-size:0.85rem;';
+    canc.textContent = 'Pedido cancelado' + (o.stockDevuelto ? ' — el stock ya se devolvió.' : '.');
+    cont.appendChild(canc);
+  } else {
+    /* State buttons */
+    const st = document.createElement('div');
+    st.className = 'state-btns';
+    const estadoLabels = { pendiente: 'Pendiente de pago', preparando: 'Preparando', listo: 'Listo', enviado: 'Enviado' };
+    ['pendiente','preparando','listo','enviado'].forEach(estado => {
+      const b = document.createElement('button');
+      b.className = 'state-btn' + (o.estado === estado ? ' active' : '');
+      b.textContent = estadoLabels[estado];
+      b.onclick = () => setEstado(o.id, estado);
+      st.appendChild(b);
+    });
+    cont.appendChild(st);
+  }
 
-  /* Delete */
+  const acciones = document.createElement('div');
+  acciones.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
+  if (o.estado !== 'cancelado' && o.estado !== 'enviado') {
+    const canc = document.createElement('button');
+    canc.className = 'btn-danger';
+    canc.style.cssText = 'padding:10px 20px;';
+    canc.textContent = 'Cancelar pedido (devuelve stock)';
+    canc.onclick = () => cancelarPedido(o, canc);
+    acciones.appendChild(canc);
+  }
   const del = document.createElement('button');
   del.className = 'btn-danger';
   del.style.cssText = 'padding:10px 20px;';
   del.textContent = 'Eliminar pedido';
-  del.onclick = () => deleteOrder(o.id);
-  cont.appendChild(del);
+  del.onclick = () => deleteOrder(o);
+  acciones.appendChild(del);
+  cont.appendChild(acciones);
 
   document.getElementById('modal-detail').classList.add('open');
 }
@@ -815,15 +933,82 @@ async function setEstado(id, estado) {
   try {
     await db.collection('pedidos').doc(id).update({ estado });
     closeDetail();
-  } catch (e) { alert('Error: ' + e.message); }
+  } catch (e) { if (!manejarErrorStaff(e)) alert('Error: ' + e.message); }
 }
 
-async function deleteOrder(id) {
-  if (!confirm('Eliminar pedido definitivamente?')) return;
+async function deleteOrder(o) {
+  const aviso = o.estado === 'cancelado'
+    ? 'Eliminar el pedido cancelado definitivamente?'
+    : 'Eliminar pedido definitivamente?\n\nOJO: eliminar NO devuelve el stock. Si el pedido no se va a entregar, usá "Cancelar pedido" (devuelve el stock) y después eliminalo.';
+  if (!confirm(aviso)) return;
   try {
-    await db.collection('pedidos').doc(id).delete();
+    await db.collection('pedidos').doc(o.id).delete();
     closeDetail();
-  } catch (e) { alert('Error: ' + e.message); }
+  } catch (e) { if (!manejarErrorStaff(e)) alert('Error: ' + e.message); }
+}
+
+/* Cancelar = UNA transacción: relee el pedido (si ya estaba cancelado no
+   hace nada), devuelve al stock las unidades de cada item con talle/color y
+   registra un movimiento POSITIVO por variante ("Cancelación #código").
+   Si una variante ya no existe (color/talle borrado del producto) no se
+   recrea: se avisa al final. */
+let cancelando = false;
+async function cancelarPedido(o, btn) {
+  if (cancelando) return;
+  if (!confirm(`Cancelar el pedido ${trackCode(o)}?\n\nSe devuelve el stock de sus productos y el pedido queda como "cancelado".`)) return;
+  cancelando = true;
+  if (btn) btn.disabled = true;
+  const omitidos = [];
+  try {
+    const pedidoRef = db.collection('pedidos').doc(o.id);
+    const codigo = (o.codigo || o.id || '').toUpperCase();
+    await db.runTransaction(async (tx) => {
+      const pSnap = await tx.get(pedidoRef);
+      if (!pSnap.exists) throw new Error('El pedido ya no existe.');
+      const p = pSnap.data();
+      if (p.estado === 'cancelado') throw new Error('El pedido ya estaba cancelado.');
+      /* agrupar unidades por producto y variante */
+      const porProducto = new Map();
+      for (const it of (p.items || [])) {
+        if (!it || !it.color || !it.talle) continue;
+        const id = String(it.id);
+        if (!porProducto.has(id)) porProducto.set(id, new Map());
+        const k = it.talle + '\u0000' + it.color;
+        const prev = porProducto.get(id).get(k);
+        porProducto.get(id).set(k, { talle: String(it.talle), color: String(it.color), qty: (prev ? prev.qty : 0) + (Number(it.qty) || 0) });
+      }
+      const ids = [...porProducto.keys()];
+      const refs = ids.map(id => db.collection('stock').doc(id));
+      const snaps = [];
+      for (const r of refs) snaps.push(await tx.get(r));   /* todas las lecturas antes de escribir */
+      const fecha = hoyISO();
+      ids.forEach((id, idx) => {
+        const variantes = (snaps[idx].exists && snaps[idx].data().variantes) || {};
+        let toco = false;
+        for (const v of porProducto.get(id).values()) {
+          const entrada = variantes[v.talle] && variantes[v.talle][v.color];
+          if (!entrada || v.qty <= 0) { omitidos.push(`#${id} ${v.talle}/${v.color}`); continue; }
+          entrada.cantidad = (Number(entrada.cantidad) || 0) + v.qty;
+          toco = true;
+          tx.set(refs[idx].collection('movimientos').doc(), {
+            talle: v.talle, color: v.color, delta: v.qty, cantidadResultante: entrada.cantidad,
+            motivo: 'Cancelación #' + codigo, fecha, ts: serverTs()
+          });
+        }
+        if (toco) tx.set(refs[idx], { variantes, actualizadoEn: serverTs() });
+      });
+      tx.update(pedidoRef, { estado: 'cancelado', canceladoEn: serverTs(), stockDevuelto: true });
+    });
+    closeDetail();
+    if (omitidos.length) {
+      alert('Pedido cancelado. Estas variantes ya no existen en el stock y no se devolvieron (cargalas a mano si corresponde):\n' + omitidos.join('\n'));
+    }
+  } catch (e) {
+    if (!manejarErrorStaff(e)) alert('No se pudo cancelar: ' + e.message);
+  } finally {
+    cancelando = false;
+    if (btn) btn.disabled = false;
+  }
 }
 
 /* =========== Metrics =========== */
@@ -831,6 +1016,7 @@ function renderMetrics(list) {
   const now = new Date();
   const hoy = now.toDateString();
   const hoyList = list.filter(o => {
+    if (o.estado === 'cancelado') return false;
     if (!o.creadoEn || !o.creadoEn.toDate) return false;
     return o.creadoEn.toDate().toDateString() === hoy;
   });
@@ -880,6 +1066,14 @@ function renderHistory(list) {
 }
 
 /* =========== CSV export =========== */
+/* Los datos del pedido los escribe el cliente: un nombre como
+   =HYPERLINK(...) o +cmd|... se ejecutaría como fórmula al abrir el CSV en
+   Excel/Sheets. Se antepone ' a todo texto que empiece con = + - @ (o tab/CR). */
+function celdaCSV(v) {
+  let s = (v === null || v === undefined) ? '' : String(v);
+  if (typeof v !== 'number' && /^[=+\-@\t\r]/.test(s)) s = "'" + s;
+  return '"' + s.replace(/"/g, '""') + '"';
+}
 function exportCSV() {
   const list = Object.values(orders);
   const headers = ['Fecha','Hora','Pedido','Nombre','Direccion','Localidad','Perfil','Modalidad','Pago','Items','Subtotal','Envio','Total','Nota','Estado'];
@@ -904,7 +1098,7 @@ function exportCSV() {
       o.total || 0,
       (o.nota || '').replace(/\n/g, ' '),
       o.estado || ''
-    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';');
+    ].map(celdaCSV).join(';');
     rows.push(row);
   });
   const csv = '﻿' + rows.join('\n');
@@ -1246,14 +1440,15 @@ function renderManualItems() {
   document.getElementById('m-tot').textContent = (sub + env).toLocaleString('es-AR');
 }
 
+/* Mismo formato que los pedidos de la tienda: 10 caracteres del alfabeto sin
+   ambiguos, generado con crypto. El ID del doc ES el código. */
 function genManualTrackingCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
+  return genCodigoSeguro(10);
 }
 
+let enviandoManual = false;
 async function submitManual() {
+  if (enviandoManual) return;
   if (!db) { alert('Firebase no configurado.'); return; }
   if (!manualCart.length) { alert('Agregá al menos un item.'); return; }
 
@@ -1309,81 +1504,73 @@ async function submitManual() {
     : 0;
 
   const code = genManualTrackingCode();
+  const pedidoRef = db.collection('pedidos').doc(code);
 
-  /* Descontar stock también en los pedidos manuales — un pedido tomado por
-     teléfono/mostrador consume el mismo stock real que uno online. Mismo
-     mecanismo atómico que usa la tienda; productos sin color/stock cargado
-     no se tocan (compatibilidad). */
+  /* UNA transacción: descuenta stock (si alcanza), crea el pedido y registra
+     los movimientos. Un pedido tomado por teléfono/mostrador consume el mismo
+     stock real que uno online. Productos sin color/stock cargado no se tocan
+     (compatibilidad). El staff no tiene tope de variantes por pedido. */
   const itemsConStock = manualCart.filter(i => i.color);
-  const resultantePorItem = {};
-  if (itemsConStock.length) {
-    try {
-      await db.runTransaction(async (tx) => {
-        const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
-        const refs = idsUnicos.map(id => db.collection('stock').doc(id));
-        const snaps = await Promise.all(refs.map(r => tx.get(r)));
-        const variantesPorId = {};
-        idsUnicos.forEach((id, idx) => {
-          variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
-        });
-        itemsConStock.forEach((i, idx) => {
-          const variantes = variantesPorId[String(i.id)];
-          const actual = ((variantes[i.talle] || {})[i.color] || {}).cantidad || 0;
-          if (actual < i.qty) {
-            throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}.`);
-          }
-          const restante = actual - i.qty;
-          variantes[i.talle] = variantes[i.talle] || {};
-          variantes[i.talle][i.color] = { ...(variantes[i.talle][i.color] || {}), cantidad: restante };
-          resultantePorItem[idx] = restante;
-        });
-        idsUnicos.forEach((id, idx) => {
-          tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
-        });
-      });
-    } catch (e) {
-      alert(e.message);
-      return;
-    }
-  }
-
+  enviandoManual = true;
   try {
-    await db.collection('pedidos').add({
-      codigo: code,
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-      cliente: cli,
-      items: manualCart,
-      modalidad: manualMod,
-      /* Pedido cargado por el admin (teléfono/mostrador) — se asume que ya
-         arreglaron el pago en persona, así que no dispara el flujo QR. */
-      pagaEnLocal: manualMod === 'retiro',
-      subtotal: sub, envio: env, total: sub + env,
-      nota,
-      estado: 'pendiente',
-      manual: true
-    });
-
-    if (itemsConStock.length) {
-      const fecha = new Date().toISOString().split('T')[0];
-      itemsConStock.forEach((i, idx) => {
-        db.collection('stock').doc(String(i.id)).collection('movimientos').add({
-          talle: i.talle, color: i.color, delta: -i.qty,
-          cantidadResultante: resultantePorItem[idx] ?? null,
-          motivo: 'Venta manual #' + code, fecha,
-          ts: firebase.firestore.FieldValue.serverTimestamp()
-        }).catch(e => console.warn('No se pudo registrar movimiento de stock:', e.message));
+    await db.runTransaction(async (tx) => {
+      const pSnap = await tx.get(pedidoRef);
+      if (pSnap.exists) throw new Error('Choque de código de pedido (muy improbable). Probá de nuevo.');
+      const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
+      const refs = idsUnicos.map(id => db.collection('stock').doc(id));
+      const snaps = [];
+      for (const r of refs) snaps.push(await tx.get(r));
+      const variantesPorId = {};
+      idsUnicos.forEach((id, idx) => {
+        variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
       });
-    }
-
+      const movs = [];
+      itemsConStock.forEach(i => {
+        const variantes = variantesPorId[String(i.id)];
+        const entrada = (variantes[i.talle] || {})[i.color];
+        const actual = (entrada && entrada.cantidad) || 0;
+        if (!entrada || actual < i.qty) {
+          throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}.`);
+        }
+        entrada.cantidad = actual - i.qty;
+        movs.push({ id: String(i.id), talle: i.talle, color: i.color, delta: -i.qty, cantidadResultante: entrada.cantidad });
+      });
+      idsUnicos.forEach((id, idx) => {
+        tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: serverTs() });
+      });
+      tx.set(pedidoRef, {
+        codigo: code,
+        creadoEn: serverTs(),
+        cliente: cli,
+        items: manualCart,
+        modalidad: manualMod,
+        /* Pedido cargado por el admin (teléfono/mostrador) — se asume que ya
+           arreglaron el pago en persona, así que no dispara el flujo QR. */
+        pagaEnLocal: manualMod === 'retiro',
+        subtotal: sub, envio: env, total: sub + env,
+        nota,
+        estado: 'pendiente',
+        manual: true
+      });
+      const fecha = hoyISO();
+      movs.forEach(m => {
+        tx.set(db.collection('stock').doc(m.id).collection('movimientos').doc(), {
+          talle: m.talle, color: m.color, delta: m.delta, cantidadResultante: m.cantidadResultante,
+          motivo: 'Venta manual #' + code, fecha, ts: serverTs()
+        });
+      });
+    });
     closeManual();
   } catch (e) {
-    alert('Error: ' + e.message);
+    if (!manejarErrorStaff(e)) alert(e.message);
     console.error(e);
+  } finally {
+    enviandoManual = false;
   }
 }
 
 /* =========== Init =========== */
-checkAuth();
+initFirebase();
 </script>
 
 </body>

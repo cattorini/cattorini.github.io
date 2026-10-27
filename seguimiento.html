@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Seguimiento de pedido — Cattorini</title>
   <meta name="description" content="Consultá el estado de tu pedido en Cattorini." />
@@ -16,9 +16,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" integrity="sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC" crossorigin="anonymous"></script>
+  <script src="./tienda-core.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -122,6 +123,14 @@
       text-align: center; padding: 40px 20px;
       color: #666;
     }
+    .vh { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .legal-footer { border-top: 1px solid #E5E5E5; margin-top: 24px; }
+    .lf-inner { max-width: 720px; margin: 0 auto; padding: 24px; font-size: 0.78rem; color: #666; line-height: 1.6; }
+    .lf-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 10px; }
+    .lf-links a { color: #0A0A0A; text-decoration: underline; }
+    .lf-arrep { font-weight: 500; }
+    .lf-id { margin: 0; overflow-wrap: anywhere; }
+    .code-display { overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
@@ -140,14 +149,15 @@
   <!-- Búsqueda -->
   <div class="card" id="search-card">
     <h2>Ingresá el código</h2>
-    <p style="color:#666;font-size:0.88rem;margin-bottom:16px;">Al confirmar tu pedido te dimos un código de 5 caracteres. Ingresálo para ver el estado en tiempo real.</p>
+    <p style="color:#666;font-size:0.88rem;margin-bottom:16px;">Al confirmar tu pedido te dimos un código de 10 caracteres (letras y números). Ingresalo para ver el estado en tiempo real.</p>
     <form onsubmit="event.preventDefault();buscar()">
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input type="text" id="in-code" class="inp" placeholder="A3F7B" maxlength="6" style="flex:1;min-width:180px;" />
+        <label for="in-code" class="vh">Código de pedido</label>
+        <input type="text" id="in-code" class="inp" placeholder="K7M2Q9X4PZ" maxlength="24" autocapitalize="characters" autocomplete="off" spellcheck="false" style="flex:1;min-width:180px;" />
         <button type="submit" class="btn">Consultar</button>
       </div>
     </form>
-    <div id="search-err" style="display:none;color:#900;font-size:0.85rem;margin-top:10px;"></div>
+    <div id="search-err" role="alert" style="display:none;color:#900;font-size:0.85rem;margin-top:10px;"></div>
   </div>
 
   <!-- Historial de pedidos del usuario -->
@@ -215,11 +225,23 @@
   <div id="not-found-card" style="display:none;">
     <div class="card not-found">
       <h2>No encontramos ese pedido</h2>
-      <p>Revisá que el código sea correcto. Los códigos tienen 5 caracteres alfanuméricos.</p>
+      <p>Revisá que el código sea correcto. Los códigos tienen 10 caracteres (letras y números, sin O, I ni L).</p>
       <button class="btn" style="margin-top:16px;" onclick="volverBusqueda()">Volver a intentar</button>
     </div>
   </div>
 </main>
+
+<footer class="legal-footer">
+  <div class="lf-inner">
+    <nav class="lf-links" aria-label="Información legal">
+      <a href="./arrepentimiento.html" class="lf-arrep">Botón de arrepentimiento</a>
+      <a href="./terminos.html">Términos y condiciones</a>
+      <a href="./privacidad.html">Política de privacidad</a>
+      <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
+    </nav>
+    <p class="lf-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+  </div>
+</footer>
 
 <script>
 'use strict';
@@ -253,10 +275,7 @@ async function loadData() {
   } catch { return null; }
 }
 
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
+const { waLink, normalizarCodigo } = window.CattCore;
 
 function renderMisPedidos() {
   try {
@@ -287,10 +306,10 @@ function renderMisPedidos() {
 }
 
 async function buscar() {
-  const raw = document.getElementById('in-code').value.trim().toUpperCase();
+  const raw = normalizarCodigo(document.getElementById('in-code').value);
   const errEl = document.getElementById('search-err');
   errEl.style.display = 'none';
-  if (!/^[A-Z0-9]{4,6}$/.test(raw)) {
+  if (!/^[A-Z0-9]{5,20}$/.test(raw)) {
     errEl.textContent = 'El código no tiene el formato correcto.';
     errEl.style.display = 'block';
     return;
@@ -309,6 +328,9 @@ function necesitaQRSeguimiento(modalidad, pagaEnLocal) {
 function renderTimeline(estado, modalidad, pagaEnLocal) {
   const orden = ['pendiente','preparando','listo','enviado'];
   const idx = orden.indexOf(estado);
+  // Un pedido cancelado no avanza: se oculta la línea de tiempo y queda solo el mensaje.
+  const timeline = document.querySelector('.timeline');
+  if (timeline) timeline.style.display = estado === 'cancelado' ? 'none' : '';
   document.querySelectorAll('.step').forEach((el, i) => {
     el.classList.remove('done', 'current');
     if (i < idx) el.classList.add('done');
@@ -356,7 +378,7 @@ function renderPedido(doc) {
   document.getElementById('pedido-card').style.display = 'block';
 
   const d = doc.data ? doc.data() : doc;
-  const code = d.codigo || (doc.id ? doc.id.slice(-5).toUpperCase() : '?');
+  const code = d.codigo || doc.id || '?';
 
   document.getElementById('code-display').textContent = '#' + code;
   document.getElementById('status-msg').textContent = statusMsgFor(d.estado, d.modalidad, d.pagaEnLocal);
@@ -423,9 +445,7 @@ function renderPedido(doc) {
 
   /* WhatsApp de consulta */
   if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
-    const wa = DATA.negocio.whatsapp;
-    const msg = encodeURIComponent(`Hola! Quería consultar sobre mi pedido #${code}.`);
-    document.getElementById('wa-consulta').href = `https://wa.me/${wa}?text=${msg}`;
+    document.getElementById('wa-consulta').href = waLink(DATA.negocio.whatsapp, `Hola! Quería consultar sobre mi pedido #${code}.`) || '#';
   }
 
   /* QR de pago — solo mientras esté pendiente de pago y el pedido lo requiera
@@ -434,9 +454,7 @@ function renderPedido(doc) {
   if (necesitaQRSeguimiento(d.modalidad, d.pagaEnLocal) && d.estado === 'pendiente') {
     pagoBox.style.display = 'block';
     if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
-      const wa = DATA.negocio.whatsapp;
-      const msg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
-      document.getElementById('pago-qr-wa').href = `https://wa.me/${wa}?text=${msg}`;
+      document.getElementById('pago-qr-wa').href = waLink(DATA.negocio.whatsapp, `Hola! Quiero pagar mi pedido #${code} por otro medio.`) || '#';
     }
     const pago = (DATA && DATA.config && DATA.config.pago) || {};
     const datosBox = document.getElementById('pago-qr-datos');
@@ -461,21 +479,27 @@ async function cargarPedido(code) {
 
   const rtBadge = document.getElementById('rt-badge');
 
+  /* El doc ID ES el código: se lee UN documento (get), nunca se lista la
+     colección (las reglas niegan `list` de pedidos al público). */
+  if (!/^[A-Z0-9]{5,20}$/.test(code)) {
+    document.getElementById('search-card').style.display = 'none';
+    document.getElementById('not-found-card').style.display = 'block';
+    return;
+  }
   try {
-    /* Buscar por campo codigo */
-    const snap = await db.collection('pedidos').where('codigo', '==', code).limit(1).get();
-    if (snap.empty) {
+    const ref = db.collection('pedidos').doc(code);
+    const doc = await ref.get();
+    if (!doc.exists) {
       document.getElementById('search-card').style.display = 'none';
       document.getElementById('not-found-card').style.display = 'block';
       return;
     }
-    const doc = snap.docs[0];
     renderPedido(doc);
 
     /* Suscribirse a cambios en vivo */
     rtBadge.textContent = 'En vivo';
     rtBadge.classList.add('live');
-    unsubscribe = db.collection('pedidos').doc(doc.id).onSnapshot(snap => {
+    unsubscribe = ref.onSnapshot(snap => {
       if (snap.exists) renderPedido(snap);
     }, err => {
       rtBadge.textContent = 'Sin conexión';
@@ -496,7 +520,7 @@ async function init() {
   const code = params.get('code');
   if (code) {
     document.getElementById('in-code').value = code;
-    await cargarPedido(code.toUpperCase());
+    await cargarPedido(normalizarCodigo(code));
   }
 }
 

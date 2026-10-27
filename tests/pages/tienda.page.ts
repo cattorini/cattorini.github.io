@@ -148,6 +148,8 @@ export class TiendaPage {
   }
 
   async ingresarLocalidadMinorista(provincia: string, localidad: string) {
+    /* Las provincias se cargan async (localidades-ar.json): esperar la opción */
+    await this.selProvincia.locator(`option[value="${provincia}"]`).waitFor({ state: 'attached', timeout: 10_000 });
     await this.selProvincia.selectOption(provincia);
     await this.page.waitForTimeout(200);
     await this.inpLocalidad.focus();
@@ -207,6 +209,7 @@ export class TiendaPage {
     if (datos.nombre !== undefined) await this.inpNombre.fill(datos.nombre);
     if (datos.direccion !== undefined) await this.inpDireccion.fill(datos.direccion);
     if (datos.provincia !== undefined) {
+      await this.inpProvinciaEnvio.locator(`option[value="${datos.provincia}"]`).waitFor({ state: 'attached', timeout: 10_000 });
       await this.inpProvinciaEnvio.selectOption(datos.provincia);
       await this.page.waitForTimeout(150);
     }

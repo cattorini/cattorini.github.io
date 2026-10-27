@@ -5,7 +5,7 @@ import { TiendaPage } from '../../pages/tienda.page';
 import { ProductoPage } from '../../pages/producto.page';
 import { PortalPage } from '../../pages/portal.page';
 import { SeguimientoPage } from '../../pages/seguimiento.page';
-import { CODIGO_MASTER, pedidoPendienteSample } from '../../fixtures/test-data';
+import { CODIGO_MAYO_INDIVIDUAL, CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaSample, pedidoPendienteSample } from '../../fixtures/test-data';
 
 test.describe('Smoke tests @smoke @critical', () => {
 
@@ -47,13 +47,13 @@ test.describe('Smoke tests @smoke @critical', () => {
     await expect(tienda.perfilBadge).toContainText(/minorista/i);
   });
 
-  test('mayorista con código master accede al catálogo @tienda @mayorista', async ({ page }) => {
-    await setupPage(page);
+  test('mayorista con código individual accede al catálogo @tienda @mayorista', async ({ page }) => {
+    await setupPage(page, { firebase: { collections: { mayoristas_activos: { [CODIGO_MAYO_INDIVIDUAL_HASH]: mayoristaSample } } } });
     const tienda = new TiendaPage(page);
     await tienda.goto();
 
     await tienda.elegirMayorista();
-    await tienda.ingresarCodigoMayorista(CODIGO_MASTER);
+    await tienda.ingresarCodigoMayorista(CODIGO_MAYO_INDIVIDUAL);
 
     await expect(tienda.modalWelcome).toBeHidden();
     await expect(tienda.catalog).toBeVisible();
@@ -112,15 +112,16 @@ test.describe('Smoke tests @smoke @critical', () => {
     await setupPage(page, {
       firebase: {
         collections: {
-          pedidos: { 'test-doc-1': pedidoPendienteSample }
+          /* doc ID = código (10 caracteres) */
+          pedidos: { 'K7M2Q9X4PZ': { ...pedidoPendienteSample, codigo: 'K7M2Q9X4PZ' } }
         }
       }
     });
     const seg = new SeguimientoPage(page);
-    await seg.gotoConCodigo(pedidoPendienteSample.codigo);
+    await seg.gotoConCodigo('K7M2Q9X4PZ');
 
     await expect(seg.pedidoCard).toBeVisible({ timeout: 5000 });
-    await expect(seg.codeDisplay).toContainText(pedidoPendienteSample.codigo);
+    await expect(seg.codeDisplay).toContainText('K7M2Q9X4PZ');
     await expect(seg.steps.first()).toBeVisible();
   });
 });

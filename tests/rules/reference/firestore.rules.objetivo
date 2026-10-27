@@ -1,0 +1,189 @@
+rules_version = '2';
+/*
+ * REFERENCIA del modelo de seguridad objetivo de Cattorini.
+ * Sirve para demostrar que los tests de tests/rules son satisfacibles con
+ * reglas reales (npm run test:rules:objetivo). NO es un archivo de deploy:
+ * antes de publicarlo hay que reemplazar el email de prueba de isStaff() por
+ * los emails reales del staff y adaptar el código de la app (ver reporte de
+ * auditoría): pedidos/solicitudes con ID = código, checkout en una sola
+ * transacción con `ultimoPedido`, seguimiento con doc(codigo).get(), login
+ * del staff con email/contraseña.
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email in ['staff@cattorini.test'];
+    }
+
+    function pedidoPath(codigo) {
+      return /databases/$(database)/documents/pedidos/$(codigo);
+    }
+
+    /* El pedido se crea EN ESTA MISMA escritura atómica (batch/transacción) */
+    function pedidoCreadoAhora(codigo) {
+      return codigo is string
+        && codigo.matches('^[A-Z0-9]{10,20}$')
+        && !exists(pedidoPath(codigo))
+        && existsAfter(pedidoPath(codigo));
+    }
+
+    /* ============ PEDIDOS ============ */
+    match /pedidos/{codigo} {
+      function pedidoValido() {
+        let d = request.resource.data;
+        return d.keys().hasAll(['codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
+                                'subtotal', 'envio', 'total', 'nota', 'estado'])
+          && d.keys().hasOnly(['codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
+                               'pagaEnLocal', 'subtotal', 'envio', 'total', 'nota', 'estado'])
+          && d.codigo == codigo
+          && d.codigo.matches('^[A-Z0-9]{10,20}$')
+          && d.creadoEn == request.time
+          && d.cliente is map
+          && d.cliente.nombre is string
+          && d.cliente.nombre.size() > 0 && d.cliente.nombre.size() <= 80
+          && d.items is list && d.items.size() > 0 && d.items.size() <= 100
+          && d.modalidad in ['retiro', 'envio']
+          && (!('pagaEnLocal' in d) || d.pagaEnLocal is bool)
+          && d.subtotal is number && d.subtotal >= 0
+          && d.envio is number && d.envio >= 0
+          && d.total is number && d.total == d.subtotal + d.envio
+          && d.nota is string && d.nota.size() <= 400
+          && d.estado == 'pendiente';
+      }
+      allow create: if pedidoValido();
+      allow get: if true;
+      allow list, update, delete: if isStaff();
+    }
+
+    /* ============ SOLICITUDES MAYORISTAS ============ */
+    match /solicitudes_mayoristas/{codigo} {
+      function solicitudValida() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['codigo', 'creadoEn', 'solicitante', 'notas', 'estado', 'respuesta'])
+          && d.keys().hasAll(['codigo', 'creadoEn', 'solicitante', 'notas', 'estado', 'respuesta'])
+          && d.codigo == codigo
+          && d.codigo.matches('^MAY-[A-Z0-9]{10,20}$')
+          && d.creadoEn == request.time
+          && d.solicitante is map
+          && d.solicitante.nombre is string
+          && d.solicitante.nombre.size() > 0 && d.solicitante.nombre.size() <= 80
+          && d.solicitante.negocio is string
+          && d.solicitante.negocio.size() > 0 && d.solicitante.negocio.size() <= 100
+          && (!('foto_negocio' in d.solicitante)
+              || d.solicitante.foto_negocio == null
+              || (d.solicitante.foto_negocio is string && d.solicitante.foto_negocio.size() <= 700000))
+          && d.notas is string && d.notas.size() <= 500
+          && d.estado == 'pendiente'
+          && d.respuesta == null;
+      }
+      allow create: if solicitudValida() || isStaff();
+      allow get: if true;
+      allow list, update, delete: if isStaff();
+    }
+
+    /* ============ MAYORISTAS ACTIVOS ============ */
+    match /mayoristas_activos/{hashId} {
+      allow get: if true;
+      allow list, create, update, delete: if isStaff();
+    }
+
+    /* ============ STOCK ============ */
+    match /stock/{productId} {
+
+      /* Las reglas no pueden iterar las claves de un Map (Set no tiene
+         toList()), así que el cliente DECLARA qué variantes descuenta en
+         `descuento: [{talle, color}, ...]` (máx. 6) y la regla verifica:
+         - solo cambian los talles/colores declarados (diff().affectedKeys()),
+         - cada variante declarada existía y BAJA (nunca sube ni queda < 0),
+         - no cambia el hex ni se agregan campos,
+         - el pedido `ultimoPedido` se crea en esta misma escritura. */
+      function colorBaja(a, d, c) {
+        return c is string && c in a && c in d
+          && d[c] is map
+          && d[c].keys().hasOnly(['cantidad', 'hex'])
+          && d[c].cantidad is int
+          && a[c].cantidad is number
+          && d[c].cantidad >= 0
+          && d[c].cantidad < a[c].cantidad
+          && d[c].get('hex', null) == a[c].get('hex', null);
+      }
+
+      function tallesDe(L) {
+        return [
+          L[0].talle,
+          L.size() > 1 ? L[1].talle : null,
+          L.size() > 2 ? L[2].talle : null,
+          L.size() > 3 ? L[3].talle : null,
+          L.size() > 4 ? L[4].talle : null,
+          L.size() > 5 ? L[5].talle : null
+        ];
+      }
+
+      function coloresDe(L, t) {
+        return [
+          L[0].talle == t ? L[0].color : null,
+          (L.size() > 1 && L[1].talle == t) ? L[1].color : null,
+          (L.size() > 2 && L[2].talle == t) ? L[2].color : null,
+          (L.size() > 3 && L[3].talle == t) ? L[3].color : null,
+          (L.size() > 4 && L[4].talle == t) ? L[4].color : null,
+          (L.size() > 5 && L[5].talle == t) ? L[5].color : null
+        ];
+      }
+
+      function entradaOk(a, d, L, i) {
+        return L[i] is map
+          && L[i].keys().hasOnly(['talle', 'color'])
+          && L[i].talle is string
+          && L[i].talle in a && L[i].talle in d
+          && d[L[i].talle] is map
+          && d[L[i].talle].diff(a[L[i].talle]).affectedKeys().hasOnly(coloresDe(L, L[i].talle))
+          && colorBaja(a[L[i].talle], d[L[i].talle], L[i].color);
+      }
+
+      function descuentoPublico() {
+        let a = resource.data.variantes;
+        let d = request.resource.data.variantes;
+        let L = request.resource.data.descuento;
+        return request.resource.data.diff(resource.data).affectedKeys()
+                 .hasOnly(['variantes', 'actualizadoEn', 'ultimoPedido', 'descuento'])
+          && d is map
+          && L is list && L.size() >= 1 && L.size() <= 6
+          && pedidoCreadoAhora(request.resource.data.ultimoPedido)
+          && d.diff(a).affectedKeys().hasOnly(tallesDe(L))
+          && entradaOk(a, d, L, 0)
+          && (L.size() < 2 || entradaOk(a, d, L, 1))
+          && (L.size() < 3 || entradaOk(a, d, L, 2))
+          && (L.size() < 4 || entradaOk(a, d, L, 3))
+          && (L.size() < 5 || entradaOk(a, d, L, 4))
+          && (L.size() < 6 || entradaOk(a, d, L, 5));
+      }
+
+      allow read: if true;
+      allow update: if isStaff() || descuentoPublico();
+      allow create, delete: if isStaff();
+
+      match /movimientos/{movId} {
+        function ventaPublica() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['talle', 'color', 'delta', 'motivo', 'fecha', 'ts'])
+            && d.keys().hasOnly(['talle', 'color', 'delta', 'cantidadResultante', 'motivo', 'fecha', 'ts'])
+            && d.talle is string && d.talle.matches('^[A-Za-z0-9./ -]{1,12}$')
+            && d.color is string && d.color.matches('^[^<>&"]{1,40}$')
+            && d.delta is int && d.delta < 0 && d.delta >= -100
+            && (!('cantidadResultante' in d) || d.cantidadResultante == null
+                || (d.cantidadResultante is int && d.cantidadResultante >= 0))
+            && d.motivo is string && d.motivo.matches('^Venta #[A-Z0-9]{10,20}$')
+            && pedidoCreadoAhora(d.motivo.split('#')[1])
+            && d.fecha is string && d.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            && d.ts == request.time;
+        }
+        allow read: if isStaff();
+        allow create: if isStaff() || ventaPublica();
+        allow update, delete: if false;
+      }
+    }
+  }
+}

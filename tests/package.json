@@ -19,11 +19,22 @@
     "test:ui": "playwright test --ui",
     "test:debug": "playwright test --debug",
     "report": "playwright show-report",
-    "install:browsers": "playwright install chromium"
+    "install:browsers": "playwright install chromium",
+    "test:rules": "node rules/run.mjs",
+    "test:rules:objetivo": "node rules/run.mjs rules/reference/firestore.rules.objetivo",
+    "test:existente": "playwright test --grep-invert \"@seguridad|@regresion\"",
+    "test:regresion": "playwright test --grep @regresion",
+    "test:seguridad": "playwright test --grep @seguridad",
+    "test:legal": "playwright test --grep @legal",
+    "test:unit": "node --test --test-reporter=spec unit/sw.test.mjs",
+    "test:checkout-emulador": "node emulador/run.mjs",
+    "test:datos": "node --test --test-reporter=spec unit/catalogo-real.test.mjs"
   },
   "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
     "@playwright/test": "^1.48.0",
     "@types/node": "^20.0.0",
+    "firebase": "^11.10.0",
     "typescript": "^5.3.0"
   }
 }

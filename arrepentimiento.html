@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <title>Botón de arrepentimiento — Cattorini</title>
+  <meta name="description" content="Revocá tu compra online en Cattorini dentro de los 10 días corridos (Ley 24.240, art. 34 · Res. 424/2020)." />
+  <meta name="robots" content="noindex, follow" />
+  <link rel="canonical" href="https://cattorini.github.io/arrepentimiento.html" />
+  <link rel="icon" href="./img/logo.jpeg" type="image/jpeg" />
+  <meta name="theme-color" content="#0A0A0A" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./legal.css" />
+  <script src="./legal.js" defer></script>
+</head>
+<body>
+
+<header class="lg-header">
+  <div class="lg-header-inner">
+    <a href="./index.html" aria-label="Cattorini — Ir al inicio"><img src="./img/logo.jpeg" alt="Cattorini" /></a>
+    <a href="./tienda.html" class="lg-back">Volver a la tienda</a>
+  </div>
+</header>
+
+<main class="lg-main">
+  <div class="lg-eyebrow">Ley 24.240, art. 34 · Res. 424/2020</div>
+  <h1>Botón de arrepentimiento</h1>
+  <p>Si compraste como consumidor final en esta tienda online, podés <strong>revocar la compra dentro de los 10 días corridos</strong> desde que recibiste el producto o desde que hiciste la compra (lo último que haya pasado), sin costo ni explicación. Los gastos de devolución corren por nuestra cuenta y te devolvemos lo que pagaste por el mismo medio.</p>
+
+  <form id="arr-form" class="lg-form" novalidate>
+    <label for="arr-pedido">Código de pedido</label>
+    <input id="arr-pedido" name="pedido" maxlength="24" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Ej: K7M2Q9X4PZ" required />
+    <div class="hint">Lo encontrás en la confirmación de la compra o en <a href="./seguimiento.html">Mis pedidos</a>.</div>
+
+    <label for="arr-nombre">Nombre y apellido</label>
+    <input id="arr-nombre" name="nombre" maxlength="80" autocomplete="name" required />
+
+    <label for="arr-contacto">Teléfono, WhatsApp o email</label>
+    <input id="arr-contacto" name="contacto" maxlength="80" autocomplete="tel" required />
+
+    <label for="arr-motivo">Comentario (opcional)</label>
+    <textarea id="arr-motivo" name="motivo" rows="3" maxlength="400"></textarea>
+
+    <div class="lg-err" id="arr-err" role="alert"></div>
+    <button type="submit" class="lg-btn">Quiero arrepentirme de la compra</button>
+  </form>
+
+  <section id="arr-ok" class="lg-hidden" tabindex="-1" aria-live="polite">
+    <h2>Tu código de trámite</h2>
+    <div class="lg-codigo" id="arr-codigo">···</div>
+    <p><strong>Guardá este código.</strong> Para completar la solicitud, envianos el mensaje por WhatsApp con el botón de abajo (ya está escrito con tu código de trámite y tu pedido). Dentro de las 24 horas te confirmamos la recepción por el mismo medio y te indicamos cómo devolver el producto.</p>
+    <a id="arr-wa" class="lg-btn lg-hidden" target="_blank" rel="noopener noreferrer">Enviar solicitud por WhatsApp</a>
+    <p class="hint lg-mt-sm">Si no podés usar WhatsApp, copiá este texto y mandalo a <span class="marcador">[EMAIL DE CONTACTO]</span>:</p>
+    <pre id="arr-texto" class="lg-pre"></pre>
+  </section>
+
+  <h2>Qué tenés que saber</h2>
+  <ul>
+    <li>El producto tiene que volver en el mismo estado en que lo recibiste.</li>
+    <li>El reintegro se hace por el mismo medio de pago, una vez que recibimos el producto.</li>
+    <li>El derecho de arrepentimiento es para consumidores finales. Las compras mayoristas para reventa se rigen por los <a href="./terminos.html">Términos y condiciones</a>.</li>
+    <li>Si tenés un problema con el producto (falla, talle equivocado), mirá también la política de cambios en los <a href="./terminos.html">Términos y condiciones</a>.</li>
+  </ul>
+</main>
+
+<footer class="lg-footer">
+  <div class="lg-footer-inner">
+    <nav aria-label="Información legal">
+      <a href="./arrepentimiento.html" class="lf-arrep" aria-current="page">Botón de arrepentimiento</a>
+      <a href="./terminos.html">Términos y condiciones</a>
+      <a href="./privacidad.html">Política de privacidad</a>
+      <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
+    </nav>
+    <p>Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+    <p>© <span id="lg-year">2026</span> Cattorini</p>
+  </div>
+</footer>
+
+</body>
+</html>

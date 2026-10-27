@@ -1,0 +1,212 @@
+rules_version = '2';
+/*
+ * Reglas de Firestore de Cattorini (proyecto cattorini-tienda).
+ *
+ * FUENTE DE VERDAD: este archivo. Se publica pegándolo en
+ * Firebase Console → Firestore Database → Reglas (o `firebase deploy
+ * --only firestore:rules`).
+ *
+ * El bloque entre <generado:descuento> y </generado:descuento> lo escribe
+ * tests/rules/generar-stock-rules.mjs (no editarlo a mano): las reglas no
+ * pueden iterar listas, así que la validación de cada variante descontada
+ * se "desenrolla" para cada tamaño posible de `descuento`.
+ *
+ * Tests: cd tests && npm run test:rules -- ../firestore.rules
+ * (el runner reemplaza el email real del staff por el de prueba).
+ */
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* Staff = Firebase Auth con email/contraseña de la allowlist. El login
+       anónimo o cualquier otro proveedor NO da privilegios. */
+    function isStaff() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email in ['cattorinilasflores@gmail.com'];
+    }
+
+    function pedidoPath(codigo) {
+      return /databases/$(database)/documents/pedidos/$(codigo);
+    }
+
+    /* El pedido se crea EN ESTA MISMA escritura atómica (batch/transacción) */
+    function pedidoCreadoAhora(codigo) {
+      return codigo is string
+        && codigo.matches('^[A-Z0-9]{10,20}$')
+        && !exists(pedidoPath(codigo))
+        && existsAfter(pedidoPath(codigo));
+    }
+
+    /* Versión liviana para stock: el formato del código ya lo valida la
+       regla de create de pedidos/{codigo} (que tiene que pasar en esta misma
+       escritura para que existsAfter sea true). */
+    function pedidoNuevo(codigo) {
+      return !exists(pedidoPath(codigo)) && existsAfter(pedidoPath(codigo));
+    }
+
+    /* ============ PEDIDOS ============ */
+    match /pedidos/{codigo} {
+      function pedidoValido() {
+        let d = request.resource.data;
+        return d.keys().hasAll(['codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
+                                'subtotal', 'envio', 'total', 'nota', 'estado'])
+          && d.keys().hasOnly(['codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
+                               'pagaEnLocal', 'subtotal', 'envio', 'total', 'nota', 'estado'])
+          && d.codigo == codigo
+          && d.codigo.matches('^[A-Z0-9]{10,20}$')
+          && d.creadoEn == request.time
+          && d.cliente is map
+          && d.cliente.nombre is string
+          && d.cliente.nombre.size() > 0 && d.cliente.nombre.size() <= 80
+          && d.items is list && d.items.size() > 0 && d.items.size() <= 100
+          && d.modalidad in ['retiro', 'envio']
+          && (!('pagaEnLocal' in d) || d.pagaEnLocal is bool)
+          && d.subtotal is number && d.subtotal >= 0
+          && d.envio is number && d.envio >= 0
+          && d.total is number && d.total == d.subtotal + d.envio
+          && d.nota is string && d.nota.size() <= 400
+          && d.estado == 'pendiente';
+      }
+      /* El staff crea pedidos manuales (mostrador/teléfono) con el mismo
+         código de 10 caracteres, pero puede marcar `manual: true`. */
+      allow create: if isStaff() || pedidoValido();
+      allow get: if true;
+      allow list, update, delete: if isStaff();
+    }
+
+    /* ============ SOLICITUDES MAYORISTAS ============ */
+    match /solicitudes_mayoristas/{codigo} {
+      function solicitudValida() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['codigo', 'creadoEn', 'solicitante', 'notas', 'estado', 'respuesta'])
+          && d.keys().hasAll(['codigo', 'creadoEn', 'solicitante', 'notas', 'estado', 'respuesta'])
+          && d.codigo == codigo
+          && d.codigo.matches('^MAY-[A-Z0-9]{10,20}$')
+          && d.creadoEn == request.time
+          && d.solicitante is map
+          && d.solicitante.nombre is string
+          && d.solicitante.nombre.size() > 0 && d.solicitante.nombre.size() <= 80
+          && d.solicitante.negocio is string
+          && d.solicitante.negocio.size() > 0 && d.solicitante.negocio.size() <= 100
+          && (!('foto_negocio' in d.solicitante)
+              || d.solicitante.foto_negocio == null
+              || (d.solicitante.foto_negocio is string && d.solicitante.foto_negocio.size() <= 700000))
+          && d.notas is string && d.notas.size() <= 500
+          && d.estado == 'pendiente'
+          && d.respuesta == null;
+      }
+      allow create: if isStaff() || solicitudValida();
+      allow get: if true;
+      allow list, update, delete: if isStaff();
+    }
+
+    /* ============ MAYORISTAS ACTIVOS ============ */
+    /* ID = sha256(código individual). Ya no existe código maestro. */
+    match /mayoristas_activos/{hashId} {
+      allow get: if true;
+      allow list, create, update, delete: if isStaff();
+    }
+
+    /* ============ STOCK ============ */
+    match /stock/{productId} {
+
+      // <generado:descuento>
+      /* MAX_DESCUENTO = 12 — generado por tests/rules/generar-stock-rules.mjs, no editar a mano. */
+      /* Cada variante declarada e = {talle, color} tiene que: existir antes y
+         después, BAJAR (nunca < 0), no cambiar el hex ni agregar campos, y
+         tener exactamente las claves {talle, color} (así L.toSet() detecta
+         repetidas). Si cumple, aporta 1/|colores cambiados en su talle|; si
+         no, aporta -1000 (la suma falla).
+         La suma de los aportes da EXACTAMENTE la cantidad de talles cambiados
+         (d.diff(a).affectedKeys().size()) solo si (1) en cada talle declarado
+         cambiaron únicamente los colores declarados y (2) no cambió ningún
+         talle no declarado. Si cambia algo de más, la suma queda al menos
+         1/(MAX+1) por debajo → la tolerancia 0.01 lo rechaza. Es la forma más
+         barata (en expresiones evaluadas) de expresar "solo cambia lo declarado". */
+      function aporte(a, d, e) {
+        let t = e.talle;
+        let dt = d[t];
+        let at = a[t];
+        let n = dt[e.color];
+        let v = at[e.color];
+        return (e.size() == 2
+            && n.cantidad >= 0 && n.cantidad < v.cantidad
+            && n == {'cantidad': n.cantidad, 'hex': v.hex})
+          ? 1.0 / dt.diff(at).affectedKeys().size()
+          : -1000.0;
+      }
+      function descuento1(a, d, L) { return aporte(a, d, L[0]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento2(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento3(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento4(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento5(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento6(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento7(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) + aporte(a, d, L[6]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento8(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) + aporte(a, d, L[6]) + aporte(a, d, L[7]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento9(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) + aporte(a, d, L[6]) + aporte(a, d, L[7]) + aporte(a, d, L[8]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento10(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) + aporte(a, d, L[6]) + aporte(a, d, L[7]) + aporte(a, d, L[8]) + aporte(a, d, L[9]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento11(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) + aporte(a, d, L[6]) + aporte(a, d, L[7]) + aporte(a, d, L[8]) + aporte(a, d, L[9]) + aporte(a, d, L[10]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuento12(a, d, L) { return aporte(a, d, L[0]) + aporte(a, d, L[1]) + aporte(a, d, L[2]) + aporte(a, d, L[3]) + aporte(a, d, L[4]) + aporte(a, d, L[5]) + aporte(a, d, L[6]) + aporte(a, d, L[7]) + aporte(a, d, L[8]) + aporte(a, d, L[9]) + aporte(a, d, L[10]) + aporte(a, d, L[11]) > d.diff(a).affectedKeys().size() - 0.01; }
+      function descuentoOk(a, d, L) {
+        return L.size() <= 12 && (L.size() <= 6 ? (L.size() <= 3 ? (L.size() <= 2 ? (L.size() <= 1 ? descuento1(a, d, L) : descuento2(a, d, L)) : descuento3(a, d, L)) : (L.size() <= 5 ? (L.size() <= 4 ? descuento4(a, d, L) : descuento5(a, d, L)) : descuento6(a, d, L))) : (L.size() <= 9 ? (L.size() <= 8 ? (L.size() <= 7 ? descuento7(a, d, L) : descuento8(a, d, L)) : descuento9(a, d, L)) : (L.size() <= 11 ? (L.size() <= 10 ? descuento10(a, d, L) : descuento11(a, d, L)) : descuento12(a, d, L))));
+      }
+      // </generado:descuento>
+
+      /* Descuento público (checkout de la tienda): el cliente DECLARA en
+         `descuento: [{talle, color}, ...]` qué variantes baja; la regla
+         verifica que:
+         - el pedido `ultimoPedido` se crea en esta misma escritura,
+         - solo cambian talles declarados y, dentro de cada talle, solo los
+           colores declarados (sin agregar ni borrar talles/colores),
+         - cada variante declarada BAJA (nunca < 0) sin tocar el hex
+           ni agregar campos,
+         - no hay variantes declaradas repetidas.
+         Tipos incorrectos (variantes que no es map, descuento que no es
+         lista, entradas sin talle/color) hacen fallar la evaluación, y en
+         Firestore un error de evaluación = denegado: no hace falta
+         chequearlos aparte (cada chequeo gasta presupuesto de expresiones).
+         El tope de variantes por producto y por pedido es MAX_DESCUENTO
+         (límite de 1000 expresiones evaluadas por documento de Firestore,
+         ver generar-stock-rules.mjs).
+         TEMPORAL: cuando exista el Worker de pagos (Cloudflare), el
+         descuento de stock pasa al Worker (credenciales de servidor) y este
+         camino público + el tope se eliminan. Los pedidos manuales del staff
+         (isStaff) no tienen tope. */
+      function descuentoPublico() {
+        let r = request.resource.data;
+        let L = r.descuento;
+        return r.diff(resource.data).affectedKeys()
+                 .hasOnly(['variantes', 'actualizadoEn', 'ultimoPedido', 'descuento'])
+          && pedidoNuevo(r.ultimoPedido)
+          && L.toSet().size() == L.size()
+          && descuentoOk(resource.data.variantes, r.variantes, L);
+      }
+
+      allow read: if true;
+      allow update: if isStaff() || descuentoPublico();
+      allow create, delete: if isStaff();
+
+      match /movimientos/{movId} {
+        function ventaPublica() {
+          let d = request.resource.data;
+          return d.keys().hasAll(['talle', 'color', 'delta', 'motivo', 'fecha', 'ts'])
+            && d.keys().hasOnly(['talle', 'color', 'delta', 'cantidadResultante', 'motivo', 'fecha', 'ts'])
+            && d.talle is string && d.talle.matches('^[A-Za-z0-9./ -]{1,12}$')
+            && d.color is string && d.color.matches('^[^<>&"]{1,40}$')
+            && d.delta is int && d.delta < 0 && d.delta >= -100
+            && (!('cantidadResultante' in d) || d.cantidadResultante == null
+                || (d.cantidadResultante is int && d.cantidadResultante >= 0))
+            && d.motivo is string && d.motivo.matches('^Venta #[A-Z0-9]{10,20}$')
+            && pedidoCreadoAhora(d.motivo.split('#')[1])
+            && d.fecha is string && d.fecha.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+            && d.ts == request.time;
+        }
+        allow read: if isStaff();
+        allow create: if isStaff() || ventaPublica();
+        allow update, delete: if false;
+      }
+    }
+
+    /* Todo lo demás: cerrado (deny by default). */
+  }
+}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title id="page-title">Producto — Cattorini</title>
   <meta name="description" id="page-desc" content="Producto de Cattorini. Camisas, pantalones y jeans de fabricación argentina." />
@@ -25,10 +25,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" integrity="sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC" crossorigin="anonymous"></script>
+  <script src="./tienda-core.js"></script>
   <script src="./ubicaciones.js" defer></script>
 
   <script type="application/ld+json" id="ld-product">{}</script>
@@ -554,6 +555,21 @@
       background: #FFF; color: #0A0A0A;
     }
     .delivery-input:focus { outline: none; border-color: #0A0A0A; }
+    /* Accesibilidad: label visible solo para lectores de pantalla */
+    .vh {
+      position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    .legal-checkout { font-size: 0.72rem; color: #666; line-height: 1.5; margin-top: 8px; }
+    .legal-checkout a { color: #0A0A0A; text-decoration: underline; }
+    /* Pie legal (Ley 24.240 / Res. 424/2020 / Res. 270/2020) */
+    .legal-footer { border-top: 1px solid #E5E5E5; background: #FAFAFA; margin-top: 40px; }
+    .lf-inner { max-width: 1400px; margin: 0 auto; padding: 24px; font-size: 0.78rem; color: #666; line-height: 1.6; }
+    .lf-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 10px; }
+    .lf-links a { color: #0A0A0A; text-decoration: underline; }
+    .lf-arrep { font-weight: 500; }
+    .lf-id { margin: 0; overflow-wrap: anywhere; }
+    #confirm-code { font-size: clamp(1.5rem, 7vw, 2.2rem) !important; letter-spacing: 0.1em !important; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -566,7 +582,7 @@
     </a>
     <div class="header-right">
       <a href="./seguimiento.html" class="track-link">Mis pedidos</a>
-      <button class="cart-btn" onclick="openCart()">
+      <button class="cart-btn" onclick="openCart()" aria-label="Ver mi pedido">
         Pedido <span class="cart-badge" id="cart-count">0</span>
       </button>
     </div>
@@ -611,9 +627,10 @@
       <div class="qty-section">
         <div class="qty-label">Cantidad</div>
         <div class="qty-ctrl">
-          <button onclick="chgQty(-1)">−</button>
+          <button type="button" onclick="chgQty(-1)" aria-label="Restar uno">−</button>
+          <label for="qty" class="vh">Cantidad</label>
           <input type="number" id="qty" value="1" min="1" max="999" />
-          <button onclick="chgQty(1)">+</button>
+          <button type="button" onclick="chgQty(1)" aria-label="Sumar uno">+</button>
         </div>
       </div>
 
@@ -630,10 +647,22 @@
   </div>
 </main>
 
+<footer class="legal-footer">
+  <div class="lf-inner">
+    <nav class="lf-links" aria-label="Información legal">
+      <a href="./arrepentimiento.html" class="lf-arrep">Botón de arrepentimiento</a>
+      <a href="./terminos.html">Términos y condiciones</a>
+      <a href="./privacidad.html">Política de privacidad</a>
+      <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
+    </nav>
+    <p class="lf-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+  </div>
+</footer>
+
 <!-- Modal guía -->
-<div class="modal-back" id="modal-guia">
-  <div class="modal-b">
-    <button class="modal-close" onclick="closeGuia()">×</button>
+<div class="modal-back" id="modal-guia" onclick="if(event.target===this)closeGuia()">
+  <div class="modal-b" role="dialog" aria-modal="true" aria-labelledby="guia-titulo">
+    <button class="modal-close" onclick="closeGuia()" aria-label="Cerrar guía de talles">×</button>
     <h3 id="guia-titulo">Guía de talles</h3>
     <div class="unidad" id="guia-unidad">Medidas en cm</div>
     <div style="overflow-x:auto;">
@@ -644,10 +673,10 @@
 
 <!-- Cart drawer -->
 <div class="drawer-back" id="drawer-back" onclick="closeCart()"></div>
-<div class="drawer" id="drawer">
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
   <div class="drawer-header">
-    <h2>Tu pedido</h2>
-    <button class="drawer-close" onclick="closeCart()">×</button>
+    <h2 id="drawer-title">Tu pedido</h2>
+    <button class="drawer-close" onclick="closeCart()" aria-label="Cerrar">×</button>
   </div>
   <div class="drawer-body" id="drawer-body"></div>
   <div class="drawer-footer" id="drawer-footer" style="display:none;">
@@ -664,8 +693,8 @@
     <div style="margin-top:16px;">
       <div style="font-size:0.82rem;font-weight:500;margin-bottom:6px;">Entrega</div>
       <div class="delivery-toggle">
-        <button id="tog-retiro" class="active" onclick="setEntrega('retiro')">Retiro en local</button>
-        <button id="tog-envio" onclick="setEntrega('envio')">Envío a domicilio</button>
+        <button id="tog-retiro" class="active" type="button" onclick="setEntrega('retiro')">Retiro en local</button>
+        <button id="tog-envio" type="button" onclick="setEntrega('envio')">Envío a domicilio</button>
       </div>
 
       <div id="retiro-pago-wrap" style="margin-top:10px;">
@@ -677,23 +706,29 @@
         <p style="font-size:0.76rem;color:#666;margin-top:4px;" id="pago-local-hint">Vas a abonar cuando retires el pedido.</p>
       </div>
 
-      <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" />
+      <label for="in-nombre" class="vh">Nombre y apellido</label>
+      <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" autocomplete="name" />
       <div id="envio-wrap" style="display:none;">
         <!-- Botón editar visible solo para mayoristas con datos pre-cargados -->
         <div id="envio-mayo-header" style="display:none;justify-content:space-between;align-items:center;margin-top:4px;font-size:0.78rem;color:#666;">
           <span>Enviamos a tu dirección registrada</span>
           <button type="button" id="btn-editar-dir" onclick="toggleEditarDireccion()" style="background:transparent;border:1px solid #E5E5E5;padding:4px 10px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:#0A0A0A;font-family:inherit;">Editar</button>
         </div>
-        <input type="text" id="in-direccion" class="delivery-input" placeholder="Calle, número, piso" maxlength="120" />
+        <label for="in-direccion" class="vh">Dirección de envío</label>
+        <input type="text" id="in-direccion" class="delivery-input" placeholder="Calle, número, piso" maxlength="120" autocomplete="street-address" />
+        <label for="in-provincia-envio" class="vh">Provincia de envío</label>
         <select id="in-provincia-envio" class="delivery-input"></select>
         <div class="loc-wrap">
+          <label for="in-localidad-envio" class="vh">Localidad de envío</label>
           <input type="text" id="in-localidad-envio" class="delivery-input" placeholder="Elegí primero la provincia" maxlength="60" disabled />
           <div id="loc-list-2" class="loc-list"></div>
         </div>
-        <input type="text" id="in-cp" class="delivery-input" placeholder="Código postal (opcional)" maxlength="10" />
+        <label for="in-cp" class="vh">Código postal</label>
+        <input type="text" id="in-cp" class="delivery-input" placeholder="Código postal (opcional)" maxlength="10" autocomplete="postal-code" />
       </div>
     </div>
 
+    <label for="cart-note" class="vh">Nota adicional</label>
     <textarea class="cart-note" id="cart-note" placeholder="Nota adicional (opcional)" maxlength="400"></textarea>
 
     <!-- Honeypot -->
@@ -702,19 +737,20 @@
     <div id="minimo-warning" style="display:none;background:#FDECEC;color:#900;padding:10px 12px;margin-bottom:10px;font-size:0.82rem;line-height:1.4;"></div>
 
     <button class="btn-primary" id="btn-send" onclick="sendOrder()">Confirmar pedido</button>
+    <p class="legal-checkout">Al confirmar aceptás los <a href="./terminos.html">Términos y condiciones</a> y la <a href="./privacidad.html">Política de privacidad</a>. Tenés 10 días para arrepentirte de la compra.</p>
     <button class="btn-secondary" onclick="clearCart()">Vaciar carrito</button>
   </div>
 </div>
 
-<div class="toast" id="toast">···</div>
+<div class="toast" id="toast" role="status" aria-live="polite">···</div>
 <div class="curtain" id="curtain"></div>
 
 <!-- Modal zona bloqueada en checkout (validación anti-fraude) -->
 <div id="zona-block-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:75;display:none;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#FFF;max-width:460px;width:100%;padding:32px;">
+  <div style="background:#FFF;max-width:460px;width:100%;padding:32px;" role="dialog" aria-modal="true" aria-labelledby="zb-title">
     <div style="text-align:center;margin-bottom:16px;">
-      <div style="width:60px;height:60px;border-radius:50%;background:#FDECEC;color:#900;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:8px;">⚠</div>
-      <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;">No podemos enviarte a esa localidad</h2>
+      <div style="width:60px;height:60px;border-radius:50%;background:#FDECEC;color:#900;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:8px;" aria-hidden="true">⚠</div>
+      <h2 id="zb-title" style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;">No podemos enviarte a esa localidad</h2>
     </div>
     <p style="color:#333;font-size:0.92rem;line-height:1.6;margin-bottom:16px;" id="zb-msg">···</p>
     <div style="padding:16px;background:#F5F5F5;border-left:3px solid #0A0A0A;margin-bottom:20px;">
@@ -722,15 +758,15 @@
       <div style="font-size:0.85rem;color:#666;line-height:1.5;" id="zb-detalle">···</div>
     </div>
     <a id="zb-wa" target="_blank" rel="noopener noreferrer" class="btn-primary" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;">Contactar por WhatsApp</a>
-    <button class="btn-secondary" onclick="document.getElementById('zona-block-modal').style.display='none'" style="width:100%;">Cambiar dirección</button>
+    <button class="btn-secondary" onclick="cerrarZonaBlock()" style="width:100%;">Cambiar dirección</button>
   </div>
 </div>
 
 <!-- Confirmation modal -->
 <div id="confirm-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:70;display:none;align-items:center;justify-content:center;padding:20px;">
-  <div style="background:#FFF;max-width:460px;width:100%;padding:40px 32px;text-align:center;">
-    <div style="width:60px;height:60px;border-radius:50%;background:#0A0A0A;color:#FFF;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:16px;">✓</div>
-    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
+  <div style="background:#FFF;max-width:460px;width:100%;padding:40px 32px;text-align:center;" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div style="width:60px;height:60px;border-radius:50%;background:#0A0A0A;color:#FFF;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:16px;" aria-hidden="true">✓</div>
+    <h2 id="confirm-title" style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
     <p style="color:#666;font-size:0.9rem;margin-bottom:8px;">Guardá este código para consultar el estado:</p>
     <div style="font-family:'Cormorant Garamond',serif;font-size:2.4rem;letter-spacing:0.15em;background:#F5F5F5;padding:16px 24px;margin:20px 0;" id="confirm-code">···</div>
     <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;" id="confirm-msg">
@@ -803,15 +839,8 @@ function necesitaQR() {
 }
 let lastSubmit = 0;
 
-/* =========== XSS-safe helpers =========== */
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
-function sanitizeInput(str, maxLen = 200) {
-  if (!str) return '';
-  return String(str).slice(0, maxLen).replace(/[<>]/g, '').trim();
-}
+/* =========== XSS-safe helpers (tienda-core.js) =========== */
+const { esc, cssUrl, imgSrc, waLink, sanitizeInput } = window.CattCore;
 
 /* =========== Data load =========== */
 async function loadData() {
@@ -871,8 +900,8 @@ function renderProduct() {
   document.getElementById('page-canonical').setAttribute('href', `https://cattorini.github.io/producto.html?id=${PRODUCT.id}`);
   document.getElementById('og-title').setAttribute('content', PRODUCT.nombre);
   document.getElementById('og-desc').setAttribute('content', PRODUCT.descripcion || '');
-  if (PRODUCT.imagenes && PRODUCT.imagenes.length) {
-    document.getElementById('og-image').setAttribute('content', `https://cattorini.github.io/img/${PRODUCT.imagenes[0]}`);
+  if (PRODUCT.imagenes && PRODUCT.imagenes.length && imgSrc(PRODUCT.imagenes[0])) {
+    document.getElementById('og-image').setAttribute('content', 'https://cattorini.github.io/' + imgSrc(PRODUCT.imagenes[0]).slice(2));
   }
 
   document.getElementById('bc-cat').textContent = CATEGORIA.nombre;
@@ -913,7 +942,7 @@ function renderProduct() {
     "description": PRODUCT.descripcion || '',
     "sku": String(PRODUCT.id),
     "brand": { "@type": "Brand", "name": "Cattorini" },
-    "image": (PRODUCT.imagenes || []).map(i => `https://cattorini.github.io/img/${i}`),
+    "image": (PRODUCT.imagenes || []).filter(i => imgSrc(i)).map(i => 'https://cattorini.github.io/' + imgSrc(i).slice(2)),
     "offers": {
       "@type": "Offer",
       "url": `https://cattorini.github.io/producto.html?id=${PRODUCT.id}`,
@@ -930,7 +959,7 @@ function renderProduct() {
     "itemListElement": [
       { "@type": "ListItem", "position": 1, "name": "Inicio", "item": "https://cattorini.github.io/index.html" },
       { "@type": "ListItem", "position": 2, "name": "Tienda", "item": "https://cattorini.github.io/tienda.html" },
-      { "@type": "ListItem", "position": 3, "name": CATEGORIA.nombre, "item": `https://cattorini.github.io/tienda.html?cat=${CATEGORIA.id}` },
+      { "@type": "ListItem", "position": 3, "name": CATEGORIA.nombre, "item": `https://cattorini.github.io/tienda.html?cat=${encodeURIComponent(CATEGORIA.id)}` },
       { "@type": "ListItem", "position": 4, "name": PRODUCT.nombre, "item": `https://cattorini.github.io/producto.html?id=${PRODUCT.id}` }
     ]
   });
@@ -941,14 +970,15 @@ function renderGallery() {
   main.classList.add('placeholder');
   main.style.backgroundImage = '';
 
-  const imgs = PRODUCT.imagenes || [];
+  const imgs = (PRODUCT.imagenes || []).filter(i => imgSrc(i));
+  if (mainImgIdx >= imgs.length) mainImgIdx = 0;
   if (imgs.length) {
     const testImg = new Image();
     testImg.onload = () => {
       main.classList.remove('placeholder');
-      main.style.backgroundImage = `url('./img/${imgs[mainImgIdx]}')`;
+      main.style.backgroundImage = cssUrl(imgs[mainImgIdx]);
     };
-    testImg.src = `./img/${imgs[mainImgIdx]}`;
+    testImg.src = imgSrc(imgs[mainImgIdx]);
   }
 
   const thumbs = document.getElementById('gallery-thumbs');
@@ -957,13 +987,17 @@ function renderGallery() {
     imgs.forEach((img, i) => {
       const t = document.createElement('div');
       t.className = 'thumb placeholder' + (i === mainImgIdx ? ' active' : '');
+      t.setAttribute('role', 'button');
+      t.tabIndex = 0;
+      t.setAttribute('aria-label', 'Ver foto ' + (i + 1));
       const testImg = new Image();
       testImg.onload = () => {
         t.classList.remove('placeholder');
-        t.style.backgroundImage = `url('./img/${img}')`;
+        t.style.backgroundImage = cssUrl(img);
       };
-      testImg.src = `./img/${img}`;
+      testImg.src = imgSrc(img);
       t.onclick = () => { mainImgIdx = i; renderGallery(); };
+      t.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); t.onclick(); } };
       thumbs.appendChild(t);
     });
   }
@@ -1064,7 +1098,8 @@ function renderColores() {
     chip.disabled = cant <= 0;
     const sw = document.createElement('span');
     sw.className = 'color-swatch';
-    sw.style.background = v.hex || '#999';
+    /* hex viene de Firestore: solo colores #RGB/#RRGGBB, nada de url() */
+    sw.style.background = /^#[0-9a-fA-F]{3,8}$/.test(String(v.hex || '')) ? v.hex : '#999';
     chip.appendChild(sw);
     chip.appendChild(document.createTextNode(nombre + (cant <= 0 ? ' (sin stock)' : '')));
     chip.onclick = () => selectColor(nombre);
@@ -1145,10 +1180,16 @@ function openGuia() {
   });
   tabla.appendChild(tbody);
 
-  document.getElementById('modal-guia').classList.add('open');
+  const modal = document.getElementById('modal-guia');
+  modal.classList.add('open');
+  window.CattCore.atraparFoco(modal, closeGuia);
+  window.CattCore.focoEnModal(modal, modal.querySelector('.modal-close'));
 }
 function closeGuia() {
-  document.getElementById('modal-guia').classList.remove('open');
+  const modal = document.getElementById('modal-guia');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  window.CattCore.devolverFoco(modal);
 }
 
 /* =========== Cart =========== */
@@ -1223,9 +1264,12 @@ function unlockBodyScroll() {
 
 async function openCart() {
   renderCart();
-  document.getElementById('drawer').classList.add('open');
+  const drawer = document.getElementById('drawer');
+  drawer.classList.add('open');
   document.getElementById('drawer-back').classList.add('open');
   lockBodyScroll();
+  window.CattCore.atraparFoco(drawer, closeCart);
+  window.CattCore.focoEnModal(drawer, drawer.querySelector('.drawer-close'));
   /* Cargar opciones de provincia ANTES de aplicar el modo mayorista
      (sino el select está vacío y no se pueden pre-llenar los datos) */
   await initEnvioUbicaciones();
@@ -1311,9 +1355,12 @@ function toggleEditarDireccion() {
   document.getElementById('in-direccion').focus();
 }
 function closeCart() {
-  document.getElementById('drawer').classList.remove('open');
+  const drawer = document.getElementById('drawer');
+  const estabaAbierto = drawer.classList.contains('open');
+  drawer.classList.remove('open');
   document.getElementById('drawer-back').classList.remove('open');
-  unlockBodyScroll();
+  if (estabaAbierto) unlockBodyScroll();
+  window.CattCore.devolverFoco(drawer);
 }
 
 function renderCart() {
@@ -1339,13 +1386,13 @@ function renderCart() {
 
     const img = document.createElement('div');
     img.className = 'cart-item-img placeholder';
-    if (item.imagen) {
+    if (item.imagen && imgSrc(item.imagen)) {
       const testImg = new Image();
       testImg.onload = () => {
         img.classList.remove('placeholder');
-        img.style.backgroundImage = `url('./img/${item.imagen}')`;
+        img.style.backgroundImage = cssUrl(item.imagen);
       };
-      testImg.src = `./img/${item.imagen}`;
+      testImg.src = imgSrc(item.imagen);
     }
     row.appendChild(img);
 
@@ -1365,11 +1412,13 @@ function renderCart() {
     const qtyBox = document.createElement('div');
     qtyBox.className = 'cart-item-qty';
     const minus = document.createElement('button');
+    minus.type = 'button'; minus.setAttribute('aria-label', 'Restar uno');
     minus.textContent = '−';
     minus.onclick = () => { chgCartQty(idx, -1); };
     const qty = document.createElement('span');
     qty.textContent = item.qty;
     const plus = document.createElement('button');
+    plus.type = 'button'; plus.setAttribute('aria-label', 'Sumar uno');
     plus.textContent = '+';
     plus.onclick = () => { chgCartQty(idx, 1); };
     qtyBox.appendChild(minus); qtyBox.appendChild(qty); qtyBox.appendChild(plus);
@@ -1405,26 +1454,25 @@ function renderTotals() {
   const box = document.getElementById('totals-box');
   box.innerHTML = '';
 
-  const r1 = document.createElement('div');
-  r1.className = 'totals-row';
-  r1.innerHTML = `<span class="muted">Subtotal</span><span>$${subtotal.toLocaleString('es-AR')}</span>`;
-  box.appendChild(r1);
-
+  /* Filas armadas con textContent (nada de innerHTML con datos del JSON) */
+  const fila = (cls, izq, der, izqMuted) => {
+    const r = document.createElement('div');
+    r.className = cls;
+    const l = document.createElement('span');
+    if (izqMuted) l.className = 'muted';
+    l.textContent = izq;
+    const d = document.createElement('span');
+    d.textContent = der;
+    r.appendChild(l); r.appendChild(d);
+    box.appendChild(r);
+    return d;
+  };
+  fila('totals-row', 'Subtotal', `$${subtotal.toLocaleString('es-AR')}`, true);
   if (entrega === 'envio') {
-    const r2 = document.createElement('div');
-    r2.className = 'totals-row';
-    if (envio === 0) {
-      r2.innerHTML = `<span class="muted">Envío</span><span style="color:#0A0A0A;">Gratis</span>`;
-    } else {
-      r2.innerHTML = `<span class="muted">Envío (${esc(env.transportista)})</span><span>$${envio.toLocaleString('es-AR')}</span>`;
-    }
-    box.appendChild(r2);
+    if (envio === 0) fila('totals-row', 'Envío', 'Gratis', true).style.color = '#0A0A0A';
+    else fila('totals-row', `Envío (${env.transportista})`, `$${envio.toLocaleString('es-AR')}`, true);
   }
-
-  const r3 = document.createElement('div');
-  r3.className = 'totals-row total';
-  r3.innerHTML = `<span>Total ${entrega === 'retiro' ? 'estimado' : ''}</span><span>$${total.toLocaleString('es-AR')}</span>`;
-  box.appendChild(r3);
+  fila('totals-row total', `Total ${entrega === 'retiro' ? 'estimado' : ''}`, `$${total.toLocaleString('es-AR')}`, false);
 
   actualizarMinimoMayorista(perfil, subtotal);
 }
@@ -1505,20 +1553,17 @@ const LS_MIS_PEDIDOS = 'catt_mis_pedidos';
 let ubicacionEnvio = null;
 
 async function initEnvioUbicaciones() {
-  if (ubicacionEnvio || !window.Ubicaciones) return;
-  ubicacionEnvio = await window.Ubicaciones.init({
+  ubicacionEnvio = await window.CattCore.initUbicacionSeguro({
     provinciaSelect: document.getElementById('in-provincia-envio'),
     localidadInput: document.getElementById('in-localidad-envio'),
     localidadList: document.getElementById('loc-list-2')
   });
 }
 
-function genTrackingCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
+/* Código del pedido en curso: se genera UNA vez por intento de compra y se
+   reutiliza al reintentar (ver tienda.html / tienda-core.js). */
+let codigoEnCurso = null;
+let enviandoPedido = false;
 
 function saveMyOrderCode(code, docId) {
   try {
@@ -1550,18 +1595,42 @@ function mostrarZonaBloqueadaCheckout(zona) {
   if (may.whatsapp) bits.push('WA: ' + may.whatsapp);
   document.getElementById('zb-detalle').textContent = bits.join('  ·  ') || 'Contactalo para más info.';
   const waEl = document.getElementById('zb-wa');
-  if (may.whatsapp) {
-    const num = may.whatsapp.replace(/[^0-9]/g, '');
-    const msg = encodeURIComponent(`Hola! Los contacto porque en Cattorini me indicaron que son distribuidores en mi zona.`);
-    waEl.href = `https://wa.me/${num}?text=${msg}`;
+  if (may.whatsapp && waLink(may.whatsapp)) {
+    waEl.href = waLink(may.whatsapp, 'Hola! Los contacto porque en Cattorini me indicaron que son distribuidores en mi zona.');
     waEl.style.display = 'block';
   } else {
     waEl.style.display = 'none';
   }
-  document.getElementById('zona-block-modal').style.display = 'flex';
+  const modal = document.getElementById('zona-block-modal');
+  modal.style.display = 'flex';
+  window.CattCore.atraparFoco(modal, cerrarZonaBlock);
+  window.CattCore.focoEnModal(modal);
 }
 
+function cerrarZonaBlock() {
+  const modal = document.getElementById('zona-block-modal');
+  modal.style.display = 'none';
+  window.CattCore.devolverFoco(modal);
+}
+
+/* Guardia contra doble click / doble envío (mismo esquema que tienda.html) */
 async function sendOrder() {
+  if (enviandoPedido) return;
+  enviandoPedido = true;
+  const btn = document.getElementById('btn-send');
+  const btnTexto = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Enviando...'; }
+  try {
+    await enviarPedido();
+  } finally {
+    enviandoPedido = false;
+    if (btn) { btn.removeAttribute('aria-busy'); btn.textContent = btnTexto || 'Confirmar pedido'; }
+    if (document.getElementById('drawer-footer').style.display !== 'none' && DATA) renderTotals();
+    else if (btn) btn.disabled = false;
+  }
+}
+
+async function enviarPedido() {
   const now = Date.now();
   if (now - lastSubmit < RATE_LIMIT_MS) {
     showToast('Esperá unos segundos antes de reenviar.');
@@ -1610,12 +1679,10 @@ async function sendOrder() {
         showToast('Completá dirección, provincia y localidad.');
         return;
       }
-      if (window.Ubicaciones) {
-        const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
-        if (!valida) {
-          showToast('Elegí una localidad de la lista sugerida.');
-          return;
-        }
+      const valida = await window.CattCore.localidadValida(provincia, localidad);
+      if (!valida) {
+        showToast('Elegí una localidad de la lista sugerida.');
+        return;
       }
     }
   }
@@ -1647,10 +1714,32 @@ async function sendOrder() {
   const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
   const total = subtotal + envio;
 
-  const code = genTrackingCode();
+  try {
+    window.CattCore.validarCarrito(cart);
+  } catch (e) {
+    if (e && e.requiereWhatsApp) {
+      /* Más combinaciones talle/color de una misma prenda que las que
+         admite el checkout online: se ofrece el pedido completo por WhatsApp. */
+      const texto = window.CattCore.textoPedidoWhatsApp(cart, {
+        perfil: cart_perfil, nombre, negocio, entrega, direccion, localidad, provincia, cp, nota
+      });
+      window.CattCore.mostrarPedidoPorWhatsApp((DATA.negocio && DATA.negocio.whatsapp) || '', e.message, texto);
+      return;
+    }
+    showToast(window.CattCore.mensajeErrorCheckout(e));
+    return;
+  }
+
+  if (!db) {
+    showToast('Sistema de pedidos no disponible. Recargá la página.');
+    return;
+  }
+
+  if (!codigoEnCurso) codigoEnCurso = window.CattCore.genCodigo();
+  const code = codigoEnCurso;
   const payload = {
     codigo: code,
-    creadoEn: (db && firebase.firestore.FieldValue.serverTimestamp()) || new Date().toISOString(),
+    creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     cliente: {
       nombre: nombre || '',
       negocio: negocio || '',
@@ -1676,81 +1765,28 @@ async function sendOrder() {
     estado: 'pendiente'
   };
 
-  let docId = null;
-  if (!db) {
-    showToast('Sistema de pedidos no disponible. Recargá la página.');
-    return;
-  }
-
-  /* Descuento de stock atómico — solo para items con color (= bajo control
-     de stock). Productos viejos sin stock cargado (sin color) no se tocan. */
-  const itemsConStock = cart.filter(i => i.color);
-  const resultantePorItem = {};
-  if (itemsConStock.length) {
-    try {
-      await db.runTransaction(async (tx) => {
-        const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
-        const refs = idsUnicos.map(id => db.collection('stock').doc(id));
-        const snaps = await Promise.all(refs.map(r => tx.get(r)));
-        const variantesPorId = {};
-        idsUnicos.forEach((id, idx) => {
-          variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
-        });
-        itemsConStock.forEach(i => {
-          const variantes = variantesPorId[String(i.id)];
-          const actual = ((variantes[i.talle] || {})[i.color] || {}).cantidad || 0;
-          if (actual < i.qty) {
-            throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}. Ajustá la cantidad en el carrito.`);
-          }
-          const restante = actual - i.qty;
-          variantes[i.talle] = variantes[i.talle] || {};
-          variantes[i.talle][i.color] = { ...(variantes[i.talle][i.color] || {}), cantidad: restante };
-          resultantePorItem[i.key] = restante;
-        });
-        idsUnicos.forEach((id, idx) => {
-          tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
-        });
-      });
-    } catch (e) {
-      showToast(e.message);
-      return;
-    }
-  }
-
+  /* UNA sola transacción: pedido + descuento de stock + movimientos */
   try {
-    const ref = await db.collection('pedidos').add(payload);
-    docId = ref.id;
+    await window.CattCore.crearPedidoAtomico(db, firebase.firestore.FieldValue, code, payload, cart);
   } catch (e) {
-    showToast('Error al enviar: ' + e.message);
-    console.error('Firestore write error:', e);
+    console.error('Checkout error:', e);
+    showToast(window.CattCore.mensajeErrorCheckout(e));
     return;
   }
 
-  if (itemsConStock.length) {
-    const fecha = new Date().toISOString().split('T')[0];
-    itemsConStock.forEach(i => {
-      db.collection('stock').doc(String(i.id)).collection('movimientos').add({
-        talle: i.talle, color: i.color, delta: -i.qty,
-        cantidadResultante: resultantePorItem[i.key] ?? null,
-        motivo: 'Venta #' + code, fecha,
-        ts: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(e => console.warn('No se pudo registrar movimiento de stock:', e.message));
-    });
-  }
-
+  codigoEnCurso = null;
   lastSubmit = now;
-  saveMyOrderCode(code, docId);
+  saveMyOrderCode(code, code);
 
   document.getElementById('confirm-code').textContent = '#' + code;
-  document.getElementById('track-link').href = `./seguimiento.html?code=${code}`;
+  document.getElementById('track-link').href = `./seguimiento.html?code=${encodeURIComponent(code)}`;
   const qrBox = document.getElementById('confirm-pago-qr');
   const msgEl = document.getElementById('confirm-msg');
   if (necesitaQR()) {
     qrBox.style.display = 'block';
     msgEl.textContent = 'Tu pedido queda pendiente de pago. Apenas lo recibamos, lo pasamos a preparación.';
     const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
-    const waMsg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
-    document.getElementById('confirm-wa-pago').href = `https://wa.me/${wa}?text=${waMsg}`;
+    document.getElementById('confirm-wa-pago').href = waLink(wa, `Hola! Quiero pagar mi pedido #${code} por otro medio.`) || '#';
     const pago = DATA.config.pago || {};
     const datosBox = document.getElementById('confirm-pago-datos');
     if (pago.titular || pago.banco) {
@@ -1767,14 +1803,19 @@ async function sendOrder() {
     qrBox.style.display = 'none';
     msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.';
   }
-  document.getElementById('confirm-modal').style.display = 'flex';
-
   saveCart([]);
   closeCart();
+
+  const confirmModal = document.getElementById('confirm-modal');
+  confirmModal.style.display = 'flex';
+  window.CattCore.atraparFoco(confirmModal, closeConfirm);
+  window.CattCore.focoEnModal(confirmModal, document.getElementById('track-link'));
 }
 
 function closeConfirm() {
-  document.getElementById('confirm-modal').style.display = 'none';
+  const confirmModal = document.getElementById('confirm-modal');
+  confirmModal.style.display = 'none';
+  window.CattCore.devolverFoco(confirmModal);
 }
 
 /* =========== Init =========== */
@@ -1792,6 +1833,15 @@ async function init() {
     document.getElementById('loading').style.display = 'none';
     document.getElementById('not-found').style.display = 'block';
     return;
+  }
+
+  /* El perfil mayorista se revalida contra mayoristas_activos/{hash} antes
+     de mostrar precios (fail-closed: si no se puede verificar, se cae a
+     minorista y la tienda vuelve a pedir el código). */
+  const rMay = await window.CattCore.validarMayoristaPersistido(db);
+  if (!rMay.ok) {
+    ['catt_perfil', 'catt_localidad', 'catt_zona_status', 'catt_mayorista_data', 'catt_codigo_valido_hash']
+      .forEach(k => localStorage.removeItem(k));
   }
 
   const found = findProduct(idNum);

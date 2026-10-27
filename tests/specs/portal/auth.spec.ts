@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { setupPage } from '../../helpers/setup';
 import { PortalPage } from '../../pages/portal.page';
+import { loginStaff } from '../../helpers/portal';
 
 test.describe('Portal — autenticación @portal', () => {
 
@@ -39,12 +40,15 @@ test.describe('Portal — autenticación @portal', () => {
     await expect(portal.errSetup).toContainText(/no coinciden/i);
   });
 
-  test('setup exitoso muestra la app @portal @critical', async ({ page }) => {
+  test('setup exitoso pide la sesión de staff y después muestra la app @portal @critical', async ({ page }) => {
     await setupPage(page);
     const portal = new PortalPage(page);
     await portal.goto();
     await portal.setupInicial('ghp_' + 'x'.repeat(36), 'testpassword');
-    // Después del setup, se muestra la pantalla de app (loadRemote puede fallar por GH mock — no importa, verificamos que la app screen aparezca)
+    /* Con solo el PAT no se entra: falta la sesión de staff de Firebase */
+    await expect(page.locator('#login-staff')).toBeVisible();
+    await expect(portal.appScreen).toBeHidden();
+    await loginStaff(page);
     await expect(portal.appScreen).toBeVisible({ timeout: 10000 });
   });
 });

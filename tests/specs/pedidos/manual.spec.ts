@@ -1,17 +1,17 @@
 import { test, expect } from '@playwright/test';
 import { setupPage, getCollection } from '../../helpers/setup';
 import { PedidosPage } from '../../pages/pedidos.page';
+import { entrarAPedidos } from '../../helpers/portal';
 import { mayoristaSample, CODIGO_MAYO_INDIVIDUAL_HASH } from '../../fixtures/test-data';
 
 test.describe('Pedido manual @pedidos @manual', () => {
 
   test('modal abre con perfil minorista por default @pedidos', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: { collections: { pedidos: {}, mayoristas_activos: {} } }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await page.locator('button', { hasText: '+ Manual' }).click();
     await expect(p.modalManual).toHaveClass(/open/);
     await expect(p.mPerfilMino).toHaveClass(/active/);
@@ -21,7 +21,6 @@ test.describe('Pedido manual @pedidos @manual', () => {
 
   test('cambiar a mayorista carga el dropdown de mayoristas @pedidos @mayorista', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: {
         collections: {
           pedidos: {},
@@ -30,7 +29,7 @@ test.describe('Pedido manual @pedidos @manual', () => {
       }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await page.locator('button', { hasText: '+ Manual' }).click();
     await p.mPerfilMayo.click();
     await expect(p.mDatosMayo).toBeVisible();
@@ -42,7 +41,6 @@ test.describe('Pedido manual @pedidos @manual', () => {
 
   test('seleccionar mayorista autocompleta info y datos de envío @pedidos @mayorista', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: {
         collections: {
           pedidos: {},
@@ -51,7 +49,7 @@ test.describe('Pedido manual @pedidos @manual', () => {
       }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await page.locator('button', { hasText: '+ Manual' }).click();
     await p.mPerfilMayo.click();
     await page.waitForTimeout(500);
@@ -65,13 +63,11 @@ test.describe('Pedido manual @pedidos @manual', () => {
 
   test('minorista sin nombre no permite crear pedido @pedidos', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: { collections: { pedidos: {}, mayoristas_activos: {} } }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await page.locator('button', { hasText: '+ Manual' }).click();
-    page.on('dialog', d => d.accept());
     await p.mSubmitBtn.click();
     const pedidos = await getCollection(page, 'pedidos');
     expect(Object.keys(pedidos).length).toBe(0);

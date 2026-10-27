@@ -17,27 +17,19 @@ test.describe('Validación de zonas @tienda @anti-fraude', () => {
     // Setup: productos.json debe tener una zona registrada para Mar del Plata.
     // Como no la tiene por default, simulamos el flujo con setupPage + intercept del JSON
     // que agrega una zona.
-    await page.route('**/productos.json', async route => {
-      try {
-        const resp = await route.fetch();
-        const json = await resp.json();
-        json.zonas_mayoristas = [{
-          provincia: 'Buenos Aires',
-          localidades: ['Mar del Plata'],
-          mayorista: {
-            nombre: 'Distribuidora del Mar',
-            telefono: '223-555-1234',
-            whatsapp: '5492235551234',
-            direccion: 'Av. Colón 1000'
-          }
-        }];
-        await route.fulfill({ contentType: 'application/json', body: JSON.stringify(json) });
-      } catch (e) {
-        await route.continue();
-      }
-    });
-
     await setupPage(page, {
+      mutarCatalogo: (json) => {
+        json.zonas_mayoristas = [{
+            provincia: 'Buenos Aires',
+            localidades: ['Mar del Plata'],
+            mayorista: {
+              nombre: 'Distribuidora del Mar',
+              telefono: '223-555-1234',
+              whatsapp: '5492235551234',
+              direccion: 'Av. Colón 1000'
+            }
+          }];
+      },
       perfil: 'minorista',
       provincia: 'Buenos Aires',
       localidad: 'Mar del Plata',
@@ -51,27 +43,19 @@ test.describe('Validación de zonas @tienda @anti-fraude', () => {
   });
 
   test('minorista miente en gate y quiere enviar a zona bloqueada — se bloquea en checkout @anti-fraude @critical', async ({ page }) => {
-    await page.route('**/productos.json', async route => {
-      try {
-        const resp = await route.fetch();
-        const json = await resp.json();
-        json.zonas_mayoristas = [{
-          provincia: 'Buenos Aires',
-          localidades: ['Mar del Plata'],
-          mayorista: {
-            nombre: 'Distribuidora del Mar',
-            telefono: '223-555-1234',
-            whatsapp: '5492235551234',
-            direccion: 'Av. Colón 1000'
-          }
-        }];
-        await route.fulfill({ contentType: 'application/json', body: JSON.stringify(json) });
-      } catch (e) {
-        await route.continue();
-      }
-    });
-
     await setupPage(page, {
+      mutarCatalogo: (json) => {
+        json.zonas_mayoristas = [{
+            provincia: 'Buenos Aires',
+            localidades: ['Mar del Plata'],
+            mayorista: {
+              nombre: 'Distribuidora del Mar',
+              telefono: '223-555-1234',
+              whatsapp: '5492235551234',
+              direccion: 'Av. Colón 1000'
+            }
+          }];
+      },
       perfil: 'minorista',
       provincia: 'Buenos Aires',
       localidad: 'Bahía Blanca',  // se identificó de zona libre
