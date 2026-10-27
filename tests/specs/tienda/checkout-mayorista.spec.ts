@@ -91,3 +91,31 @@ test.describe('Checkout mayorista con datos @tienda @checkout @mayorista', () =>
     expect(docs[0].cliente.perfil).toBe('mayorista');
   });
 });
+
+test.describe('Flete mayorista según política del cliente @tienda @mayorista @envio', () => {
+  test('mayorista con envío: el flete figura "A coordinar" y no se suma al total @mayorista', async ({ page }) => {
+    await setupPage(page, {
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH,
+      mayoristaData: mayoristaSample, firebase: activos(mayoristaSample), cart: cartMayo
+    });
+    const tienda = new TiendaPage(page);
+    await tienda.goto();
+    await tienda.abrirCarrito();
+    await tienda.elegirEnvio();
+    const box = page.locator('#totals-box');
+    await expect(box).toContainText('A coordinar');
+    await expect(box).toContainText('Flete');
+    // subtotal 5 × 14.500 = 72.500 y el total no suma ningún flete
+    await expect(box.locator('.totals-row.total')).toContainText('72.500');
+  });
+
+  test('mayorista: el aviso de envío informa el flete por bulto @mayorista', async ({ page }) => {
+    await setupPage(page, {
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH,
+      mayoristaData: mayoristaSample, firebase: activos(mayoristaSample), cart: cartMayo
+    });
+    const tienda = new TiendaPage(page);
+    await tienda.goto();
+    await expect(page.getByText(/por bulto/).first()).toBeVisible();
+  });
+});

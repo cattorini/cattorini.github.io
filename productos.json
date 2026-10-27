@@ -22,10 +22,12 @@
   },
   "config": {
     "envio": {
-      "gratis_desde": 100000,
+      "gratis_desde": 0,
+      "mayorista_por_bulto": 20000,
+      "mayorista_por_bulto_mas_500km": 28000,
       "costo_estandar": 4500,
       "transportista": "Vía Cargo, Correo Argentino",
-      "leyenda": "Enviamos a todo el país por Vía Cargo. Envío gratis en compras minoristas.\nPor compras mayoristas coordinar con el cliente."
+      "leyenda": "Enviamos a todo el país por Vía Cargo. Envío sin cargo en compras minoristas.\nMayoristas: flete a cargo del comprador, $20.000 por bulto ($28.000 a más de 500 km de CABA)."
     },
     "mayoristas": {
       "codigo_hash": "",

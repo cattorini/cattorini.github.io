@@ -633,7 +633,7 @@
       <a href="./privacidad.html">Política de privacidad</a>
       <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
     </nav>
-    <p class="lf-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+    <p class="lf-id">Razón social: ORIGINAL 59 S.A. · CUIT: 30-71125900-3 · IVA Responsable Inscripto · Domicilio: Av. Sarmiento 454, Las Flores (7200), Provincia de Buenos Aires · Tel. 02244 45-4040</p>
   </div>
 </footer>
 
@@ -1178,7 +1178,7 @@ function renderInfoEnvio() {
     /* El envío gratis por monto es un beneficio exclusivo de minoristas —
        mostrarle esa leyenda a un mayorista es directamente falso, porque
        para él el envío siempre corre por su cuenta. */
-    banner.textContent = `Envíos por ${env.transportista}. El costo de envío se discrimina aparte y se suma al total en el carrito.`;
+    banner.textContent = `Flete a cargo del comprador por ${env.transportista}: $${(env.mayorista_por_bulto || 20000).toLocaleString('es-AR')} por bulto ($${(env.mayorista_por_bulto_mas_500km || 28000).toLocaleString('es-AR')} a más de 500 km de CABA). Lo coordinamos al confirmar el pedido.`;
   } else {
     banner.textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
   }
@@ -1526,7 +1526,7 @@ function renderTotals() {
   if (entrega === 'envio') {
     /* El envío mayorista siempre corre por cuenta del comprador — el
        envío gratis por monto es un beneficio exclusivo de minoristas. */
-    envio = (perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar;
+    envio = perfil === 'mayorista' ? 0 : (subtotal >= env.gratis_desde ? 0 : env.costo_estandar);
   }
   const total = subtotal + envio;
 
@@ -1546,7 +1546,8 @@ function renderTotals() {
     const r2L = document.createElement('span'); r2L.className = 'muted';
     r2L.textContent = 'Envío (' + env.transportista + ')';
     const r2R = document.createElement('span');
-    if (envio === 0) { r2R.textContent = 'Gratis'; r2R.style.color = '#0A0A0A'; }
+    if (perfil === 'mayorista') { r2R.textContent = 'A coordinar'; r2L.textContent = 'Flete (' + env.transportista + ')'; }
+    else if (envio === 0) { r2R.textContent = 'Gratis'; r2R.style.color = '#0A0A0A'; }
     else { r2R.textContent = `$${envio.toLocaleString('es-AR')}`; }
     r2.appendChild(r2L); r2.appendChild(r2R);
     box.appendChild(r2);
@@ -1808,7 +1809,7 @@ async function enviarPedido() {
   }
 
   const env = DATA.config.envio;
-  const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
+  const envio = entrega === 'envio' ? (cart_perfil === 'mayorista' ? 0 : (subtotal >= env.gratis_desde ? 0 : env.costo_estandar)) : 0;
   const total = subtotal + envio;
 
   /* Validaciones de carrito (tope de variantes por producto, cantidades) */

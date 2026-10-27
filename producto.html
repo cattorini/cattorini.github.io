@@ -655,7 +655,7 @@
       <a href="./privacidad.html">Política de privacidad</a>
       <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
     </nav>
-    <p class="lf-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+    <p class="lf-id">Razón social: ORIGINAL 59 S.A. · CUIT: 30-71125900-3 · IVA Responsable Inscripto · Domicilio: Av. Sarmiento 454, Las Flores (7200), Provincia de Buenos Aires · Tel. 02244 45-4040</p>
   </div>
 </footer>
 
@@ -884,7 +884,7 @@ function renderInfoEnvio() {
   if (perfil === 'mayorista') {
     /* El envío gratis por monto es un beneficio exclusivo de minoristas —
        para un mayorista el envío siempre corre por su cuenta. */
-    banner.textContent = `Envíos por ${env.transportista}. El costo de envío se discrimina aparte y se suma al total en el carrito.`;
+    banner.textContent = `Flete a cargo del comprador por ${env.transportista}: $${(env.mayorista_por_bulto || 20000).toLocaleString('es-AR')} por bulto ($${(env.mayorista_por_bulto_mas_500km || 28000).toLocaleString('es-AR')} a más de 500 km de CABA). Lo coordinamos al confirmar el pedido.`;
   } else {
     banner.textContent = env.leyenda || `Envíos por ${env.transportista}. Gratis desde $${env.gratis_desde.toLocaleString('es-AR')}.`;
   }
@@ -1447,7 +1447,7 @@ function renderTotals() {
   if (entrega === 'envio') {
     /* El envío mayorista siempre corre por cuenta del comprador — el
        envío gratis por monto es un beneficio exclusivo de minoristas. */
-    envio = (perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar;
+    envio = perfil === 'mayorista' ? 0 : (subtotal >= env.gratis_desde ? 0 : env.costo_estandar);
   }
   const total = subtotal + envio;
 
@@ -1469,7 +1469,8 @@ function renderTotals() {
   };
   fila('totals-row', 'Subtotal', `$${subtotal.toLocaleString('es-AR')}`, true);
   if (entrega === 'envio') {
-    if (envio === 0) fila('totals-row', 'Envío', 'Gratis', true).style.color = '#0A0A0A';
+    if (perfil === 'mayorista') fila('totals-row', `Flete (${env.transportista})`, 'A coordinar', true);
+    else if (envio === 0) fila('totals-row', 'Envío', 'Gratis', true).style.color = '#0A0A0A';
     else fila('totals-row', `Envío (${env.transportista})`, `$${envio.toLocaleString('es-AR')}`, true);
   }
   fila('totals-row total', `Total ${entrega === 'retiro' ? 'estimado' : ''}`, `$${total.toLocaleString('es-AR')}`, false);
@@ -1711,7 +1712,7 @@ async function enviarPedido() {
   }
 
   const env = DATA.config.envio;
-  const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
+  const envio = entrega === 'envio' ? (cart_perfil === 'mayorista' ? 0 : (subtotal >= env.gratis_desde ? 0 : env.costo_estandar)) : 0;
   const total = subtotal + envio;
 
   try {
