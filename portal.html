@@ -5,7 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="no-referrer" />
   <meta name="robots" content="noindex, nofollow, noarchive, nosnippet" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com https://*.googleapis.com;" />
+  <!-- CSP: img-src sin https: genérico y connect-src sin comodines, para que un
+       eventual XSS no pueda exfiltrar el PAT de GitHub ni la sesión de staff.
+       connect-src: api.github.com (publicar productos.json), Firestore y
+       Firebase Auth email/contraseña (identitytoolkit + securetoken). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://api.github.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; object-src 'none'; base-uri 'none'; form-action 'none';" />
   <title>Portal Cattorini</title>
   <link rel="icon" href="./img/logo.jpeg" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -263,6 +267,23 @@
       <button class="btn w-full" onclick="doLogin()">Entrar</button>
       <button class="btn-ghost w-full mt-2" onclick="resetAccess()">Reconfigurar acceso</button>
     </div>
+
+    <!-- Paso 2: sesión de staff en Firebase (email + contraseña). Se pide una
+         vez por dispositivo: la sesión queda guardada. Sin esta sesión el
+         portal no lee ni escribe nada en Firestore. -->
+    <div id="login-staff" style="display:none;">
+      <div class="msg-info mb-4">Iniciá sesión con tu cuenta de staff (pedidos, stock y mayoristas). Queda guardada en este dispositivo.</div>
+      <div class="mb-3">
+        <label class="lbl" for="staff-email">Email</label>
+        <input type="email" id="staff-email" class="inp" autocomplete="username" />
+      </div>
+      <div class="mb-3">
+        <label class="lbl" for="staff-pass">Contraseña</label>
+        <input type="password" id="staff-pass" class="inp" autocomplete="current-password" />
+      </div>
+      <div id="err-staff" class="msg-info err" style="display:none;"></div>
+      <button class="btn w-full" id="staff-btn" onclick="doStaffLogin()">Iniciar sesión</button>
+    </div>
   </div>
 </div>
 
@@ -278,6 +299,7 @@
       <button class="btn-ghost" onclick="loadRemote()">↻ Recargar</button>
       <button class="btn-ghost" onclick="location.href='./pedidos.html'">📋 Pedidos</button>
       <button class="btn-ghost" onclick="doLogout()">Salir</button>
+      <button class="btn-ghost" onclick="cerrarSesionStaff('Cerraste la sesión de staff en este dispositivo.')" title="Cierra la sesión de Firebase guardada en este dispositivo">Cerrar sesión de staff</button>
     </div>
   </div>
 
@@ -355,17 +377,12 @@
       <div class="subtab-panel active" id="subtab-config">
         <div class="card">
           <h3 class="serif text-xl mb-4">Configuración general</h3>
-          <div class="msg-info">El código master funciona para todos los mayoristas que no tengan uno individual. Se guarda solo como hash SHA-256 por seguridad.</div>
+          <!-- El código master (config.mayoristas.codigo_hash) se eliminó: su hash
+               era público en productos.json y alcanzaba para entrar como
+               mayorista. Cada mayorista entra solo con su código individual
+               (mayoristas_activos/{sha256(código)}). -->
+          <div class="msg-info">Cada mayorista entra con su <b>código individual</b>, que se genera al aceptar su solicitud o al darlo de alta a mano. Ya no existe un código general para todos.</div>
           <div class="grid-2">
-            <div>
-              <label class="lbl">Nuevo código master</label>
-              <input type="text" id="new-may-code" class="inp" placeholder="Dejá vacío para no cambiar" autocomplete="off" />
-              <button class="btn-ghost mt-2" onclick="generateMayoHash()">Generar nuevo hash</button>
-            </div>
-            <div>
-              <label class="lbl">Hash actual (guardado)</label>
-              <input class="inp" data-field="config.mayoristas.codigo_hash" readonly style="font-family:monospace;font-size:0.72rem;background:#F5F5F5;" />
-            </div>
             <div><label class="lbl">Mínimo de compra ($)</label><input type="number" class="inp" data-field="config.mayoristas.minimo_compra" /></div>
             <div style="grid-column:1/-1;"><label class="lbl">Mensaje de bienvenida en el gate</label><textarea class="inp" rows="2" data-field="config.mayoristas.mensaje_bienvenida"></textarea></div>
           </div>
@@ -462,7 +479,7 @@
             Este código NO se puede recuperar después. Copiálo o enviálo ahora mismo.
           </p>
           <a id="mc-wa" target="_blank" rel="noopener noreferrer" class="btn" style="display:block;text-align:center;text-decoration:none;margin-bottom:8px;">Enviar por WhatsApp</a>
-          <button class="btn-ghost" onclick="copiarCodigo()" style="width:100%;">Copiar código</button>
+          <button class="btn-ghost" onclick="copiarCodigo(event)" style="width:100%;">Copiar código</button>
 
           <!-- Bloqueo de zona minoristas -->
           <div id="mc-zona-block" style="display:none;margin-top:20px;padding:14px;background:#FAFAFA;border:1px solid #E5E5E5;text-align:left;">
@@ -696,6 +713,11 @@ let data = null;
 let dataSha = null;
 let dirty = false;
 
+/* Formatos que acepta firestore.rules en los movimientos de venta públicos
+   (ver ventaPublica): un talle/color fuera de esto haría fallar el checkout. */
+const TALLE_VALIDO = /^[A-Za-z0-9./ -]{1,12}$/;
+const COLOR_VALIDO = /^[^<>&"]{1,40}$/;
+
 /* ============ XSS-safe ============ */
 function esc(s) {
   if (s === null || s === undefined) return '';
@@ -832,14 +854,51 @@ function doLogout() {
   location.reload();
 }
 
+/* Dos llaves independientes:
+   1) el PAT de GitHub (cifrado en este dispositivo) para publicar productos.json;
+   2) la sesión de staff de Firebase Auth (email + contraseña) para TODO lo que
+      toca Firestore (stock, solicitudes, mayoristas). Las reglas solo le dan
+      permisos a esa cuenta (isStaff() en firestore.rules).
+   La app se muestra recién con las dos. */
+let patDesbloqueado = false;
+let appIniciada = false;
+
 async function enterApp() {
+  patDesbloqueado = true;
+  await actualizarPantalla();
+}
+
+function mostrarSoloLogin(id) {
+  ['login-first', 'login-recurring', 'login-staff'].forEach(x => {
+    document.getElementById(x).style.display = x === id ? 'block' : 'none';
+  });
+}
+
+async function actualizarPantalla() {
+  if (!patDesbloqueado) return;            /* paso 1: checkLoginState() */
+  await authInicial;                       /* no mostrar el login si la sesión guardada está por llegar */
+  if (!staffUser) {
+    document.getElementById('app-screen').style.display = 'none';
+    document.getElementById('login-screen').style.display = 'flex';
+    mostrarSoloLogin('login-staff');
+    const msg = sessionStorage.getItem(SS_STAFF_MSG);
+    if (msg) { showErr('staff', msg); sessionStorage.removeItem(SS_STAFF_MSG); }
+    return;
+  }
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app-screen').style.display = 'block';
-  try {
-    await loadRemote();
-  } catch (e) {
-    alert('Error al cargar datos: ' + e.message);
+  if (!appIniciada) {
+    appIniciada = true;
+    try {
+      await loadRemote();
+    } catch (e) {
+      alert('Error al cargar datos: ' + e.message);
+    }
   }
+  /* Activos se carga siempre (no solo al abrir su sub-tab): Solicitudes lo
+     usa para avisar si ya hay un mayorista en la misma zona. */
+  loadSolicitudes();
+  loadActivos();
 }
 
 /* ============ GH API ============ */
@@ -954,8 +1013,45 @@ async function validarStockAntesDePublicar() {
   return problemas;
 }
 
+/* A8: un producto disponible a $0 se vende gratis; un precio mayorista
+   absurdamente bajo (p.ej. 30.9 en vez de 30900) también. Se bloquea la
+   publicación con un mensaje que dice QUÉ producto corregir. Los productos
+   que no son de fabricación propia no se venden a mayoristas: para ellos solo
+   se exige el precio minorista. */
+function validarPreciosAntesDePublicar() {
+  const problemas = [];
+  const fmt = n => '$' + Number(n || 0).toLocaleString('es-AR');
+  for (const cat of (data.categorias || [])) {
+    for (const p of (cat.productos || [])) {
+      if (p.disponible === false) continue;
+      const nom = `#${p.id} · ${p.nombre || '(sin nombre)'}`;
+      const min = Number(p.precio_minorista);
+      const may = Number(p.precio_mayorista);
+      if (!(min > 0)) { problemas.push(`${nom}: precio minorista ${fmt(p.precio_minorista)} (tiene que ser mayor a 0)`); continue; }
+      if (p.fabricacion_propia === false) continue;
+      if (!(may > 0)) problemas.push(`${nom}: precio mayorista ${fmt(p.precio_mayorista)} (tiene que ser mayor a 0)`);
+      else if (may < min * 0.10) problemas.push(`${nom}: precio mayorista ${fmt(may)} es menos del 10% del minorista (${fmt(min)}) — ¿falta un cero?`);
+    }
+  }
+  return problemas;
+}
+
+let publicando = false;
+
+/* Devuelve true si quedó publicado (o no había nada que publicar). */
 async function publishChanges() {
+  if (publicando) return false;
+  publicando = true;
   try {
+    const problemasPrecio = validarPreciosAntesDePublicar();
+    if (problemasPrecio.length) {
+      alert(
+        'No se puede publicar: hay productos disponibles con precios que no corresponden.\n\n' +
+        problemasPrecio.join('\n') +
+        '\n\nCorregí el precio en el tab Catálogo, o apagá "Disp." si todavía no se vende, y volvé a publicar.'
+      );
+      return false;
+    }
     const problemasStock = await validarStockAntesDePublicar();
     if (problemasStock.length) {
       alert(
@@ -963,29 +1059,43 @@ async function publishChanges() {
         problemasStock.join('\n') +
         '\n\nCargá al menos un color (con su stock) para cada talle en "Colores y stock inicial" (tab Catálogo o Stock), o destildá el talle si todavía no corresponde venderlo.'
       );
-      return;
+      return false;
     }
     setStatus('Publicando...');
     const content = JSON.stringify(data, null, 2);
 
-    /* Releer el archivo remoto justo antes de publicar (no confiar en el sha
-       cacheado desde el último loadRemote): evita 409 por sha desactualizado
-       si hubo otro publish en el medio (ej. otra pestaña, o "bloquear zona"
-       auto-publicando), y permite comparar contra el contenido REAL actual
-       en vez de contra lo que había al abrir el portal. */
+    /* Releer el archivo remoto justo antes de publicar. Si cambió desde que
+       se cargó en esta pestaña (otra pestaña, otro dispositivo, un commit a
+       mano), publicar lo que hay en memoria PISARÍA esos cambios en silencio:
+       se frena y se ofrece recargar. */
     const remote = await ghGet(FILE_PATH);
     const remoteContent = base64UnicodeDecode(remote.content);
+
+    if (remoteContent !== raw) {
+      setStatus('Cambió en GitHub', 'err');
+      if (confirm(
+        'El catálogo publicado cambió desde que abriste el portal (por ejemplo, desde otra pestaña u otro dispositivo).\n\n' +
+        'Para no pisar esos cambios, NO se publicó nada.\n\n' +
+        'Aceptar: recargar el catálogo actual (se descartan los cambios sin publicar de esta pestaña).\n' +
+        'Cancelar: quedarte acá (anotá lo que cambiaste, recargá y volvé a cargarlo).'
+      )) {
+        dirty = false;
+        await loadRemote();
+      }
+      return false;
+    }
 
     if (remoteContent === content) {
       dirty = false;
       document.getElementById('save-bar').style.display = 'none';
       setStatus('Sin cambios', 'ok');
       alert('No hay cambios reales para publicar: el contenido editado es idéntico al que ya está en el sitio. Si esperabas ver un cambio, revisá que el campo que tocaste realmente se haya guardado antes de publicar.');
-      return;
+      return true;
     }
 
     const b64 = base64UnicodeEncode(content);
     const res = await ghPut(FILE_PATH, b64, remote.sha, 'chore: actualizar productos.json desde portal');
+    raw = content;
     dataSha = res.content.sha;
     dirty = false;
     document.getElementById('save-bar').style.display = 'none';
@@ -993,9 +1103,13 @@ async function publishChanges() {
 
     /* Update sitemap */
     await updateSitemap();
+    return true;
   } catch (e) {
     setStatus('Error', 'err');
     alert('Error al publicar: ' + e.message);
+    return false;
+  } finally {
+    publicando = false;
   }
 }
 
@@ -1263,6 +1377,11 @@ function renderTalles() {
       tI.value = talle;
       tI.onchange = () => {
         const nuevo = tI.value.trim();
+        if (nuevo && nuevo !== talle && !TALLE_VALIDO.test(nuevo)) {
+          alert('El talle solo puede tener letras sin acento, números, espacio y . / - (hasta 12 caracteres).');
+          tI.value = talle;
+          return;
+        }
         if (nuevo && nuevo !== talle) {
           const tmp = { ...guia[tipo].tabla };
           delete tmp[talle]; tmp[nuevo] = valores;
@@ -1295,8 +1414,9 @@ function renderTalles() {
     addFila.className = 'btn-ghost mt-2';
     addFila.textContent = '+ Agregar talle';
     addFila.onclick = () => {
-      const t = prompt('Nombre del nuevo talle:');
+      const t = (prompt('Nombre del nuevo talle:') || '').trim();
       if (!t) return;
+      if (!TALLE_VALIDO.test(t)) { alert('El talle solo puede tener letras sin acento, números, espacio y . / - (hasta 12 caracteres). Ej: 40, XL, 3/4.'); return; }
       guia[tipo].tabla[t] = new Array((guia[tipo].medidas || []).length).fill('');
       markDirty(); renderTalles();
     };
@@ -1659,7 +1779,7 @@ function renderProductRow(cat, ci, p, pi) {
   p.imagenes.forEach((img, ii) => {
     const th = document.createElement('div');
     th.className = 'img-thumb';
-    th.style.backgroundImage = `url('./img/${img}')`;
+    th.style.backgroundImage = urlImg(img);
     const delI = document.createElement('button');
     delI.className = 'del'; delI.textContent = '×';
     delI.onclick = () => { p.imagenes.splice(ii, 1); markDirty(); renderCategorias(); };
@@ -1681,6 +1801,13 @@ function renderProductRow(cat, ci, p, pi) {
   box.appendChild(detail);
 
   return box;
+}
+
+/* url("...") seguro para un nombre de archivo que viene de productos.json:
+   sin comillas/paréntesis/backslash que permitan salir del url(). */
+function urlImg(nombre) {
+  const seguro = encodeURI(String(nombre || '')).replace(/["'()\\]/g, c => '%' + c.charCodeAt(0).toString(16).toUpperCase());
+  return 'url("./img/' + seguro + '")';
 }
 
 function addCategoria() {
@@ -1827,19 +1954,24 @@ function poblarSelectsStock() {
   if (document.getElementById('subtab-stock-editar').classList.contains('active')) renderStockList();
 }
 
+function serverTs() { return firebase.firestore.FieldValue.serverTimestamp(); }
+function hoyISO() { return new Date().toISOString().split('T')[0]; }
+
 async function getStockDoc(productId) {
-  const snap = await fbDb.collection('stock').doc(String(productId)).get();
+  const db = await staffDb();
+  const snap = await db.collection('stock').doc(String(productId)).get();
   return snap.exists ? snap.data() : { variantes: {} };
 }
 
-/* delta: +N entrada, -N salida. Si hex viene definido, fija/actualiza el color de esa variante. */
+/* delta: +N entrada, -N salida (CSV, alta de color). Si hex viene definido,
+   fija/actualiza el color de esa variante. Lee el valor ACTUAL dentro de la
+   transacción y registra el movimiento en la MISMA transacción. */
 async function ajustarStock(productId, talle, color, delta, motivo, hex) {
-  const okAuth = await esperarAuth();
-  if (!okAuth) throw new Error(mensajeErrorAuth());
-  const ref = fbDb.collection('stock').doc(String(productId));
-  const fecha = new Date().toISOString().split('T')[0];
+  const db = await staffDb();
+  const ref = db.collection('stock').doc(String(productId));
+  const fecha = hoyISO();
   let nuevaCantidad = 0;
-  await fbDb.runTransaction(async (tx) => {
+  await db.runTransaction(async (tx) => {
     const doc = await tx.get(ref);
     const variantes = (doc.exists && doc.data().variantes) || {};
     variantes[talle] = variantes[talle] || {};
@@ -1851,39 +1983,69 @@ async function ajustarStock(productId, talle, color, delta, motivo, hex) {
       cantidad: nuevaCantidad,
       hex: hex || (prev && prev.hex) || '#999999'
     };
-    tx.set(ref, { variantes, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
+    tx.set(ref, { variantes, actualizadoEn: serverTs() });
+    if (delta !== 0) {
+      tx.set(ref.collection('movimientos').doc(), {
+        talle, color, delta, cantidadResultante: nuevaCantidad,
+        motivo: motivo || 'Ajuste manual', fecha, ts: serverTs()
+      });
+    }
   });
-  if (delta !== 0) {
-    await ref.collection('movimientos').add({
-      talle, color, delta, cantidadResultante: nuevaCantidad,
-      motivo: motivo || 'Ajuste manual', fecha,
-      ts: firebase.firestore.FieldValue.serverTimestamp()
-    });
-  }
   return nuevaCantidad;
+}
+
+/* M7: el admin escribe el TOTAL que hay. La transacción lee el valor actual
+   (no el que se mostró en pantalla) y registra como movimiento la diferencia
+   REAL. Si el stock cambió mientras editaba (p.ej. entró una venta), avisa
+   antes de pisarlo (StockCambio). */
+class StockCambio extends Error {
+  constructor(actual) { super('El stock cambió'); this.actual = actual; }
+}
+async function fijarStock(productId, talle, color, nuevoTotal, esperado) {
+  const db = await staffDb();
+  const ref = db.collection('stock').doc(String(productId));
+  let delta = 0;
+  await db.runTransaction(async (tx) => {
+    const doc = await tx.get(ref);
+    const variantes = (doc.exists && doc.data().variantes) || {};
+    const prev = variantes[talle] && variantes[talle][color];
+    if (!prev) throw new Error(`El color ${color} ya no existe en el talle ${talle}. Recargá la lista.`);
+    const actual = prev.cantidad || 0;
+    if (actual !== esperado) throw new StockCambio(actual);
+    delta = nuevoTotal - actual;
+    if (delta === 0) return;
+    variantes[talle][color] = { cantidad: nuevoTotal, hex: prev.hex || '#999999' };
+    tx.set(ref, { variantes, actualizadoEn: serverTs() });
+    tx.set(ref.collection('movimientos').doc(), {
+      talle, color, delta, cantidadResultante: nuevoTotal,
+      motivo: delta > 0 ? 'Ingreso manual' : 'Ajuste manual', fecha: hoyISO(), ts: serverTs()
+    });
+  });
+  return delta;
 }
 
 async function eliminarColorStock(productId, talle, color) {
   if (!confirm(`Eliminar el color "${color}" del talle ${talle}? Se pierde el stock cargado (queda registrado en el historial).`)) return;
-  const okAuth = await esperarAuth();
-  if (!okAuth) { alert(mensajeErrorAuth()); return; }
-  const ref = fbDb.collection('stock').doc(String(productId));
-  let cantidadPrevia = 0;
-  await fbDb.runTransaction(async (tx) => {
-    const doc = await tx.get(ref);
-    if (!doc.exists) return;
-    const variantes = doc.data().variantes || {};
-    if (!variantes[talle] || !variantes[talle][color]) return;
-    cantidadPrevia = variantes[talle][color].cantidad || 0;
-    delete variantes[talle][color];
-    tx.set(ref, { variantes, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
-  });
-  if (cantidadPrevia !== 0) {
-    await ref.collection('movimientos').add({
-      talle, color, delta: -cantidadPrevia, cantidadResultante: 0,
-      motivo: 'Color eliminado', fecha: new Date().toISOString().split('T')[0],
-      ts: firebase.firestore.FieldValue.serverTimestamp()
+  try {
+    const db = await staffDb();
+    const ref = db.collection('stock').doc(String(productId));
+    await db.runTransaction(async (tx) => {
+      const doc = await tx.get(ref);
+      if (!doc.exists) return;
+      const variantes = doc.data().variantes || {};
+      if (!variantes[talle] || !variantes[talle][color]) return;
+      const cantidadPrevia = variantes[talle][color].cantidad || 0;
+      delete variantes[talle][color];
+      tx.set(ref, { variantes, actualizadoEn: serverTs() });
+      if (cantidadPrevia !== 0) {
+        tx.set(ref.collection('movimientos').doc(), {
+          talle, color, delta: -cantidadPrevia, cantidadResultante: 0,
+          motivo: 'Color eliminado', fecha: hoyISO(), ts: serverTs()
+        });
+      }
     });
+  } catch (e) {
+    if (!manejarErrorStaff(e)) alert('No se pudo eliminar el color: ' + e.message);
   }
 }
 
@@ -1895,33 +2057,26 @@ async function eliminarColorStock(productId, talle, color) {
    resucitar si algún día un talle con el mismo nombre vuelve a existir
    para ese producto — que es exactamente lo que reportó el cliente. */
 async function purgarTalleStock(productId, talle, motivo) {
-  const okAuth = await esperarAuth();
-  if (!okAuth) return; // best-effort: no bloqueamos la edición del catálogo por esto
-  const ref = fbDb.collection('stock').doc(String(productId));
-  let coloresEliminados = null;
-  await fbDb.runTransaction(async (tx) => {
+  const db = await staffDb();
+  const ref = db.collection('stock').doc(String(productId));
+  await db.runTransaction(async (tx) => {
     const doc = await tx.get(ref);
     if (!doc.exists) return;
     const variantes = doc.data().variantes || {};
     if (!variantes[talle]) return;
-    coloresEliminados = variantes[talle];
+    const coloresEliminados = variantes[talle];
     delete variantes[talle];
-    tx.set(ref, { variantes, actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
-  });
-  if (coloresEliminados) {
-    const fecha = new Date().toISOString().split('T')[0];
+    tx.set(ref, { variantes, actualizadoEn: serverTs() });
+    const fecha = hoyISO();
     for (const [color, v] of Object.entries(coloresEliminados)) {
       const cantidad = (v && v.cantidad) || 0;
       if (cantidad === 0) continue;
-      try {
-        await ref.collection('movimientos').add({
-          talle, color, delta: -cantidad, cantidadResultante: 0,
-          motivo: motivo || 'Talle eliminado', fecha,
-          ts: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (e) { console.warn('No se pudo registrar el movimiento de purga', e); }
+      tx.set(ref.collection('movimientos').doc(), {
+        talle, color, delta: -cantidad, cantidadResultante: 0,
+        motivo: motivo || 'Talle eliminado', fecha, ts: serverTs()
+      });
     }
-  }
+  });
 }
 
 /* Filtra talles_disponibles contra la guía de talles vigente y purga en
@@ -1939,10 +2094,9 @@ function reconciliarTalles(p, tallesValidos, motivo) {
    Sin esto, si se reutiliza el ID (ver nextProductId) el próximo producto
    que lo herede resucita el stock del que se borró. */
 async function purgarStockProducto(productId) {
-  const okAuth = await esperarAuth();
-  if (!okAuth) return;
   try {
-    await fbDb.collection('stock').doc(String(productId)).delete();
+    const db = await staffDb();
+    await db.collection('stock').doc(String(productId)).delete();
   } catch (e) { console.warn('No se pudo purgar el stock del producto eliminado', productId, e); }
 }
 
@@ -2037,22 +2191,44 @@ function renderColorStockBlock(p, stockDoc, cont, onChange) {
       const tdSw = document.createElement('td'); tdSw.style.cssText = 'padding:6px;width:28px;';
       const hexIn = document.createElement('input'); hexIn.type = 'color'; hexIn.value = v.hex || '#999999';
       hexIn.style.cssText = 'width:28px;height:28px;border:none;cursor:pointer;';
-      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value).then(onChange);
+      hexIn.onchange = () => ajustarStock(productId, talle, color, 0, null, hexIn.value)
+        .then(onChange)
+        .catch(e => { if (!manejarErrorStaff(e)) alert(e.message); });
       tdSw.appendChild(hexIn); tr.appendChild(tdSw);
 
       const tdN = document.createElement('td'); tdN.style.padding = '6px'; tdN.textContent = color;
       tr.appendChild(tdN);
 
       const tdQ = document.createElement('td'); tdQ.style.padding = '6px'; tdQ.style.width = '110px';
-      const qIn = document.createElement('input'); qIn.type = 'number'; qIn.className = 'inp'; qIn.value = v.cantidad || 0;
+      const qIn = document.createElement('input'); qIn.type = 'number'; qIn.min = '0'; qIn.step = '1'; qIn.className = 'inp'; qIn.value = v.cantidad || 0;
       qIn.onchange = async () => {
-        const nuevo = parseInt(qIn.value, 10) || 0;
-        const delta = nuevo - (v.cantidad || 0);
-        if (delta === 0) return;
+        const mostrado = v.cantidad || 0;
+        const nuevo = Number(qIn.value);
+        if (!Number.isInteger(nuevo) || nuevo < 0) {
+          alert('Ingresá una cantidad entera, 0 o mayor.');
+          qIn.value = mostrado;
+          return;
+        }
+        if (nuevo === mostrado) return;
+        qIn.disabled = true;
         try {
-          await ajustarStock(productId, talle, color, delta, delta > 0 ? 'Ingreso manual' : 'Ajuste manual');
+          try {
+            await fijarStock(productId, talle, color, nuevo, mostrado);
+          } catch (e) {
+            if (!(e instanceof StockCambio)) throw e;
+            if (!confirm(`El stock de ${talle}/${color} cambió mientras editabas (por ejemplo, entró una venta): ahora hay ${e.actual}, no ${mostrado}.\n\n¿Dejarlo igual en ${nuevo}?`)) {
+              onChange();
+              return;
+            }
+            await fijarStock(productId, talle, color, nuevo, e.actual);
+          }
           onChange();
-        } catch (e) { alert(e.message); qIn.value = v.cantidad || 0; }
+        } catch (e) {
+          if (!manejarErrorStaff(e)) alert(e.message);
+          qIn.value = mostrado;
+        } finally {
+          qIn.disabled = false;
+        }
       };
       tdQ.appendChild(qIn); tr.appendChild(tdQ);
 
@@ -2075,12 +2251,22 @@ function renderColorStockBlock(p, stockDoc, cont, onChange) {
     addBtn.onclick = async () => {
       const nombre = nameIn.value.trim();
       if (!nombre) { alert('Poné un nombre de color.'); return; }
+      /* Mismo formato que acepta firestore.rules en los movimientos de venta:
+         un color con < > & " haría fallar el checkout de esa variante. */
+      if (!COLOR_VALIDO.test(nombre)) { alert('El nombre del color no puede tener < > & " ni más de 40 caracteres.'); return; }
       if (colores[nombre]) { alert('Ese color ya existe para este talle — editalo en la tabla.'); return; }
-      const cant = parseInt(qtyNew.value, 10) || 0;
+      const cant = Number(qtyNew.value) || 0;
+      if (!Number.isInteger(cant) || cant < 0) { alert('El stock inicial tiene que ser un número entero, 0 o mayor.'); return; }
+      if (addBtn.disabled) return;
+      addBtn.disabled = true;
       try {
         await ajustarStock(productId, talle, nombre, cant, 'Alta inicial', hexNew.value);
         onChange();
-      } catch (e) { alert(e.message); }
+      } catch (e) {
+        if (!manejarErrorStaff(e)) alert(e.message);
+      } finally {
+        addBtn.disabled = false;
+      }
     };
     addRow.appendChild(nameIn); addRow.appendChild(hexNew); addRow.appendChild(qtyNew); addRow.appendChild(addBtn);
     box.appendChild(addRow);
@@ -2100,11 +2286,12 @@ function cargarCSVArchivo(input) {
 }
 
 async function importarStockCSV() {
-  const raw = document.getElementById('stock-csv-input').value.trim();
+  const texto = document.getElementById('stock-csv-input').value.trim();
   const statusEl = document.getElementById('stock-import-status');
-  if (!raw) { statusEl.textContent = 'Pegá o cargá un CSV primero.'; return; }
-  const lineas = raw.split('\n').map(l => l.trim()).filter(Boolean);
-  let ok = 0, errores = [];
+  if (!texto) { statusEl.textContent = 'Pegá o cargá un CSV primero.'; return; }
+  const lineas = texto.split('\n').map(l => l.trim()).filter(Boolean);
+  let ok = 0;
+  const errores = [];
   statusEl.textContent = 'Importando...';
   for (let i = 0; i < lineas.length; i++) {
     const cols = lineas[i].split(',').map(c => c.trim());
@@ -2113,17 +2300,30 @@ async function importarStockCSV() {
       errores.push(`Línea ${i + 1}: faltan columnas (esperado producto_id,talle,color,delta[,motivo])`);
       continue;
     }
-    const delta = parseFloat(deltaStr);
-    if (isNaN(delta)) { errores.push(`Línea ${i + 1}: delta "${deltaStr}" no es un número`); continue; }
+    const delta = Number(deltaStr);
+    if (!Number.isInteger(delta)) { errores.push(`Línea ${i + 1}: delta "${deltaStr}" no es un número entero`); continue; }
+    if (!TALLE_VALIDO.test(talle)) { errores.push(`Línea ${i + 1}: talle "${talle}" con formato inválido`); continue; }
+    if (!COLOR_VALIDO.test(color)) { errores.push(`Línea ${i + 1}: color "${color}" con caracteres no permitidos (< > & ")`); continue; }
     try {
-      await ajustarStock(productoId, talle, color, delta, motivo || 'Importación CSV');
+      await ajustarStock(productoId, talle, color, delta, (motivo || 'Importación CSV').slice(0, 120));
       ok++;
     } catch (e) {
+      if (manejarErrorStaff(e)) return;
       errores.push(`Línea ${i + 1} (#${productoId} ${talle}/${color}): ${e.message}`);
     }
   }
-  statusEl.innerHTML = `${ok} movimiento(s) importado(s) correctamente.` +
-    (errores.length ? `<br><span style="color:#900;">${errores.length} error(es):<br>${errores.map(e => '· ' + e).join('<br>')}</span>` : '');
+  /* Todo por textContent: el contenido del CSV nunca se interpreta como HTML */
+  statusEl.textContent = '';
+  const okEl = document.createElement('div');
+  okEl.textContent = `${ok} movimiento(s) importado(s) correctamente.`;
+  statusEl.appendChild(okEl);
+  if (errores.length) {
+    const errEl = document.createElement('div');
+    errEl.style.color = '#900';
+    errEl.style.whiteSpace = 'pre-line';
+    errEl.textContent = `${errores.length} error(es):\n` + errores.map(e => '· ' + e).join('\n');
+    statusEl.appendChild(errEl);
+  }
   if (ok > 0) renderStockList();
 }
 
@@ -2135,42 +2335,50 @@ async function renderStockHistorial() {
   if (!productId) { cont.textContent = 'Elegí un producto.'; return; }
   cont.textContent = 'Cargando...';
   try {
-    const snap = await fbDb.collection('stock').doc(String(productId))
+    const db = await staffDb();
+    const snap = await db.collection('stock').doc(String(productId))
       .collection('movimientos').orderBy('ts', 'desc').limit(100).get();
-    cont.innerHTML = '';
+    cont.textContent = '';
     if (snap.empty) { cont.textContent = 'Sin movimientos registrados todavía.'; return; }
     const tabla = document.createElement('table');
     tabla.style.cssText = 'width:100%;border-collapse:collapse;font-size:0.85rem;';
-    tabla.innerHTML = '<thead><tr>' +
-      ['Fecha', 'Talle', 'Color', 'Movimiento', 'Resultado', 'Motivo'].map(h => `<th style="text-align:left;padding:6px;background:#F5F5F5;">${h}</th>`).join('') +
-      '</tr></thead>';
+    const thead = document.createElement('thead');
+    const trh = document.createElement('tr');
+    ['Fecha', 'Talle', 'Color', 'Movimiento', 'Resultado', 'Motivo'].forEach(h => {
+      const th = document.createElement('th');
+      th.style.cssText = 'text-align:left;padding:6px;background:#F5F5F5;';
+      th.textContent = h;
+      trh.appendChild(th);
+    });
+    thead.appendChild(trh);
+    tabla.appendChild(thead);
     const tbody = document.createElement('tbody');
+    /* Los movimientos de venta los crea el checkout público: todo dato va por
+       textContent (nunca innerHTML), aunque las reglas ya limiten el formato. */
+    const celda = (tr, valor, color) => {
+      const td = document.createElement('td');
+      td.style.padding = '6px';
+      if (color) td.style.color = color;
+      td.textContent = (valor === null || valor === undefined) ? '' : String(valor);
+      tr.appendChild(td);
+    };
     snap.forEach(doc => {
-      const m = doc.data();
+      const m = doc.data() || {};
       const tr = document.createElement('tr');
-      const signo = m.delta > 0 ? '+' : '';
-      tr.innerHTML = `<td style="padding:6px;">${m.fecha || ''}</td><td style="padding:6px;">${m.talle || ''}</td><td style="padding:6px;">${m.color || ''}</td>` +
-        `<td style="padding:6px;color:${m.delta < 0 ? '#900' : '#060'};">${signo}${m.delta}</td><td style="padding:6px;">${m.cantidadResultante ?? ''}</td><td style="padding:6px;">${m.motivo || ''}</td>`;
+      const delta = typeof m.delta === 'number' ? m.delta : null;
+      celda(tr, m.fecha);
+      celda(tr, m.talle);
+      celda(tr, m.color);
+      celda(tr, delta === null ? m.delta : (delta > 0 ? '+' : '') + delta, delta !== null && delta < 0 ? '#900' : '#060');
+      celda(tr, m.cantidadResultante);
+      celda(tr, m.motivo);
       tbody.appendChild(tr);
     });
     tabla.appendChild(tbody);
     cont.appendChild(tabla);
   } catch (e) {
-    cont.textContent = 'Error al cargar historial: ' + e.message;
+    if (!manejarErrorStaff(e)) cont.textContent = 'Error al cargar historial: ' + e.message;
   }
-}
-
-/* ---- Hash mayorista ---- */
-async function generateMayoHash() {
-  const nuevo = document.getElementById('new-may-code').value.trim();
-  if (!nuevo) return;
-  if (nuevo.length < 4) { alert('El código debe tener al menos 4 caracteres.'); return; }
-  const hash = await sha256Hex(nuevo);
-  data.config.mayoristas.codigo_hash = hash;
-  document.querySelector('[data-field="config.mayoristas.codigo_hash"]').value = hash;
-  document.getElementById('new-may-code').value = '';
-  markDirty();
-  alert('Hash generado. Recordá guardar el código real ("' + nuevo + '") en algún lugar seguro — el sistema no lo puede recuperar.');
 }
 
 /* ============ Tabs ============ */
@@ -2188,7 +2396,7 @@ window.addEventListener('beforeunload', (e) => {
   if (dirty) { e.preventDefault(); e.returnValue = ''; }
 });
 
-/* ============ Solicitudes mayoristas ============ */
+/* ============ Firebase: sesión de staff ============ */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyCIG1frFYuegF_NJWq0xuYdmCxnNl4iMYk",
   authDomain: "cattorini-tienda.firebaseapp.com",
@@ -2197,66 +2405,168 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "703822597559",
   appId: "1:703822597559:web:6b795cefcfdc068870ac32"
 };
+const SS_STAFF_MSG = 'catt_staff_msg';
+
 let fbDb = null;
 let fbAuth = null;
-let fbAuthReady = false;
-let fbAuthErrorCode = null;
-let fbAuthErrorMsg = null;
+/* Usuario de staff VERIFICADO: email/contraseña y con permiso real en las
+   reglas (comprobado con una lectura que solo el staff puede hacer). */
+let staffUser = null;
+let _resolverStaff = null;
+let staffResuelto = false;
+let staffListo = new Promise(r => { _resolverStaff = r; });
+let _resolverAuthInicial = null;
+const authInicial = new Promise(r => { _resolverAuthInicial = r; });
+/* Si Firebase no responde (sin red), no colgar la pantalla de login */
+setTimeout(() => _resolverAuthInicial(), 6000);
+
 try {
   if (typeof firebase !== 'undefined') {
     firebase.initializeApp(FIREBASE_CONFIG);
     fbDb = firebase.firestore();
     fbAuth = firebase.auth();
-    fbAuth.signInAnonymously()
-      .then(() => { fbAuthReady = true; console.log('✅ Firebase auth OK'); })
-      .catch(e => {
-        fbAuthErrorCode = e.code || '';
-        fbAuthErrorMsg = e.message || String(e);
-        console.error('❌ Firebase auth error:', e);
-      });
+    /* La sesión de staff queda guardada en este dispositivo */
+    try { fbAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {}); } catch (e) {}
+    fbAuth.onAuthStateChanged(u => { onStaffAuthChanged(u); });
   }
-} catch(e) { console.error('❌ Firebase init error en portal:', e.message); }
+} catch (e) { console.error('Firebase init error en portal:', e.message); _resolverAuthInicial(); }
 
-/* Espera a que la auth esté lista antes de operaciones que requieren autenticación */
-async function esperarAuth() {
-  if (fbAuthReady) return true;
-  for (let i = 0; i < 30; i++) {
-    if (fbAuthReady) return true;
-    if (fbAuthErrorCode) return false; // no seguir esperando si ya sabemos que falló
-    await new Promise(r => setTimeout(r, 200));
+/* Toda operación de Firestore pasa por acá: espera a que haya sesión de
+   staff verificada (sin carreras: nada lee ni escribe antes del login). */
+function staffDb() {
+  if (!fbDb) return Promise.reject(new Error('Firebase no está disponible. Revisá tu conexión y recargá la página.'));
+  return staffListo;
+}
+
+function esCuentaPassword(u) {
+  return !!u && !u.isAnonymous && (u.providerData || []).some(p => p && p.providerId === 'password');
+}
+
+async function onStaffAuthChanged(u) {
+  if (u && !esCuentaPassword(u)) {
+    /* Sesión anónima o de otro proveedor (restos del portal viejo): no sirve */
+    try { await fbAuth.signOut(); } catch (e) {}
+    return;
+  }
+  if (!u) {
+    staffUser = null;
+    _resolverAuthInicial();
+    actualizarPantalla();
+    return;
+  }
+  if (!(await verificarStaff())) { _resolverAuthInicial(); return; }
+  staffUser = u;
+  staffResuelto = true;
+  _resolverStaff(fbDb);
+  _resolverAuthInicial();
+  actualizarPantalla();
+}
+
+/* Una cuenta email/contraseña que NO está en la allowlist de las reglas
+   recibe permission-denied: se cierra la sesión con un mensaje claro. */
+async function verificarStaff() {
+  try {
+    await fbDb.collection('mayoristas_activos').limit(1).get();
+    return true;
+  } catch (e) {
+    if (e && e.code === 'permission-denied') {
+      await cerrarSesionStaff('Esta cuenta no tiene permiso para usar el panel. Iniciá sesión con la cuenta del staff de Cattorini.');
+      return false;
+    }
+    console.warn('No se pudo verificar la cuenta de staff (¿sin conexión?):', e && e.message);
+    return true;
+  }
+}
+
+async function cerrarSesionStaff(msg) {
+  if (msg) sessionStorage.setItem(SS_STAFF_MSG, msg);
+  if (solUnsub) { try { solUnsub(); } catch (e) {} solUnsub = null; }
+  if (actUnsub) { try { actUnsub(); } catch (e) {} actUnsub = null; }
+  staffUser = null;
+  if (staffResuelto) {
+    staffResuelto = false;
+    staffListo = new Promise(r => { _resolverStaff = r; });
+  }
+  try { if (fbAuth) await fbAuth.signOut(); } catch (e) {}
+  actualizarPantalla();
+}
+
+/* permission-denied en cualquier operación = la cuenta no es (o dejó de ser)
+   staff: se cierra la sesión. Devuelve true si lo manejó. */
+function manejarErrorStaff(e) {
+  if (e && e.code === 'permission-denied') {
+    cerrarSesionStaff('Tu cuenta no tiene permiso para esta operación (o la sesión venció). Iniciá sesión de nuevo con la cuenta del staff.');
+    return true;
   }
   return false;
 }
 
-function mensajeErrorAuth() {
-  if (fbAuthErrorCode === 'auth/operation-not-allowed' || fbAuthErrorCode === 'auth/admin-restricted-operation') {
-    return 'Firebase Authentication anónima no está habilitada.\n\n' +
-      'Solución: andá a Firebase Console → Authentication → Sign-in method → habilitá "Anónimo".';
+function mensajeErrorLogin(e) {
+  const c = (e && e.code) || '';
+  if (['auth/invalid-credential', 'auth/wrong-password', 'auth/user-not-found', 'auth/invalid-login-credentials'].includes(c)) {
+    return 'Email o contraseña incorrectos.';
   }
-  if (fbAuthErrorCode === 'auth/network-request-failed') {
-    return 'Sin conexión a Firebase. Verificá tu internet.';
-  }
-  if (fbAuthErrorCode) {
-    return 'Error de Firebase auth: ' + fbAuthErrorCode + '\n' + (fbAuthErrorMsg || '');
-  }
-  return 'Firebase auth no listo (timeout). Recargá la página. Revisá la consola del browser (F12) para más detalle.';
+  if (c === 'auth/invalid-email') return 'El email no es válido.';
+  if (c === 'auth/too-many-requests') return 'Demasiados intentos fallidos. Esperá unos minutos y probá de nuevo.';
+  if (c === 'auth/user-disabled') return 'Esta cuenta está deshabilitada.';
+  if (c === 'auth/network-request-failed') return 'Sin conexión. Revisá tu internet y probá de nuevo.';
+  if (c === 'auth/operation-not-allowed') return 'El inicio de sesión con email y contraseña no está habilitado en Firebase (Authentication → Método de acceso).';
+  return 'No se pudo iniciar sesión' + (c ? ' (' + c + ')' : '') + '.';
 }
 
+async function doStaffLogin() {
+  hideErr('staff');
+  const email = document.getElementById('staff-email').value.trim();
+  const pass = document.getElementById('staff-pass').value;
+  if (!email || !pass) { showErr('staff', 'Completá email y contraseña.'); return; }
+  if (!fbAuth) { showErr('staff', 'No se pudo cargar Firebase. Revisá tu conexión y recargá la página.'); return; }
+  const btn = document.getElementById('staff-btn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.textContent = 'Entrando...';
+  try {
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+    document.getElementById('staff-pass').value = '';
+    /* onAuthStateChanged verifica permisos y muestra la app */
+  } catch (e) {
+    showErr('staff', mensajeErrorLogin(e));
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Iniciar sesión';
+  }
+}
+document.getElementById('staff-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doStaffLogin(); });
+document.getElementById('in-pass-r').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+/* ============ Códigos (crypto, sin caracteres ambiguos) ============ */
+/* Sin 0/O ni 1/I/L. Mismo alfabeto que tienda-core.js. */
+const ALFABETO_CODIGOS = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function genCodigoSeguro(largo) {
+  const out = [];
+  /* Rechazo de bytes >= 248 (31*8): distribución uniforme */
+  while (out.length < largo) {
+    const buf = new Uint8Array(largo * 2);
+    crypto.getRandomValues(buf);
+    for (let i = 0; i < buf.length && out.length < largo; i++) {
+      if (buf[i] < 248) out.push(ALFABETO_CODIGOS[buf[i] % ALFABETO_CODIGOS.length]);
+    }
+  }
+  return out.join('');
+}
+function genCodigoMayorista() { return 'CATT-' + genCodigoSeguro(10); }
+function genCodigoSolicitud() { return 'MAY-' + genCodigoSeguro(10); }
+
+/* Operaciones en curso (protección de doble click) */
+const enCurso = new Set();
+async function unaVez(clave, fn) {
+  if (enCurso.has(clave)) return;
+  enCurso.add(clave);
+  try { return await fn(); } finally { enCurso.delete(clave); }
+}
+
+/* ============ Solicitudes mayoristas ============ */
 let solicitudes = [];
 let solUnsub = null;
-
-function genCodigoMayorista() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return 'CATT-' + s;
-}
-
-async function sha256hex(str) {
-  const buf = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
 
 async function loadSolicitudes() {
   const statusEl = document.getElementById('sol-status');
@@ -2265,34 +2575,46 @@ async function loadSolicitudes() {
     statusEl.textContent = 'Firebase no configurado.';
     return;
   }
+  statusEl.className = 'msg-info';
   statusEl.textContent = 'Cargando...';
+  statusEl.style.display = 'block';
   try {
+    const db = await staffDb();
     if (solUnsub) solUnsub();
-    solUnsub = fbDb.collection('solicitudes_mayoristas')
+    solUnsub = db.collection('solicitudes_mayoristas')
       .orderBy('creadoEn', 'desc')
       .limit(200)
       .onSnapshot(snap => {
         solicitudes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         const pendientes = solicitudes.filter(s => s.estado === 'pendiente').length;
-        /* Badge en el tab-btn top-level "Mayoristas" y en el sub-tab "Solicitudes" */
         [document.getElementById('badge-sol'), document.getElementById('badge-sub-sol')].forEach(badge => {
           if (!badge) return;
           badge.textContent = pendientes;
           badge.style.display = pendientes > 0 ? 'inline-block' : 'none';
         });
         renderSolicitudes();
+      }, err => {
+        if (manejarErrorStaff(err)) return;
+        statusEl.className = 'msg-info err';
+        statusEl.textContent = 'Error al cargar: ' + err.message;
+        statusEl.style.display = 'block';
       });
   } catch (e) {
+    if (manejarErrorStaff(e)) return;
     statusEl.className = 'msg-info err';
     statusEl.textContent = 'Error al cargar: ' + e.message;
   }
+}
+
+function waLink(numero, texto) {
+  return `https://wa.me/${String(numero || '').replace(/[^0-9]/g, '')}?text=${encodeURIComponent(texto)}`;
 }
 
 function renderSolicitudes() {
   const cont = document.getElementById('solicitudes-list');
   const statusEl = document.getElementById('sol-status');
   const filter = document.getElementById('sol-filter').value;
-  cont.innerHTML = '';
+  cont.textContent = '';
 
   let list = solicitudes;
   if (filter !== 'todas') list = list.filter(s => s.estado === filter);
@@ -2300,17 +2622,18 @@ function renderSolicitudes() {
   if (!list.length) {
     statusEl.className = 'msg-info';
     statusEl.textContent = `Sin solicitudes ${filter === 'todas' ? '' : filter + 's'}.`;
+    statusEl.style.display = 'block';
     return;
   }
-
   statusEl.style.display = 'none';
 
+  /* TODO dato de la solicitud lo escribe cualquiera desde el formulario
+     público: solo textContent / propiedades, nunca innerHTML. */
   list.forEach(sol => {
     const s = sol.solicitante || {};
     const box = document.createElement('div');
     box.className = 'item-row';
 
-    /* Header */
     const head = document.createElement('div');
     head.style.cssText = 'display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;flex-wrap:wrap;gap:8px;';
     const left = document.createElement('div');
@@ -2320,7 +2643,7 @@ function renderSolicitudes() {
     left.appendChild(cod);
     const cli = document.createElement('div');
     cli.style.cssText = 'font-size:0.9rem;font-weight:500;';
-    cli.textContent = s.nombre + ' — ' + s.negocio;
+    cli.textContent = (s.nombre || '') + ' — ' + (s.negocio || '');
     left.appendChild(cli);
     head.appendChild(left);
     const estado = document.createElement('span');
@@ -2332,14 +2655,13 @@ function renderSolicitudes() {
     head.appendChild(estado);
     box.appendChild(head);
 
-    /* Info grid */
     const info = document.createElement('div');
     info.style.cssText = 'display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;font-size:0.85rem;color:#444;margin-bottom:12px;';
     const add = (l, v) => {
       if (!v) return;
       const item = document.createElement('div');
-      const ll = document.createElement('div'); ll.style.cssText='font-size:0.7rem;color:#999;text-transform:uppercase;letter-spacing:0.08em;'; ll.textContent = l;
-      const rr = document.createElement('div'); rr.textContent = v;
+      const ll = document.createElement('div'); ll.style.cssText = 'font-size:0.7rem;color:#999;text-transform:uppercase;letter-spacing:0.08em;'; ll.textContent = l;
+      const rr = document.createElement('div'); rr.textContent = String(v);
       item.appendChild(ll); item.appendChild(rr);
       info.appendChild(item);
     };
@@ -2351,19 +2673,19 @@ function renderSolicitudes() {
     add('Localidad', (s.localidad || '') + (s.provincia ? ', ' + s.provincia : ''));
     add('Dirección', s.direccion);
     add('Código postal', s.codigoPostal);
-    if (sol.creadoEn && sol.creadoEn.toDate) {
-      add('Recibida', sol.creadoEn.toDate().toLocaleString('es-AR'));
-    }
+    if (sol.creadoEn && sol.creadoEn.toDate) add('Recibida', sol.creadoEn.toDate().toLocaleString('es-AR'));
     box.appendChild(info);
 
-    if (s.foto_negocio) {
+    /* Foto: solo base64 puro (las reglas limitan el tamaño) */
+    if (typeof s.foto_negocio === 'string' && /^[A-Za-z0-9+/=\s]+$/.test(s.foto_negocio)) {
       const fotoWrap = document.createElement('div');
       fotoWrap.style.marginBottom = '12px';
       const fLbl = document.createElement('div');
       fLbl.style.cssText = 'font-size:0.7rem;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;';
       fLbl.textContent = 'Foto del negocio';
       const foto = document.createElement('img');
-      foto.src = 'data:image/jpeg;base64,' + s.foto_negocio;
+      foto.src = 'data:image/jpeg;base64,' + s.foto_negocio.replace(/\s/g, '');
+      foto.alt = 'Foto del negocio';
       foto.style.cssText = 'max-width:160px;max-height:160px;object-fit:cover;border:1px solid #E5E5E5;cursor:zoom-in;transition:max-width .2s,max-height .2s;';
       foto.title = 'Click para agrandar';
       let ampliada = false;
@@ -2387,174 +2709,174 @@ function renderSolicitudes() {
       const resp = document.createElement('div');
       resp.style.cssText = 'padding:10px;background:' + (sol.estado === 'aceptada' ? '#E7F5E7' : '#FDECEC') + ';font-size:0.85rem;margin-bottom:12px;';
       if (sol.estado === 'aceptada') {
-        resp.innerHTML = '';
-        const p = document.createElement('div'); p.textContent = 'Código mayorista entregado:';
-        const c = document.createElement('div'); c.style.cssText = 'font-family:"Cormorant Garamond",serif;font-size:1.2rem;margin-top:4px;letter-spacing:0.1em;';
-        c.textContent = sol.respuesta.codigoMayorista || '?';
-        resp.appendChild(p); resp.appendChild(c);
+        /* El código ya no se guarda en claro: se muestra UNA vez al aceptar.
+           Solicitudes viejas pueden tenerlo: se avisa que conviene regenerarlo. */
+        if (sol.respuesta.codigoMayorista) {
+          resp.textContent = 'Código entregado (guardado en claro por la versión anterior del portal): ' +
+            sol.respuesta.codigoMayorista + '. Conviene regenerarlo desde "Activos" para que deje de figurar acá.';
+        } else {
+          resp.textContent = 'Aceptada. El código se mostró una sola vez al aceptarla y no se guarda; si el mayorista lo perdió, usá "Regenerar código" en Activos.';
+        }
       } else {
         resp.textContent = 'Motivo: ' + (sol.respuesta.motivo || '');
       }
       box.appendChild(resp);
     }
 
-    /* Warning: ya hay un mayorista activo en la misma localidad. No bloquea
-       nada — es informativo, para que el admin decida a criterio (distancia,
-       tamaño de la localidad) si igual puede convivir con el nuevo. */
+    /* Aviso: ya hay un mayorista activo en la misma localidad (informativo) */
     if (sol.estado === 'pendiente' && s.localidad) {
-      const norm = v => (v || '').trim().toLowerCase();
+      const norm = v => String(v || '').trim().toLowerCase();
       const existentes = (mayoristasActivos || []).filter(m =>
         norm(m.localidad) === norm(s.localidad) && norm(m.provincia) === norm(s.provincia)
       );
       if (existentes.length) {
         const warn = document.createElement('div');
         warn.style.cssText = 'padding:10px;background:#FFF7E0;color:#7A5000;font-size:0.85rem;margin-bottom:12px;border-left:3px solid #C89000;';
-        warn.innerHTML = `⚠ Ya hay ${existentes.length > 1 ? existentes.length + ' mayoristas' : 'un mayorista'} activo en ${s.localidad}, ${s.provincia}: <strong>${existentes.map(m => (m.nombre || '') + (m.negocio ? ' — ' + m.negocio : '')).join(', ')}</strong>. Verificá la distancia entre direcciones antes de aceptar o rechazar — en localidades grandes pueden convivir sin problema.`;
+        warn.appendChild(document.createTextNode(
+          `⚠ Ya hay ${existentes.length > 1 ? existentes.length + ' mayoristas' : 'un mayorista'} activo en ${s.localidad}, ${s.provincia || ''}: `));
+        const strong = document.createElement('strong');
+        strong.textContent = existentes.map(m => (m.nombre || '') + (m.negocio ? ' — ' + m.negocio : '')).join(', ');
+        warn.appendChild(strong);
+        warn.appendChild(document.createTextNode('. Verificá la distancia entre direcciones antes de aceptar o rechazar — en localidades grandes pueden convivir sin problema.'));
         box.appendChild(warn);
       }
     }
 
-    /* Actions */
+    const acts = document.createElement('div');
+    acts.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
     if (sol.estado === 'pendiente') {
-      const acts = document.createElement('div');
-      acts.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
       const btnA = document.createElement('button');
       btnA.className = 'btn';
       btnA.textContent = '✓ Aceptar';
-      btnA.onclick = () => aceptarSolicitud(sol);
+      btnA.onclick = () => aceptarSolicitud(sol, btnA);
       const btnR = document.createElement('button');
       btnR.className = 'btn-danger';
       btnR.textContent = '✗ Rechazar';
-      btnR.onclick = () => rechazarSolicitud(sol);
+      btnR.onclick = () => rechazarSolicitud(sol, btnR);
       acts.appendChild(btnA); acts.appendChild(btnR);
-
-      if (s.whatsapp) {
-        const btnW = document.createElement('a');
-        btnW.className = 'btn-ghost';
-        btnW.textContent = 'WhatsApp';
-        btnW.target = '_blank';
-        btnW.rel = 'noopener noreferrer';
-        const msg = encodeURIComponent(`Hola ${s.nombre}, te contacto de Cattorini por tu solicitud de cuenta mayorista (${sol.codigo}).`);
-        btnW.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
-        acts.appendChild(btnW);
-      }
-      box.appendChild(acts);
-    } else {
-      const acts = document.createElement('div');
-      acts.style.cssText = 'display:flex;gap:8px;flex-wrap:wrap;';
-      if (s.whatsapp) {
-        const btnW = document.createElement('a');
-        btnW.className = 'btn-ghost';
-        btnW.textContent = 'WhatsApp';
-        btnW.target = '_blank';
-        btnW.rel = 'noopener noreferrer';
-        let msg;
-        if (sol.estado === 'aceptada' && sol.respuesta && sol.respuesta.codigoMayorista) {
-          msg = encodeURIComponent(
-            `Hola ${s.nombre}, tu cuenta mayorista en Cattorini fue aprobada. ` +
-            `Tu código de acceso es: ${sol.respuesta.codigoMayorista}\n\n` +
-            `Usalo en la tienda al elegir "Soy mayorista". Cualquier duda, respondé este mensaje.`
-          );
-        } else if (sol.estado === 'rechazada') {
-          msg = encodeURIComponent(
-            `Hola ${s.nombre}, te contacto de Cattorini sobre tu solicitud mayorista ${sol.codigo}.`
-          );
-        } else {
-          msg = encodeURIComponent(`Hola ${s.nombre}, te contacto de Cattorini por tu solicitud ${sol.codigo}.`);
-        }
-        btnW.href = `https://wa.me/${s.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
-        acts.appendChild(btnW);
-      }
+    }
+    if (s.whatsapp) {
+      const btnW = document.createElement('a');
+      btnW.className = 'btn-ghost';
+      btnW.textContent = 'WhatsApp';
+      btnW.target = '_blank';
+      btnW.rel = 'noopener noreferrer';
+      btnW.href = waLink(s.whatsapp, sol.estado === 'aceptada'
+        ? `Hola ${s.nombre || ''}, te contacto de Cattorini por tu cuenta mayorista (${sol.codigo || ''}).`
+        : `Hola ${s.nombre || ''}, te contacto de Cattorini por tu solicitud de cuenta mayorista (${sol.codigo || ''}).`);
+      acts.appendChild(btnW);
+    }
+    if (sol.estado !== 'pendiente') {
       const btnDel = document.createElement('button');
       btnDel.className = 'btn-danger';
       btnDel.textContent = 'Eliminar registro';
-      btnDel.onclick = async () => {
-        if (!confirm('Eliminar el registro definitivamente?')) return;
-        try { await fbDb.collection('solicitudes_mayoristas').doc(sol.id).delete(); }
-        catch (e) { alert('Error: ' + e.message); }
-      };
+      btnDel.onclick = () => eliminarSolicitud(sol, btnDel);
       acts.appendChild(btnDel);
-      box.appendChild(acts);
     }
-
+    box.appendChild(acts);
     cont.appendChild(box);
   });
 }
 
-/* Aceptar solicitud:
-   1. Auto-genera código CATT-XXXXXX
-   2. Hashea el código
-   3. Crea doc en mayoristas_activos con hash como ID
-   4. Actualiza la solicitud a "aceptada" guardando el código plaintext (para que el solicitante lo vea en seguimiento)
-   5. Muestra modal con código + botón WhatsApp para el admin */
-async function aceptarSolicitud(sol) {
-  const okAuth = await esperarAuth();
-  if (!okAuth) { alert(mensajeErrorAuth()); return; }
-
-  const s = sol.solicitante || {};
-  const codigo = genCodigoMayorista();
-  const codigoHash = await sha256hex(codigo);
-
-  try {
-    /* 1) Crear en mayoristas_activos con hash como ID */
-    await fbDb.collection('mayoristas_activos').doc(codigoHash).set({
-      nombre: s.nombre || '',
-      negocio: s.negocio || '',
-      cuit: s.cuit || '',
-      tipo: s.tipo || '',
-      telefono: s.telefono || '',
-      whatsapp: s.whatsapp || '',
-      email: s.email || '',
-      provincia: s.provincia || '',
-      localidad: s.localidad || '',
-      direccion: s.direccion || '',
-      codigoPostal: s.codigoPostal || '',
-      notas: sol.notas || '',
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      solicitudId: sol.id,
-      solicitudCodigo: sol.codigo || ''
-    });
-
-    /* 2) Marcar solicitud como aceptada con el código para el solicitante */
-    await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
-      estado: 'aceptada',
-      respuesta: {
-        codigoMayorista: codigo,
-        resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
-      }
-    });
-
-    /* 3) Modal para el admin con código + WhatsApp + opción bloquear zona */
-    mostrarModalCodigo({
-      titulo: 'Solicitud aceptada',
-      nombre: `${s.nombre} — ${s.negocio}`,
-      codigo,
-      whatsapp: s.whatsapp,
-      mayoristaData: {
-        nombre: s.nombre, negocio: s.negocio,
-        telefono: s.telefono, whatsapp: s.whatsapp,
-        provincia: s.provincia, localidad: s.localidad,
-        direccion: s.direccion, codigoPostal: s.codigoPostal
-      }
-    });
-  } catch (e) { alert('Error: ' + e.message); console.error(e); }
+function datosActivoDesde(s, extra) {
+  return {
+    nombre: s.nombre || '',
+    negocio: s.negocio || '',
+    cuit: s.cuit || '',
+    tipo: s.tipo || '',
+    telefono: s.telefono || '',
+    whatsapp: s.whatsapp || '',
+    email: s.email || '',
+    provincia: s.provincia || '',
+    localidad: s.localidad || '',
+    direccion: s.direccion || '',
+    codigoPostal: s.codigoPostal || '',
+    ...extra
+  };
 }
 
-/* Rechazar */
-async function rechazarSolicitud(sol) {
+/* Aceptar solicitud — UNA transacción:
+   - relee la solicitud y aborta si ya no está pendiente (doble click, otra pestaña),
+   - crea mayoristas_activos/{sha256(código)},
+   - marca la solicitud como aceptada SIN guardar el código en claro.
+   El código se muestra una sola vez al staff (modal con WhatsApp). */
+function aceptarSolicitud(sol, btn) {
+  return unaVez('sol:' + sol.id, async () => {
+    if (btn) { btn.disabled = true; btn.textContent = 'Aceptando...'; }
+    try {
+      const db = await staffDb();
+      const s = sol.solicitante || {};
+      const codigo = genCodigoMayorista();
+      const codigoHash = await sha256Hex(codigo);
+      const solRef = db.collection('solicitudes_mayoristas').doc(sol.id);
+      const actRef = db.collection('mayoristas_activos').doc(codigoHash);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(solRef);
+        if (!snap.exists) throw new Error('La solicitud ya no existe.');
+        if ((snap.data().estado || 'pendiente') !== 'pendiente') {
+          throw new Error('Esta solicitud ya fue resuelta (¿desde otra pestaña?).');
+        }
+        tx.set(actRef, datosActivoDesde(s, {
+          notas: sol.notas || '',
+          createdAt: serverTs(),
+          solicitudId: sol.id,
+          solicitudCodigo: sol.codigo || ''
+        }));
+        tx.update(solRef, { estado: 'aceptada', respuesta: { resueltoEn: serverTs() } });
+      });
+      mostrarModalCodigo({
+        titulo: 'Solicitud aceptada',
+        nombre: `${s.nombre || ''} — ${s.negocio || ''}`,
+        codigo,
+        whatsapp: s.whatsapp,
+        mayoristaData: s
+      });
+    } catch (e) {
+      if (!manejarErrorStaff(e)) alert('No se pudo aceptar: ' + e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Aceptar'; }
+    }
+  });
+}
+
+function rechazarSolicitud(sol, btn) {
   const nom = (sol.solicitante && sol.solicitante.nombre) || '';
   if (!confirm('¿Rechazar la solicitud de ' + nom + '?')) return;
-  const okAuth = await esperarAuth();
-  if (!okAuth) { alert(mensajeErrorAuth()); return; }
-  try {
-    await fbDb.collection('solicitudes_mayoristas').doc(sol.id).update({
-      estado: 'rechazada',
-      respuesta: {
-        motivo: 'Por el momento no podemos habilitar esta cuenta. Si querés más información, escribinos por WhatsApp.',
-        resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
-      }
-    });
-  } catch (e) { alert('Error: ' + e.message); console.error(e); }
+  return unaVez('sol:' + sol.id, async () => {
+    if (btn) btn.disabled = true;
+    try {
+      const db = await staffDb();
+      const solRef = db.collection('solicitudes_mayoristas').doc(sol.id);
+      await db.runTransaction(async (tx) => {
+        const snap = await tx.get(solRef);
+        if (!snap.exists) throw new Error('La solicitud ya no existe.');
+        if ((snap.data().estado || 'pendiente') !== 'pendiente') throw new Error('Esta solicitud ya fue resuelta.');
+        tx.update(solRef, {
+          estado: 'rechazada',
+          respuesta: {
+            motivo: 'Por el momento no podemos habilitar esta cuenta. Si querés más información, escribinos por WhatsApp.',
+            resueltoEn: serverTs()
+          }
+        });
+      });
+    } catch (e) {
+      if (!manejarErrorStaff(e)) alert('No se pudo rechazar: ' + e.message);
+      if (btn) btn.disabled = false;
+    }
+  });
+}
+
+function eliminarSolicitud(sol, btn) {
+  if (!confirm('Eliminar el registro definitivamente?')) return;
+  return unaVez('sol:' + sol.id, async () => {
+    if (btn) btn.disabled = true;
+    try {
+      const db = await staffDb();
+      await db.collection('solicitudes_mayoristas').doc(sol.id).delete();
+    } catch (e) {
+      if (!manejarErrorStaff(e)) alert('Error: ' + e.message);
+      if (btn) btn.disabled = false;
+    }
+  });
 }
 
 /* Modal código genérico */
@@ -2570,19 +2892,15 @@ function mostrarModalCodigo({ titulo, nombre, codigo, whatsapp, mayoristaData })
 
   const waEl = document.getElementById('mc-wa');
   if (whatsapp) {
-    const num = whatsapp.replace(/[^0-9]/g, '');
-    const msg = encodeURIComponent(
-      `Hola ${nombre.split(' — ')[0]}, tu cuenta mayorista en Cattorini fue aprobada. ` +
+    waEl.href = waLink(whatsapp,
+      `Hola ${String(nombre).split(' — ')[0]}, tu cuenta mayorista en Cattorini fue aprobada. ` +
       `Tu código de acceso es: ${codigo}\n\nUsalo en la tienda al elegir "Soy mayorista". ` +
-      `Cualquier duda, respondé este mensaje.`
-    );
-    waEl.href = `https://wa.me/${num}?text=${msg}`;
+      `Cualquier duda, respondé este mensaje.`);
     waEl.style.display = 'block';
   } else {
     waEl.style.display = 'none';
   }
 
-  /* Bloque de zona: solo si tenemos provincia + localidad */
   const zonaBlock = document.getElementById('mc-zona-block');
   const zonaStatus = document.getElementById('mc-zona-status');
   const zonaBtn = document.getElementById('mc-zona-btn');
@@ -2592,11 +2910,10 @@ function mostrarModalCodigo({ titulo, nombre, codigo, whatsapp, mayoristaData })
 
   if (mayoristaData && mayoristaData.provincia && mayoristaData.localidad) {
     document.getElementById('mc-zona-label').textContent = `${mayoristaData.localidad}, ${mayoristaData.provincia}`;
-    /* Chequear si la zona ya está bloqueada */
-    const yaBloqueada = data && data.zonas_mayoristas && data.zonas_mayoristas.some(z => {
-      if ((z.provincia || '').trim().toLowerCase() !== mayoristaData.provincia.trim().toLowerCase()) return false;
-      return (z.localidades || []).some(l => l.trim().toLowerCase() === mayoristaData.localidad.trim().toLowerCase());
-    });
+    const norm = v => String(v || '').trim().toLowerCase();
+    const yaBloqueada = data && data.zonas_mayoristas && data.zonas_mayoristas.some(z =>
+      norm(z.provincia) === norm(mayoristaData.provincia) &&
+      (z.localidades || []).some(l => norm(l) === norm(mayoristaData.localidad)));
     if (yaBloqueada) {
       zonaBtn.disabled = true;
       zonaBtn.textContent = '✓ Zona ya bloqueada';
@@ -2635,59 +2952,49 @@ async function bloquearZonaDeModal() {
 /* Agrega la zona del mayorista a data.zonas_mayoristas y publica productos.json */
 async function bloquearZonaMinoristas(m) {
   if (!data) throw new Error('No hay datos cargados. Recargá.');
-  const prov = (m.provincia || '').trim();
-  const loc = (m.localidad || '').trim();
+  const prov = String(m.provincia || '').trim();
+  const loc = String(m.localidad || '').trim();
   if (!prov || !loc) throw new Error('Falta provincia o localidad.');
 
   data.zonas_mayoristas = data.zonas_mayoristas || [];
-  const norm = s => (s || '').trim().toLowerCase();
-
-  /* Buscar zona existente por provincia */
+  const norm = v => String(v || '').trim().toLowerCase();
   let zona = data.zonas_mayoristas.find(z => norm(z.provincia) === norm(prov));
-
   const contactoMayorista = {
     nombre: (m.nombre || '') + (m.negocio ? ' — ' + m.negocio : ''),
     telefono: m.telefono || '',
     whatsapp: m.whatsapp || '',
     direccion: (m.direccion || '') + (m.codigoPostal ? ' (CP ' + m.codigoPostal + ')' : '')
   };
-
   if (zona) {
     zona.localidades = zona.localidades || [];
-    if (!zona.localidades.some(l => norm(l) === norm(loc))) {
-      zona.localidades.push(loc);
-    }
-    /* Solo overrideamos el mayorista si esa zona no tenía datos */
-    if (!zona.mayorista || !zona.mayorista.nombre) {
-      zona.mayorista = contactoMayorista;
-    }
+    if (!zona.localidades.some(l => norm(l) === norm(loc))) zona.localidades.push(loc);
+    if (!zona.mayorista || !zona.mayorista.nombre) zona.mayorista = contactoMayorista;
   } else {
-    data.zonas_mayoristas.push({
-      provincia: prov,
-      localidades: [loc],
-      mayorista: contactoMayorista
-    });
+    data.zonas_mayoristas.push({ provincia: prov, localidades: [loc], mayorista: contactoMayorista });
   }
-
   markDirty();
   if (typeof renderZonas === 'function') renderZonas();
   /* Publicar inmediatamente para que tome efecto ya */
-  await publishChanges();
+  const ok = await publishChanges();
+  if (!ok) throw new Error('La zona quedó marcada pero no se publicó (ver el aviso anterior). Publicá desde la barra superior.');
 }
 
 function cerrarModalCodigo() {
   document.getElementById('modal-codigo').style.display = 'none';
+  document.getElementById('mc-codigo').textContent = '···';
   _mcCodigoActual = '';
   _mcZonaData = null;
 }
 
-async function copiarCodigo() {
+async function copiarCodigo(ev) {
+  const btn = (ev && ev.target) || null;
   try {
     await navigator.clipboard.writeText(_mcCodigoActual);
-    const btn = event.target;
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copiado';
-    setTimeout(() => btn.textContent = orig, 1500);
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Copiado';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    }
   } catch { alert('No se pudo copiar. Copialo manualmente: ' + _mcCodigoActual); }
 }
 
@@ -2717,86 +3024,74 @@ function sanAM(s, max) {
   return String(s || '').slice(0, max).replace(/[<>]/g, '').trim();
 }
 
-/* Alta manual: crea DIRECTO en mayoristas_activos + registra la solicitud como aceptada */
-async function crearMayoristaManual() {
-  if (!fbDb) { alert('Firebase no disponible. Recargá.'); return; }
-  const btn = document.getElementById('am-btn');
+/* Alta manual: mayorista activo + solicitud (ya aceptada, para el historial)
+   en UN batch atómico. La solicitud usa el código como ID (mismo modelo que
+   las públicas) y no guarda el código mayorista. */
+function crearMayoristaManual() {
+  return unaVez('alta-manual', async () => {
+    if (!fbDb) { alert('Firebase no disponible. Recargá.'); return; }
+    const btn = document.getElementById('am-btn');
+    const nombre = sanAM(document.getElementById('am-nombre').value, 80);
+    const negocio = sanAM(document.getElementById('am-negocio').value, 100);
+    if (!nombre || !negocio) { alert('Nombre y negocio son obligatorios.'); return; }
 
-  const nombre = sanAM(document.getElementById('am-nombre').value, 80);
-  const negocio = sanAM(document.getElementById('am-negocio').value, 100);
-  if (!nombre || !negocio) { alert('Nombre y negocio son obligatorios.'); return; }
+    btn.disabled = true;
+    btn.textContent = 'Registrando...';
+    try {
+      const db = await staffDb();
+      const codigo = genCodigoMayorista();
+      const codigoHash = await sha256Hex(codigo);
+      const wa = sanAM(document.getElementById('am-wa').value, 30);
+      const solicitanteData = {
+        nombre, negocio,
+        cuit: sanAM(document.getElementById('am-cuit').value, 15),
+        tipo: sanAM(document.getElementById('am-tipo').value, 50),
+        telefono: sanAM(document.getElementById('am-tel').value, 30),
+        whatsapp: wa,
+        email: sanAM(document.getElementById('am-email').value, 80),
+        provincia: sanAM(document.getElementById('am-prov').value, 40),
+        localidad: sanAM(document.getElementById('am-loc').value, 60),
+        direccion: sanAM(document.getElementById('am-direccion').value, 120),
+        codigoPostal: sanAM(document.getElementById('am-cp').value, 10)
+      };
+      const notas = sanAM(document.getElementById('am-notas').value, 500);
+      const codigoSol = genCodigoSolicitud();
 
-  const okAuth = await esperarAuth();
-  if (!okAuth) { alert(mensajeErrorAuth()); return; }
+      const batch = db.batch();
+      batch.set(db.collection('mayoristas_activos').doc(codigoHash), datosActivoDesde(solicitanteData, {
+        notas,
+        createdAt: serverTs(),
+        manual: true,
+        solicitudId: codigoSol,
+        solicitudCodigo: codigoSol
+      }));
+      batch.set(db.collection('solicitudes_mayoristas').doc(codigoSol), {
+        codigo: codigoSol,
+        creadoEn: serverTs(),
+        solicitante: solicitanteData,
+        notas,
+        estado: 'aceptada',
+        respuesta: { resueltoEn: serverTs() },
+        manual: true
+      });
+      await batch.commit();
 
-  btn.disabled = true;
-  btn.textContent = 'Registrando...';
-
-  const codigo = genCodigoMayorista();
-  const codigoHash = await sha256hex(codigo);
-  const wa = sanAM(document.getElementById('am-wa').value, 30);
-
-  const solicitanteData = {
-    nombre, negocio,
-    cuit: sanAM(document.getElementById('am-cuit').value, 15),
-    tipo: sanAM(document.getElementById('am-tipo').value, 50),
-    telefono: sanAM(document.getElementById('am-tel').value, 30),
-    whatsapp: wa,
-    email: sanAM(document.getElementById('am-email').value, 80),
-    provincia: sanAM(document.getElementById('am-prov').value, 40),
-    localidad: sanAM(document.getElementById('am-loc').value, 60),
-    direccion: sanAM(document.getElementById('am-direccion').value, 120),
-    codigoPostal: sanAM(document.getElementById('am-cp').value, 10)
-  };
-  const notas = sanAM(document.getElementById('am-notas').value, 500);
-  const codigoSol = 'MAY-' + Array.from({length: 4}, () =>
-    'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[Math.floor(Math.random() * 32)]
-  ).join('');
-
-  try {
-    /* 1) Crear en mayoristas_activos */
-    await fbDb.collection('mayoristas_activos').doc(codigoHash).set({
-      ...solicitanteData,
-      notas,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-      manual: true,
-      solicitudCodigo: codigoSol
-    });
-
-    /* 2) Crear la solicitud (pending → aceptada) para el historial */
-    const solRef = await fbDb.collection('solicitudes_mayoristas').add({
-      codigo: codigoSol,
-      creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
-      solicitante: solicitanteData,
-      notas,
-      estado: 'pendiente',
-      respuesta: null
-    });
-    await fbDb.collection('solicitudes_mayoristas').doc(solRef.id).update({
-      estado: 'aceptada',
-      respuesta: {
-        codigoMayorista: codigo,
-        resueltoEn: firebase.firestore.FieldValue.serverTimestamp()
-      },
-      manual: true
-    });
-
-    /* 3) Modal código con WhatsApp + opción bloquear zona */
-    mostrarModalCodigo({
-      titulo: 'Mayorista registrado',
-      nombre: `${nombre} — ${negocio}`,
-      codigo,
-      whatsapp: wa,
-      mayoristaData: solicitanteData
-    });
-    clearAM();
-  } catch (e) {
-    alert('Error: ' + e.message);
-    console.error(e);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Registrar mayorista';
-  }
+      mostrarModalCodigo({
+        titulo: 'Mayorista registrado',
+        nombre: `${nombre} — ${negocio}`,
+        codigo,
+        whatsapp: wa,
+        mayoristaData: solicitanteData
+      });
+      clearAM();
+    } catch (e) {
+      if (!manejarErrorStaff(e)) alert('Error: ' + e.message);
+      console.error(e);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Registrar mayorista';
+    }
+  });
 }
 
 /* ============ ABM Mayoristas activos ============ */
@@ -2810,29 +3105,27 @@ async function loadActivos() {
     statusEl.textContent = 'Firebase no configurado.';
     return;
   }
-  const okAuth = await esperarAuth();
-  if (!okAuth) {
-    statusEl.className = 'msg-info err';
-    statusEl.textContent = mensajeErrorAuth();
-    return;
-  }
+  statusEl.className = 'msg-info';
   statusEl.textContent = 'Cargando...';
+  statusEl.style.display = 'block';
   try {
+    const db = await staffDb();
     if (actUnsub) actUnsub();
-    actUnsub = fbDb.collection('mayoristas_activos').limit(500).onSnapshot(snap => {
+    actUnsub = db.collection('mayoristas_activos').limit(500).onSnapshot(snap => {
       mayoristasActivos = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      /* Badge cantidad total */
       const badge = document.getElementById('badge-activos');
       if (badge) badge.textContent = mayoristasActivos.length;
       renderActivos();
-      /* Re-renderizar Solicitudes también: el aviso de zona duplicada usa
-         mayoristasActivos, y este snapshot puede resolver DESPUÉS del de
-         solicitudes_mayoristas (ambos son listeners independientes) — sin
-         este llamado, el aviso quedaba sin mostrarse hasta el próximo
-         cambio en solicitudes_mayoristas, que podía tardar o no llegar. */
+      /* El aviso de zona duplicada en Solicitudes usa mayoristasActivos */
       renderSolicitudes();
+    }, err => {
+      if (manejarErrorStaff(err)) return;
+      statusEl.className = 'msg-info err';
+      statusEl.textContent = 'Error: ' + err.message;
+      statusEl.style.display = 'block';
     });
   } catch (e) {
+    if (manejarErrorStaff(e)) return;
     statusEl.className = 'msg-info err';
     statusEl.textContent = 'Error: ' + e.message;
   }
@@ -2841,13 +3134,13 @@ async function loadActivos() {
 function renderActivos() {
   const cont = document.getElementById('activos-list');
   const statusEl = document.getElementById('act-status');
-  cont.innerHTML = '';
+  cont.textContent = '';
 
   const q = (document.getElementById('act-search').value || '').toLowerCase().trim();
   const filtered = q ? mayoristasActivos.filter(m => {
     const hay = [m.nombre, m.negocio, m.localidad, m.provincia, m.email].join(' ').toLowerCase();
     return hay.includes(q);
-  }) : mayoristasActivos;
+  }) : mayoristasActivos.slice();
 
   if (!filtered.length) {
     statusEl.className = 'msg-info';
@@ -2857,7 +3150,7 @@ function renderActivos() {
   }
   statusEl.style.display = 'none';
 
-  filtered.sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''));
+  filtered.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || '')));
 
   filtered.forEach(m => {
     const row = document.createElement('div');
@@ -2866,7 +3159,7 @@ function renderActivos() {
     const info = document.createElement('div');
     info.className = 'activo-info';
     const h4 = document.createElement('h4');
-    h4.textContent = m.nombre + ' — ' + m.negocio;
+    h4.textContent = (m.nombre || '') + ' — ' + (m.negocio || '');
     info.appendChild(h4);
     const sub = document.createElement('div');
     sub.className = 'sub';
@@ -2898,8 +3191,7 @@ function renderActivos() {
       btnW.textContent = 'WhatsApp';
       btnW.target = '_blank';
       btnW.rel = 'noopener noreferrer';
-      const msg = encodeURIComponent(`Hola ${m.nombre}, te contacto de Cattorini.`);
-      btnW.href = `https://wa.me/${m.whatsapp.replace(/[^0-9]/g,'')}?text=${msg}`;
+      btnW.href = waLink(m.whatsapp, `Hola ${m.nombre || ''}, te contacto de Cattorini.`);
       acts.appendChild(btnW);
     }
 
@@ -2908,13 +3200,11 @@ function renderActivos() {
     btnEdit.onclick = () => editarActivo(m);
     acts.appendChild(btnEdit);
 
-    /* Botón bloquear zona (solo si tiene provincia+localidad y no está ya bloqueada) */
     if (m.provincia && m.localidad) {
-      const norm = s => (s || '').trim().toLowerCase();
+      const norm = v => String(v || '').trim().toLowerCase();
       const yaBloqueada = data && data.zonas_mayoristas && data.zonas_mayoristas.some(z =>
         norm(z.provincia) === norm(m.provincia) &&
-        (z.localidades || []).some(l => norm(l) === norm(m.localidad))
-      );
+        (z.localidades || []).some(l => norm(l) === norm(m.localidad)));
       if (yaBloqueada) {
         const badge = document.createElement('button');
         badge.textContent = '✓ Zona bloqueada';
@@ -2944,13 +3234,13 @@ function renderActivos() {
 
     const btnRegen = document.createElement('button');
     btnRegen.textContent = 'Regenerar código';
-    btnRegen.onclick = () => regenerarCodigo(m);
+    btnRegen.onclick = () => regenerarCodigo(m, btnRegen);
     acts.appendChild(btnRegen);
 
     const btnDel = document.createElement('button');
     btnDel.className = 'del';
     btnDel.textContent = 'Eliminar';
-    btnDel.onclick = () => eliminarActivo(m);
+    btnDel.onclick = () => eliminarActivo(m, btnDel);
     acts.appendChild(btnDel);
 
     row.appendChild(acts);
@@ -2958,74 +3248,87 @@ function renderActivos() {
   });
 }
 
-async function editarActivo(m) {
-  const nuevoNombre = prompt('Nombre y apellido:', m.nombre || '');
-  if (nuevoNombre === null) return;
-  const nuevoNegocio = prompt('Razón social o negocio:', m.negocio || '');
-  if (nuevoNegocio === null) return;
-  const nuevoWA = prompt('WhatsApp (549...):', m.whatsapp || '');
-  if (nuevoWA === null) return;
-  const nuevoTel = prompt('Teléfono:', m.telefono || '');
-  if (nuevoTel === null) return;
-  const nuevoEmail = prompt('Email:', m.email || '');
-  if (nuevoEmail === null) return;
-  const nuevaProv = prompt('Provincia:', m.provincia || '');
-  if (nuevaProv === null) return;
-  const nuevaLoc = prompt('Localidad:', m.localidad || '');
-  if (nuevaLoc === null) return;
-  const nuevaDir = prompt('Dirección (calle, número, piso):', m.direccion || '');
-  if (nuevaDir === null) return;
-  const nuevoCP = prompt('Código postal:', m.codigoPostal || '');
-  if (nuevoCP === null) return;
-  const nuevasNotas = prompt('Notas:', m.notas || '');
-  if (nuevasNotas === null) return;
-
-  try {
-    await fbDb.collection('mayoristas_activos').doc(m.id).update({
-      nombre: nuevoNombre.trim().slice(0, 80),
-      negocio: nuevoNegocio.trim().slice(0, 100),
-      whatsapp: nuevoWA.trim().slice(0, 30),
-      telefono: nuevoTel.trim().slice(0, 30),
-      email: nuevoEmail.trim().slice(0, 80),
-      provincia: nuevaProv.trim().slice(0, 40),
-      localidad: nuevaLoc.trim().slice(0, 60),
-      direccion: nuevaDir.trim().slice(0, 120),
-      codigoPostal: nuevoCP.trim().slice(0, 10),
-      notas: nuevasNotas.trim().slice(0, 500)
-    });
-  } catch (e) { alert('Error: ' + e.message); }
+function editarActivo(m) {
+  const campos = [
+    ['nombre', 'Nombre y apellido:', 80],
+    ['negocio', 'Razón social o negocio:', 100],
+    ['whatsapp', 'WhatsApp (549...):', 30],
+    ['telefono', 'Teléfono:', 30],
+    ['email', 'Email:', 80],
+    ['provincia', 'Provincia:', 40],
+    ['localidad', 'Localidad:', 60],
+    ['direccion', 'Dirección (calle, número, piso):', 120],
+    ['codigoPostal', 'Código postal:', 10],
+    ['notas', 'Notas:', 500]
+  ];
+  const cambios = {};
+  for (const [campo, label, max] of campos) {
+    const v = prompt(label, m[campo] || '');
+    if (v === null) return;
+    cambios[campo] = sanAM(v, max);
+  }
+  return unaVez('act:' + m.id, async () => {
+    try {
+      const db = await staffDb();
+      await db.collection('mayoristas_activos').doc(m.id).update(cambios);
+    } catch (e) { if (!manejarErrorStaff(e)) alert('Error: ' + e.message); }
+  });
 }
 
-async function regenerarCodigo(m) {
-  if (!confirm(`Regenerar código de ${m.nombre}?\n\nEl código anterior deja de funcionar inmediatamente.`)) return;
-  try {
-    const nuevoCodigo = genCodigoMayorista();
-    const nuevoHash = await sha256hex(nuevoCodigo);
-    /* Crear doc nuevo con hash nuevo, copiando todos los datos */
-    const nuevoDoc = { ...m };
-    delete nuevoDoc.id;
-    delete nuevoDoc.createdAt;
-    nuevoDoc.regeneradoAt = firebase.firestore.FieldValue.serverTimestamp();
-    nuevoDoc.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-    await fbDb.collection('mayoristas_activos').doc(nuevoHash).set(nuevoDoc);
-    /* Eliminar el viejo */
-    await fbDb.collection('mayoristas_activos').doc(m.id).delete();
-    /* Modal con código nuevo */
-    mostrarModalCodigo({
-      titulo: 'Código regenerado',
-      nombre: `${m.nombre} — ${m.negocio}`,
-      codigo: nuevoCodigo,
-      whatsapp: m.whatsapp,
-      mayoristaData: m
-    });
-  } catch (e) { alert('Error: ' + e.message); console.error(e); }
+/* Regenerar = UNA transacción: crea el doc con el hash nuevo, borra el viejo
+   (el código anterior deja de funcionar en el mismo instante) y limpia de la
+   solicitud cualquier código guardado en claro por la versión anterior. */
+function regenerarCodigo(m, btn) {
+  if (!confirm(`Regenerar código de ${m.nombre || ''}?\n\nEl código anterior deja de funcionar inmediatamente.`)) return;
+  return unaVez('act:' + m.id, async () => {
+    if (btn) btn.disabled = true;
+    try {
+      const db = await staffDb();
+      const nuevoCodigo = genCodigoMayorista();
+      const nuevoHash = await sha256Hex(nuevoCodigo);
+      const viejoRef = db.collection('mayoristas_activos').doc(m.id);
+      const nuevoRef = db.collection('mayoristas_activos').doc(nuevoHash);
+      const solRef = m.solicitudId ? db.collection('solicitudes_mayoristas').doc(String(m.solicitudId)) : null;
+      let datos = null;
+      await db.runTransaction(async (tx) => {
+        const vSnap = await tx.get(viejoRef);
+        if (!vSnap.exists) throw new Error('Este mayorista ya no existe (¿se eliminó o se regeneró desde otra pestaña?).');
+        const solSnap = solRef ? await tx.get(solRef) : null;
+        datos = { ...vSnap.data() };
+        tx.set(nuevoRef, { ...datos, regeneradoAt: serverTs() });
+        tx.delete(viejoRef);
+        if (solSnap && solSnap.exists) {
+          const r = solSnap.data().respuesta || {};
+          tx.update(solRef, { respuesta: { resueltoEn: r.resueltoEn || serverTs(), codigoRegeneradoEn: serverTs() } });
+        }
+      });
+      mostrarModalCodigo({
+        titulo: 'Código regenerado',
+        nombre: `${datos.nombre || ''} — ${datos.negocio || ''}`,
+        codigo: nuevoCodigo,
+        whatsapp: datos.whatsapp,
+        mayoristaData: datos
+      });
+    } catch (e) {
+      if (!manejarErrorStaff(e)) alert('Error: ' + e.message);
+      console.error(e);
+      if (btn) btn.disabled = false;
+    }
+  });
 }
 
-async function eliminarActivo(m) {
-  if (!confirm(`Eliminar acceso mayorista de ${m.nombre} (${m.negocio})?\n\nLos pedidos anteriores se mantienen. Solo se elimina el permiso de acceso.`)) return;
-  try {
-    await fbDb.collection('mayoristas_activos').doc(m.id).delete();
-  } catch (e) { alert('Error: ' + e.message); }
+function eliminarActivo(m, btn) {
+  if (!confirm(`Eliminar acceso mayorista de ${m.nombre || ''} (${m.negocio || ''})?\n\nLos pedidos anteriores se mantienen. Solo se elimina el permiso de acceso.`)) return;
+  return unaVez('act:' + m.id, async () => {
+    if (btn) btn.disabled = true;
+    try {
+      const db = await staffDb();
+      await db.collection('mayoristas_activos').doc(m.id).delete();
+    } catch (e) {
+      if (!manejarErrorStaff(e)) alert('Error: ' + e.message);
+      if (btn) btn.disabled = false;
+    }
+  });
 }
 
 /* ============ Navegación tabs / sub-tabs ============ */
@@ -3052,17 +3355,6 @@ document.querySelectorAll('.subtab-btn').forEach(b => {
     if (b.dataset.subtab === 'stock-historial') renderStockHistorial();
   });
 });
-
-/* Al entrar al app, cargar solicitudes y activos.
-   Activos se carga eager (no solo on-demand al abrir el sub-tab) porque
-   ahora también hace falta en Solicitudes, para avisar si ya hay un
-   mayorista en la misma zona antes de aceptar una solicitud nueva. */
-const originalEnterApp = enterApp;
-enterApp = async function() {
-  await originalEnterApp();
-  loadSolicitudes();
-  loadActivos();
-};
 
 /* ============ Init ============ */
 checkLoginState();

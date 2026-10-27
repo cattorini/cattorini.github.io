@@ -1,207 +1,44 @@
 # Firestore Security Rules — Cattorini
 
-Cuando crees el proyecto Firebase real para Cattorini, seguí estos pasos.
+Las reglas viven en **`firestore.rules`** (raíz del repo). Este archivo ya no
+contiene reglas: cualquier versión vieja copiada de acá es INSEGURA (dejaba a
+cualquier usuario anónimo actuar como admin).
 
-## 1. Crear proyecto Firebase
+## Publicar las reglas
 
-1. Ir a https://console.firebase.google.com
-2. Crear proyecto llamado `cattorini` (o similar)
-3. Habilitar **Firestore Database** en modo producción
-4. Habilitar **Authentication** → Método de acceso → habilitar "Anónimo"
-5. Copiar la config del proyecto (Configuración del proyecto → Tus apps → Web) y reemplazar el `FIREBASE_CONFIG` placeholder en:
-   - `tienda.html`
-   - `producto.html`
-   - `pedidos.html`
-   - `portal.html`
-   - `seguimiento.html`
-   - `seguimiento-mayorista.html`
-   - `index.html`
+Firebase Console → proyecto `cattorini-tienda` → Firestore Database → Reglas →
+pegar el contenido completo de `firestore.rules` → Publicar.
 
-## 2. Reglas de seguridad Firestore
+Antes de publicar, siempre:
 
-Ir a **Firestore Database → Reglas** y pegar exactamente esto:
-
-```javascript
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-
-    /* ============ PEDIDOS ============ */
-    match /pedidos/{orderId} {
-
-      /* CREATE — desde la tienda pública, con validación estricta de shape */
-      allow create: if
-        request.resource.data.keys().hasAll([
-          'codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
-          'subtotal', 'envio', 'total', 'nota', 'estado'
-        ])
-        && request.resource.data.codigo is string
-        && request.resource.data.codigo.size() >= 4
-        && request.resource.data.codigo.size() <= 8
-        && request.resource.data.cliente is map
-        && request.resource.data.cliente.nombre is string
-        && request.resource.data.cliente.nombre.size() > 0
-        && request.resource.data.cliente.nombre.size() <= 80
-        && request.resource.data.items is list
-        && request.resource.data.items.size() > 0
-        && request.resource.data.items.size() <= 100
-        && request.resource.data.modalidad in ['retiro', 'envio']
-        && request.resource.data.subtotal is number
-        && request.resource.data.subtotal >= 0
-        && request.resource.data.envio is number
-        && request.resource.data.envio >= 0
-        && request.resource.data.total is number
-        && request.resource.data.total >= 0
-        && request.resource.data.estado == 'pendiente';
-
-      /* READ público con acceso limitado — necesario para seguimiento por código
-         Un cliente sólo puede leer si conoce el ID (búsqueda por código = query where) */
-      allow read: if true;
-
-      /* UPDATE y DELETE — solo autenticados (portal usa signin anónimo) */
-      allow update, delete: if request.auth != null;
-    }
-
-    /* ============ SOLICITUDES MAYORISTAS ============ */
-    match /solicitudes_mayoristas/{solId} {
-
-      /* CREATE — desde el formulario del landing, con validación estricta */
-      allow create: if
-        request.resource.data.keys().hasAll([
-          'codigo', 'creadoEn', 'solicitante', 'notas', 'estado', 'respuesta'
-        ])
-        && request.resource.data.codigo is string
-        && request.resource.data.codigo.size() >= 6
-        && request.resource.data.codigo.size() <= 12
-        && request.resource.data.solicitante is map
-        && request.resource.data.solicitante.nombre is string
-        && request.resource.data.solicitante.nombre.size() > 0
-        && request.resource.data.solicitante.nombre.size() <= 80
-        && request.resource.data.solicitante.negocio is string
-        && request.resource.data.solicitante.negocio.size() > 0
-        && request.resource.data.solicitante.negocio.size() <= 100
-        && (
-          !('foto_negocio' in request.resource.data.solicitante)
-          || request.resource.data.solicitante.foto_negocio == null
-          || (
-            request.resource.data.solicitante.foto_negocio is string
-            && request.resource.data.solicitante.foto_negocio.size() <= 700000
-          )
-        )
-        && request.resource.data.estado == 'pendiente'
-        && request.resource.data.respuesta == null;
-
-      /* READ público — el solicitante consulta su solicitud por código */
-      allow read: if true;
-
-      /* UPDATE y DELETE — solo admin autenticado */
-      allow update, delete: if request.auth != null;
-    }
-
-    /* ============ MAYORISTAS ACTIVOS ============ */
-    /* Doc ID = SHA-256 del código de acceso (nunca guardamos código plaintext) */
-    match /mayoristas_activos/{hashId} {
-
-      /* GET público — necesario para que la tienda valide el código
-         Es seguro porque hay que conocer el hash exacto (2^256 combinaciones)
-         para poder acceder a un doc */
-      allow get: if true;
-
-      /* LIST solo admin — para listar todos en el panel de gestión */
-      allow list: if request.auth != null;
-
-      /* CREATE, UPDATE, DELETE — solo admin autenticado */
-      allow create, update, delete: if request.auth != null;
-    }
-
-    /* ============ STOCK ============ */
-    /* Doc ID = id del producto (string). Cantidad actual por talle+color,
-       para que la tienda pueda chequear disponibilidad y bloquear la venta
-       en 0 en tiempo real. */
-    match /stock/{productId} {
-
-      /* READ público — la tienda necesita ver cantidades disponibles
-         antes de dejar agregar al carrito */
-      allow read: if true;
-
-      /* UPDATE público limitado — es el único paso donde un cliente anónimo
-         (al confirmar un pedido) descuenta stock. Se restringe a que SOLO
-         pueda tocar los campos variantes/actualizadoEn (no puede inyectar
-         campos nuevos ni reemplazar el doc entero). No hay forma 100% de
-         garantizar por reglas que el número solo baje (requeriría Cloud
-         Functions, fuera de alcance en plan Spark) — se acepta el mismo
-         nivel de riesgo que ya se documentó para /pedidos: shape validation,
-         no protección económica perfecta. El movimiento negativo real queda
-         auditado en la subcolección de abajo, que sí está más restringida. */
-      allow update: if
-        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['variantes', 'actualizadoEn'])
-        && request.resource.data.variantes is map;
-
-      /* CREATE y DELETE del doc de stock — solo admin (alta de producto nuevo) */
-      allow create, delete: if request.auth != null;
-
-      /* Historial de movimientos (entradas/salidas por día) */
-      match /movimientos/{movId} {
-
-        /* READ solo admin — es data operativa interna, no hace falta
-           exponerla públicamente */
-        allow read: if request.auth != null;
-
-        /* CREATE: el admin puede crear cualquier movimiento (ingresos,
-           ajustes, import CSV — positivos o negativos). Un cliente anónimo
-           SOLO puede crear movimientos negativos (ventas) — nunca puede
-           inflar stock propio ni ajeno. */
-        allow create: if
-          request.resource.data.keys().hasAll(['talle', 'color', 'delta', 'motivo', 'fecha'])
-          && request.resource.data.talle is string
-          && request.resource.data.color is string
-          && request.resource.data.delta is number
-          && (
-            request.auth != null
-            || request.resource.data.delta < 0
-          );
-
-        /* UPDATE y DELETE — nunca, ni admin. El historial es append-only. */
-        allow update, delete: if false;
-      }
-    }
-  }
-}
+```bash
+cd tests
+node rules/generar-stock-rules.mjs --check   # el bloque generado está al día
+npm run test:rules                           # reglas contra el emulador (nunca contra el proyecto real)
 ```
 
-## 3. Sobre el modelo de seguridad de reads
+## Modelo (resumen)
 
-Los `read: if true` son intencionales:
-- **Pedidos**: el cliente necesita consultar por código sin autenticarse. Como el código de 5 caracteres es opaco y no listable (Firestore no permite listar sin auth con `list`), un atacante tendría que hacer fuerza bruta contra ~33 millones de combinaciones para descubrir códigos existentes. En la práctica se limita por rate limiting de Firestore.
-- **Solicitudes**: mismo modelo con códigos MAY-XXXX.
+- **Staff** = Firebase Auth con email/contraseña de la allowlist de
+  `isStaff()`. El login anónimo no da ningún privilegio.
+- `pedidos/{codigo}` y `solicitudes_mayoristas/{codigo}`: el ID del doc es el
+  código. `get` público (seguimiento), `list`/`update`/`delete` solo staff.
+- `mayoristas_activos/{sha256(codigo)}`: `get` público, todo lo demás staff.
+  No existe código mayorista maestro.
+- `stock/{id}`: lectura pública; el checkout público solo puede BAJAR las
+  variantes que declara en `descuento`, en la misma transacción que crea el
+  pedido, con un tope de 12 variantes por producto por pedido (límite de
+  expresiones de Firestore, ver `tests/rules/generar-stock-rules.mjs`). Es
+  temporal: cuando exista el Worker de pagos, el descuento de stock pasa al
+  Worker y se levanta el tope.
+- `stock/{id}/movimientos`: lectura solo staff; ventas públicas con formato
+  estricto (`Venta #CODIGO`); historial append-only.
 
-Si querés endurecer más:
-- Cambiar `allow read: if true` a `allow read: if request.auth != null` y hacer que las páginas de seguimiento pidan una segunda verificación (ej: apellido + últimos 4 del código).
+## Configuración de Authentication (consola de Firebase)
 
-## 4. Verificación
-
-- Desde una ventana incógnita hacé un pedido de prueba en `tienda.html`.
-- Debería aparecer en la cola de `pedidos.html`.
-- El código en la confirmación debería funcionar en `seguimiento.html?code=XXXXX`.
-- Lo mismo con solicitud mayorista → `seguimiento-mayorista.html?code=MAY-XXXX`.
-- Si no aparece, abrí devtools → Console y buscá errores de Firebase.
-
-## 5. Cuotas free tier (Firestore Spark)
-
-- 50.000 lecturas/día
-- 20.000 escrituras/día
-- 1 GB almacenamiento
-
-Estimación Cattorini (pico razonable):
-- 100 pedidos/día = 100 writes
-- 30 consultas de seguimiento/día = 30 reads
-- Portal abierto 10 veces/día × 200 pedidos snapshot = 2000 reads
-- 20 solicitudes mayoristas/día = 20 writes + 40 reads
-- **Total estimado: ~120 writes + ~2100 reads por día** — muy por debajo del límite.
-
-## 6. Notas de seguridad
-
-- El shape validation en `create` bloquea spam malformed.
-- La colección `pedidos` no permite update ni delete públicos → los usuarios no pueden alterar sus propios pedidos después de enviarlos.
-- El `estado` inicial siempre es `pendiente` — no se puede crear un pedido ya "aceptado" pasando por atrás.
-- Las contraseñas del portal están en el cliente (PBKDF2 + AES-GCM), NO en Firebase. Firebase auth anónimo solo se usa como marcador de "portal activo".
+1. Authentication → Método de acceso → habilitar **Correo electrónico/contraseña**.
+2. Users → Agregar usuario → el email del dueño (el de `isStaff()`), con una
+   contraseña PROPIA del panel (distinta a la de su cuenta de Google).
+3. Deshabilitar el proveedor **Anónimo**.
+4. Authentication → Configuración → Acciones del usuario → desmarcar
+   "Habilitar creación (registro)" para que nadie pueda crearse una cuenta.

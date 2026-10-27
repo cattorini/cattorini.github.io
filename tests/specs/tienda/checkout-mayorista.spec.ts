@@ -1,7 +1,11 @@
 import { test, expect } from '@playwright/test';
 import { setupPage, getCollection } from '../../helpers/setup';
 import { TiendaPage } from '../../pages/tienda.page';
-import { mayoristaSample, CODIGO_MASTER_HASH } from '../../fixtures/test-data';
+import { mayoristaSample, CODIGO_MAYO_INDIVIDUAL_HASH } from '../../fixtures/test-data';
+
+/* Ya no existe código maestro: el perfil mayorista se revalida contra
+   mayoristas_activos/{sha256(código individual)} en cada visita. */
+const activos = (data: any) => ({ collections: { mayoristas_activos: { [CODIGO_MAYO_INDIVIDUAL_HASH]: data } } });
 
 const cartMayo = [
   { id: 1, nombre: 'Camisa Oxford Blanca', categoria: 'Camisas', talle: 'M', qty: 5, precio: 14500 }
@@ -12,8 +16,8 @@ test.describe('Checkout mayorista con datos @tienda @checkout @mayorista', () =>
   test('panel resumen del mayorista aparece cuando tiene datos @mayorista', async ({ page }) => {
     await setupPage(page, {
       perfil: 'mayorista',
-      codigoHashValido: CODIGO_MASTER_HASH,
-      mayoristaData: mayoristaSample,
+      codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH,
+      mayoristaData: mayoristaSample, firebase: activos(mayoristaSample),
       cart: cartMayo
     });
     const tienda = new TiendaPage(page);
@@ -27,7 +31,7 @@ test.describe('Checkout mayorista con datos @tienda @checkout @mayorista', () =>
 
   test('envío con dirección pre-llenada y deshabilitada + botón Editar @mayorista', async ({ page }) => {
     await setupPage(page, {
-      perfil: 'mayorista', codigoHashValido: CODIGO_MASTER_HASH, mayoristaData: mayoristaSample, cart: cartMayo
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaData: mayoristaSample, firebase: activos(mayoristaSample), cart: cartMayo
     });
     const tienda = new TiendaPage(page);
     await tienda.goto();
@@ -41,7 +45,7 @@ test.describe('Checkout mayorista con datos @tienda @checkout @mayorista', () =>
 
   test('click en Editar desbloquea los campos de dirección @mayorista', async ({ page }) => {
     await setupPage(page, {
-      perfil: 'mayorista', codigoHashValido: CODIGO_MASTER_HASH, mayoristaData: mayoristaSample, cart: cartMayo
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaData: mayoristaSample, firebase: activos(mayoristaSample), cart: cartMayo
     });
     const tienda = new TiendaPage(page);
     await tienda.goto();
@@ -55,7 +59,7 @@ test.describe('Checkout mayorista con datos @tienda @checkout @mayorista', () =>
   test('mayorista sin dirección — campos aparecen editables y vacíos @mayorista', async ({ page }) => {
     const mayoSinDir = { ...mayoristaSample, direccion: '', codigoPostal: '' };
     await setupPage(page, {
-      perfil: 'mayorista', codigoHashValido: CODIGO_MASTER_HASH, mayoristaData: mayoSinDir, cart: cartMayo
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaData: mayoSinDir, firebase: activos(mayoSinDir), cart: cartMayo
     });
     const tienda = new TiendaPage(page);
     await tienda.goto();
@@ -67,7 +71,7 @@ test.describe('Checkout mayorista con datos @tienda @checkout @mayorista', () =>
 
   test('flujo completo envío usa datos del mayorista @mayorista @critical', async ({ page }) => {
     await setupPage(page, {
-      perfil: 'mayorista', codigoHashValido: CODIGO_MASTER_HASH, mayoristaData: mayoristaSample, cart: cartMayo
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaData: mayoristaSample, firebase: activos(mayoristaSample), cart: cartMayo
     });
     const tienda = new TiendaPage(page);
     await tienda.goto();

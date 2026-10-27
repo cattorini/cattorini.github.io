@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { setupPage } from '../../helpers/setup';
 import { TiendaPage } from '../../pages/tienda.page';
-import { CODIGO_MASTER } from '../../fixtures/test-data';
+import { CODIGO_MAYO_INDIVIDUAL, CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaSample } from '../../fixtures/test-data';
 
 test.describe('Tienda — identificación @tienda @ident', () => {
 
@@ -14,12 +14,12 @@ test.describe('Tienda — identificación @tienda @ident', () => {
     await expect(tienda.btnSoyMinorista).toBeVisible();
   });
 
-  test('mayorista con código master válido accede al catálogo @mayorista', async ({ page }) => {
-    await setupPage(page);
+  test('mayorista con código individual válido accede al catálogo @mayorista', async ({ page }) => {
+    await setupPage(page, { firebase: { collections: { mayoristas_activos: { [CODIGO_MAYO_INDIVIDUAL_HASH]: mayoristaSample } } } });
     const tienda = new TiendaPage(page);
     await tienda.goto();
     await tienda.elegirMayorista();
-    await tienda.ingresarCodigoMayorista(CODIGO_MASTER);
+    await tienda.ingresarCodigoMayorista(CODIGO_MAYO_INDIVIDUAL);
     await expect(tienda.modalWelcome).toBeHidden();
     await expect(tienda.catalog).toBeVisible();
     await expect(tienda.perfilBadge).toContainText(/mayorista/i);

@@ -106,10 +106,11 @@ test.describe('Landing — solicitud mayorista @landing @mayorista', () => {
     });
     await landing.enviarFormMayorista();
     const code = await landing.esperarConfirmacionMayorista();
-    expect(code).toMatch(/^MAY-[A-Z0-9]{4}$/);
+    expect(code).toMatch(/^MAY-[A-HJKMNP-Z2-9]{10}$/);
 
-    // Verificar que se guardó en Firestore (mock)
+    // Verificar que se guardó en Firestore (mock) con doc ID = código
     const solicitudes = await getCollection(page, 'solicitudes_mayoristas');
+    expect(Object.keys(solicitudes)).toEqual([code]);
     const docs = Object.values(solicitudes);
     expect(docs.length).toBeGreaterThan(0);
     expect((docs[0] as any).estado).toBe('pendiente');

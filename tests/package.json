@@ -27,6 +27,7 @@
     "test:seguridad": "playwright test --grep @seguridad",
     "test:legal": "playwright test --grep @legal",
     "test:unit": "node --test --test-reporter=spec unit/sw.test.mjs",
+    "test:checkout-emulador": "node emulador/run.mjs",
     "test:datos": "node --test --test-reporter=spec unit/catalogo-real.test.mjs"
   },
   "devDependencies": {

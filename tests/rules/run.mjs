@@ -5,9 +5,8 @@
  * trata como proyecto offline sin credenciales).
  *
  * Uso:
- *   node rules/run.mjs                       → reglas ACTUALES, extraídas del
- *                                              bloque ```javascript de ../FIRESTORE-RULES.md
- *   node rules/run.mjs ../firestore.rules    → un archivo de reglas nuevo
+ *   node rules/run.mjs                       → ../firestore.rules (las del repo)
+ *   node rules/run.mjs ../firestore.rules    → idem, explícito
  *   node rules/run.mjs rules/reference/firestore.rules.objetivo
  *                                            → la referencia del modelo objetivo
  *
@@ -37,14 +36,18 @@ if (arg) {
   rules = readFileSync(p, 'utf8');
   source = relative(repoRoot, p);
 } else {
-  const md = readFileSync(resolve(repoRoot, 'FIRESTORE-RULES.md'), 'utf8');
-  const m = md.match(/```(?:javascript|js)?\s*\n(rules_version[\s\S]*?)```/);
-  if (!m) {
-    console.error('No encontré el bloque de reglas (```javascript rules_version ...) en FIRESTORE-RULES.md');
-    process.exit(2);
-  }
-  rules = m[1];
-  source = 'FIRESTORE-RULES.md (bloque extraído)';
+  /* Default: las reglas del repo (antes se extraían de FIRESTORE-RULES.md) */
+  rules = readFileSync(resolve(repoRoot, 'firestore.rules'), 'utf8');
+  source = 'firestore.rules';
+}
+
+/* firestore.rules del repo lleva el email REAL del staff en isStaff(); los
+   tests usan el usuario de prueba (fixtures/test-data.ts → STAFF_EMAIL). */
+const EMAIL_REAL_STAFF = 'cattorinilasflores@gmail.com';
+const EMAIL_TEST_STAFF = 'staff@cattorini.test';
+if (rules.includes(EMAIL_REAL_STAFF)) {
+  rules = rules.split(EMAIL_REAL_STAFF).join(EMAIL_TEST_STAFF);
+  console.log(`(email real del staff reemplazado por ${EMAIL_TEST_STAFF} solo para el emulador)`);
 }
 
 const rulesPath = resolve(genDir, 'firestore.rules');
@@ -69,7 +72,7 @@ const env = {
   PATH: `/opt/homebrew/opt/openjdk/bin:${process.env.PATH}`
 };
 
-const testCmd = `node --test --test-reporter=spec "${resolve(here, 'firestore.rules.test.mjs')}"`;
+const testCmd = `node --test --test-concurrency=1 --test-reporter=spec "${resolve(here, 'firestore.rules.test.mjs')}" "${resolve(here, 'limites.test.mjs')}"`;
 const r = spawnSync(
   'firebase',
   ['emulators:exec', '--project', 'demo-cattorini', '--only', 'firestore',

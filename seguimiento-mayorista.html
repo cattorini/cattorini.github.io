@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Estado de solicitud mayorista — Cattorini</title>
   <meta name="robots" content="noindex, nofollow" />
@@ -15,9 +15,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" integrity="sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC" crossorigin="anonymous"></script>
+  <script src="./tienda-core.js"></script>
 
   <style>
     * { box-sizing: border-box; }
@@ -101,6 +102,14 @@
     .mp-item:hover { border-color: #0A0A0A; }
     .mp-code { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; letter-spacing: 0.08em; }
     .mp-date { color: #666; font-size: 0.78rem; }
+    .vh { position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .legal-footer { border-top: 1px solid #E5E5E5; margin-top: 24px; }
+    .lf-inner { max-width: 720px; margin: 0 auto; padding: 24px; font-size: 0.78rem; color: #666; line-height: 1.6; }
+    .lf-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 10px; }
+    .lf-links a { color: #0A0A0A; text-decoration: underline; }
+    .lf-arrep { font-weight: 500; }
+    .lf-id { margin: 0; overflow-wrap: anywhere; }
+    .code-display { overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
@@ -122,11 +131,12 @@
     <p style="color:#666;font-size:0.88rem;margin-bottom:16px;">El código que recibiste cuando enviaste tu solicitud (empieza con MAY-).</p>
     <form onsubmit="event.preventDefault();buscar()">
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <input type="text" id="in-code" class="inp" placeholder="MAY-XXXX" maxlength="12" style="flex:1;min-width:200px;" />
+        <label for="in-code" class="vh">Código de solicitud</label>
+        <input type="text" id="in-code" class="inp" placeholder="MAY-K7M2Q9X4PZ" maxlength="28" autocapitalize="characters" autocomplete="off" spellcheck="false" style="flex:1;min-width:200px;" />
         <button type="submit" class="btn">Consultar</button>
       </div>
     </form>
-    <div id="search-err" style="display:none;color:#900;font-size:0.85rem;margin-top:10px;"></div>
+    <div id="search-err" role="alert" style="display:none;color:#900;font-size:0.85rem;margin-top:10px;"></div>
   </div>
 
   <!-- Mis solicitudes desde este dispositivo -->
@@ -147,13 +157,10 @@
         <div class="aceptada-box">
           <div style="font-size:2rem;">🎉</div>
           <h2 style="margin:12px 0 8px;">¡Tu solicitud fue aprobada!</h2>
-          <div id="codigo-mayorista-wrap" style="display:none;">
-            <p style="color:#666;font-size:0.9rem;margin-bottom:8px;">Este es tu código de acceso mayorista. Guardálo bien.</p>
-            <div class="codigo-mayorista" id="codigo-mayorista">···</div>
-            <p style="color:#666;font-size:0.82rem;">Usalo en la tienda al elegir "Soy mayorista".</p>
-          </div>
-          <div id="codigo-mayorista-msg" style="display:none;">
-            <p style="color:#333;font-size:0.95rem;margin-top:12px;line-height:1.6;" id="codigo-mayorista-msg-text">···</p>
+          <!-- El código de acceso mayorista NUNCA se muestra acá: el staff lo
+               manda una sola vez por WhatsApp. Esta página solo muestra el estado. -->
+          <div id="codigo-mayorista-msg">
+            <p style="color:#333;font-size:0.95rem;margin-top:12px;line-height:1.6;" id="codigo-mayorista-msg-text">Te enviamos tu código de acceso por WhatsApp. Si no lo recibiste, escribinos y te lo reenviamos.</p>
           </div>
         </div>
         <a id="wa-aceptada" target="_blank" rel="noopener noreferrer" class="btn" style="width:100%;text-align:center;margin-bottom:8px;">Escribir por WhatsApp</a>
@@ -187,11 +194,23 @@
   <div id="not-found-card" style="display:none;">
     <div class="card" style="text-align:center;">
       <h2>No encontramos esa solicitud</h2>
-      <p style="color:#666;">Revisá que el código sea correcto. Deben ser 8 caracteres (ej: MAY-A3F7).</p>
+      <p style="color:#666;">Revisá que el código sea correcto: empieza con MAY- y sigue con 10 caracteres (ej: MAY-K7M2Q9X4PZ).</p>
       <button class="btn" style="margin-top:16px;" onclick="volverBusqueda()">Volver a intentar</button>
     </div>
   </div>
 </main>
+
+<footer class="legal-footer">
+  <div class="lf-inner">
+    <nav class="lf-links" aria-label="Información legal">
+      <a href="./arrepentimiento.html" class="lf-arrep">Botón de arrepentimiento</a>
+      <a href="./terminos.html">Términos y condiciones</a>
+      <a href="./privacidad.html">Política de privacidad</a>
+      <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
+    </nav>
+    <p class="lf-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+  </div>
+</footer>
 
 <script>
 'use strict';
@@ -214,6 +233,14 @@ try {
 
 let DATA = null;
 let unsub = null;
+const { waLink, normalizarCodigo } = window.CattCore;
+
+/* "may-k7m2 q9x4pz", "MAYK7M2Q9X4PZ", "#MAY-..." → "MAY-K7M2Q9X4PZ" */
+function normalizarSolicitud(s) {
+  const n = normalizarCodigo(s);
+  if (/^MAY-?[A-Z0-9]+$/.test(n)) return 'MAY-' + n.replace(/^MAY-?/, '');
+  return n;
+}
 const LS_MIS_SOLICITUDES = 'catt_mis_solicitudes';
 
 function renderMisSolicitudes() {
@@ -250,15 +277,14 @@ async function loadData() {
 }
 
 async function buscar() {
-  const raw = document.getElementById('in-code').value.trim().toUpperCase();
+  const norm = normalizarSolicitud(document.getElementById('in-code').value);
   const err = document.getElementById('search-err');
   err.style.display = 'none';
-  if (!/^MAY-?[A-Z0-9]{4,6}$/.test(raw)) {
-    err.textContent = 'El código no tiene el formato correcto. Debe ser MAY-XXXX.';
+  if (!/^MAY-[A-Z0-9]{4,20}$/.test(norm)) {
+    err.textContent = 'El código no tiene el formato correcto. Empieza con MAY- (ej: MAY-K7M2Q9X4PZ).';
     err.style.display = 'block';
     return;
   }
-  const norm = raw.startsWith('MAY-') ? raw : 'MAY-' + raw.slice(3);
   window.location.href = `?code=${encodeURIComponent(norm)}`;
 }
 
@@ -284,29 +310,18 @@ function renderSolicitud(d) {
 
   if (d.estado === 'aceptada') {
     document.getElementById('aceptada-content').style.display = 'block';
-    const codigo = (d.respuesta && d.respuesta.codigoMayorista) || '';
-    /* Heurística: si el valor tiene espacios o es largo, es un mensaje descriptivo.
-       Si parece un código real (corto, sin espacios), lo mostramos como código destacado. */
-    const esCodigo = codigo && !codigo.includes(' ') && codigo.length <= 30;
-    if (esCodigo) {
-      document.getElementById('codigo-mayorista-wrap').style.display = 'block';
-      document.getElementById('codigo-mayorista-msg').style.display = 'none';
-      document.getElementById('codigo-mayorista').textContent = codigo;
-    } else {
-      document.getElementById('codigo-mayorista-wrap').style.display = 'none';
-      document.getElementById('codigo-mayorista-msg').style.display = 'block';
-      document.getElementById('codigo-mayorista-msg-text').textContent = codigo || 'Te vamos a contactar por WhatsApp con tu código de acceso.';
-    }
+    /* El código de acceso no se muestra nunca en esta página (aunque el
+       documento lo trajera): lo entrega el staff por WhatsApp. */
     if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
-      const msg = encodeURIComponent(`Hola! Mi solicitud mayorista ${d.codigo} fue aprobada. Quería recibir el código de acceso.`);
-      document.getElementById('wa-aceptada').href = `https://wa.me/${DATA.negocio.whatsapp}?text=${msg}`;
+      document.getElementById('wa-aceptada').href = waLink(DATA.negocio.whatsapp,
+        `Hola! Mi solicitud mayorista ${d.codigo} fue aprobada. No recibí el código de acceso.`) || '#';
     }
   } else if (d.estado === 'rechazada') {
     document.getElementById('rechazada-content').style.display = 'block';
     document.getElementById('rechazo-motivo').textContent = (d.respuesta && d.respuesta.motivo) || 'No se especificó motivo.';
     if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
-      const msg = encodeURIComponent(`Hola! Mi solicitud mayorista ${d.codigo} fue rechazada. Quería consultar.`);
-      document.getElementById('wa-consulta').href = `https://wa.me/${DATA.negocio.whatsapp}?text=${msg}`;
+      document.getElementById('wa-consulta').href = waLink(DATA.negocio.whatsapp,
+        `Hola! Mi solicitud mayorista ${d.codigo} fue rechazada. Quería consultar.`) || '#';
     }
   } else {
     document.getElementById('pendiente-content').style.display = 'block';
@@ -341,19 +356,25 @@ async function cargar(code) {
     document.getElementById('search-err').style.display = 'block';
     return;
   }
+  /* El doc ID ES el código: get de UN documento, nunca list. */
+  if (!/^MAY-[A-Z0-9]{4,20}$/.test(code)) {
+    document.getElementById('search-card').style.display = 'none';
+    document.getElementById('not-found-card').style.display = 'block';
+    return;
+  }
   try {
-    const snap = await db.collection('solicitudes_mayoristas').where('codigo', '==', code).limit(1).get();
-    if (snap.empty) {
+    const ref = db.collection('solicitudes_mayoristas').doc(code);
+    const doc = await ref.get();
+    if (!doc.exists) {
       document.getElementById('search-card').style.display = 'none';
       document.getElementById('not-found-card').style.display = 'block';
       return;
     }
-    const doc = snap.docs[0];
     renderSolicitud(doc.data());
     /* Live updates */
-    unsub = db.collection('solicitudes_mayoristas').doc(doc.id).onSnapshot(s => {
+    unsub = ref.onSnapshot(s => {
       if (s.exists) renderSolicitud(s.data());
-    });
+    }, () => {});
   } catch (e) {
     document.getElementById('search-err').textContent = 'Error al consultar. Reintentá.';
     document.getElementById('search-err').style.display = 'block';
@@ -367,7 +388,7 @@ async function init() {
   const code = params.get('code');
   if (code) {
     document.getElementById('in-code').value = code;
-    await cargar(code.toUpperCase());
+    await cargar(normalizarSolicitud(code));
   }
 }
 

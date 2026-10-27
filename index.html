@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com; frame-src https://www.google.com https://maps.google.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Cattorini — Camisas, pantalones y jeans en Las Flores</title>
   <meta name="description" content="Cattorini · Camisas, pantalones y jeans desde 1959 en Las Flores, Buenos Aires. Venta mayorista a todo el país y minorista en local propio. Envíos por Vía Cargo." />
@@ -38,11 +38,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js" integrity="sha512-B1lby8cGcAUU3GR+Fd809/ZxgHbfwJMp0jLTVfHiArTuUt++VqSlJpaJvhNtRf3NERaxDNmmxkdx2o+aHd4bvw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js" integrity="sha512-AY2+JxnBETJ0wcXnLPCcZJIJx0eA3PaeFAAQiC/YBBMY6MdgOqafygJgX7iX9MHNeH3f6CFwc7aRHmH8XiqTVg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" integrity="sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC" crossorigin="anonymous"></script>
+  <script src="./tienda-core.js"></script>
   <script src="./ubicaciones.js" defer></script>
 
   <style>
@@ -324,6 +325,13 @@
     }
     .logo-nav { height: 26px; }
     .logo-footer { height: 34px; filter: invert(1) brightness(1.2); opacity: 0.95; }
+    /* Pie legal (Ley 24.240 / Res. 424/2020 / Res. 270/2020) */
+    .legal-links { display: flex; flex-wrap: wrap; gap: 10px 22px; justify-content: center; font-size: 0.82rem; margin-bottom: 14px; }
+    .legal-links a { text-decoration: underline; color: rgba(255,255,255,0.85); }
+    .legal-links .arrep-btn { text-decoration: none; border: 1px solid rgba(255,255,255,0.6); padding: 6px 14px; color: #FFF; font-weight: 500; letter-spacing: 0.04em; }
+    .legal-id { font-size: 0.75rem; color: rgba(255,255,255,0.5); text-align: center; line-height: 1.6; margin-bottom: 16px; overflow-wrap: anywhere; }
+    .may-privacidad { font-size: 0.75rem; color: #666; line-height: 1.5; margin: 4px 0 12px; }
+    .may-privacidad a { color: #0A0A0A; text-decoration: underline; }
     .logo-invert { filter: invert(1); }
 
     /* Page transitions — CSS-driven fade-in (no depende de JS) */
@@ -698,7 +706,16 @@
         </div>
       </div>
     </div>
-    <div class="pt-8 border-t border-gray-800 text-xs text-center" style="color: rgba(255,255,255,0.3);">
+    <div class="pt-8 border-t border-gray-800">
+      <nav class="legal-links" aria-label="Información legal">
+        <a href="./arrepentimiento.html" class="arrep-btn">Botón de arrepentimiento</a>
+        <a href="./terminos.html">Términos y condiciones</a>
+        <a href="./privacidad.html">Política de privacidad</a>
+        <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
+      </nav>
+      <p class="legal-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+    </div>
+    <div class="text-xs text-center" style="color: rgba(255,255,255,0.3);">
       © <span id="year"></span> Cattorini · Sitio por <a href="https://github.com/juliancarroccio" target="_blank" rel="noopener noreferrer">PushCommerce</a>
     </div>
   </div>
@@ -708,34 +725,34 @@
 
 <!-- Modal solicitud mayorista -->
 <div class="may-back" id="may-modal" onclick="closeMayForm(event)">
-  <div class="may-content" onclick="event.stopPropagation()">
+  <div class="may-content" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="may-title">
     <button class="may-close" onclick="closeMayForm()" aria-label="Cerrar">×</button>
 
     <div id="may-form-step">
       <div class="eyebrow" style="margin-bottom:8px;">Cuenta mayorista</div>
-      <h2 class="serif" style="font-size:1.6rem;margin-bottom:8px;letter-spacing:-0.02em;">Solicitud de acceso</h2>
+      <h2 class="serif" id="may-title" style="font-size:1.6rem;margin-bottom:8px;letter-spacing:-0.02em;">Solicitud de acceso</h2>
       <p style="color:#666;font-size:0.88rem;margin-bottom:20px;line-height:1.5;">
         Contanos de tu comercio y vamos a evaluar tu solicitud. Te vamos a dar un código de seguimiento para consultar el estado.
       </p>
 
       <div class="may-row">
         <div>
-          <label class="may-lbl">Nombre y apellido</label>
+          <label class="may-lbl" for="may-nombre">Nombre y apellido</label>
           <input class="may-inp" id="may-nombre" maxlength="80" />
         </div>
         <div>
-          <label class="may-lbl">Razón social o negocio</label>
+          <label class="may-lbl" for="may-negocio">Razón social o negocio</label>
           <input class="may-inp" id="may-negocio" maxlength="100" />
         </div>
       </div>
 
       <div class="may-row">
         <div>
-          <label class="may-lbl">CUIT / CUIL</label>
+          <label class="may-lbl" for="may-cuit">CUIT / CUIL</label>
           <input class="may-inp" id="may-cuit" maxlength="15" placeholder="20-12345678-9" />
         </div>
         <div>
-          <label class="may-lbl">Tipo de comercio</label>
+          <label class="may-lbl" for="may-tipo">Tipo de comercio</label>
           <select class="may-sel" id="may-tipo">
             <option value="">Elegí una opción</option>
             <option>Mercería / Cotillón</option>
@@ -750,25 +767,25 @@
 
       <div class="may-row">
         <div>
-          <label class="may-lbl">Teléfono</label>
+          <label class="may-lbl" for="may-tel">Teléfono</label>
           <input class="may-inp" id="may-tel" maxlength="30" />
         </div>
         <div>
-          <label class="may-lbl">WhatsApp</label>
+          <label class="may-lbl" for="may-wa">WhatsApp</label>
           <input class="may-inp" id="may-wa" maxlength="30" placeholder="Con código país" />
         </div>
       </div>
 
-      <label class="may-lbl">Email</label>
+      <label class="may-lbl" for="may-email">Email</label>
       <input class="may-inp" id="may-email" type="email" maxlength="80" />
 
       <div class="may-row">
         <div>
-          <label class="may-lbl">Provincia</label>
+          <label class="may-lbl" for="may-provincia">Provincia</label>
           <select class="may-sel" id="may-provincia"></select>
         </div>
         <div>
-          <label class="may-lbl">Localidad</label>
+          <label class="may-lbl" for="may-localidad">Localidad</label>
           <div class="loc-wrap">
             <input class="may-inp" id="may-localidad" maxlength="60" disabled placeholder="Elegí primero la provincia" style="margin-bottom:0;" />
             <div id="loc-list-may" class="loc-list"></div>
@@ -778,30 +795,32 @@
 
       <div class="may-row">
         <div style="grid-column: 1 / -1;">
-          <label class="may-lbl">Dirección (calle, número, piso)</label>
+          <label class="may-lbl" for="may-direccion">Dirección (calle, número, piso)</label>
           <input class="may-inp" id="may-direccion" maxlength="120" placeholder="Para envíos por Vía Cargo" />
         </div>
       </div>
       <div class="may-row">
         <div>
-          <label class="may-lbl">Código postal</label>
+          <label class="may-lbl" for="may-cp">Código postal</label>
           <input class="may-inp" id="may-cp" maxlength="10" />
         </div>
         <div></div>
       </div>
 
-      <label class="may-lbl">Notas (opcional)</label>
+      <label class="may-lbl" for="may-notas">Notas (opcional)</label>
       <textarea class="may-txt" id="may-notas" rows="3" maxlength="500" placeholder="Volumen estimado de compra, referencias, etc."></textarea>
 
-      <label class="may-lbl">Foto del negocio (opcional)</label>
+      <label class="may-lbl" for="may-foto">Foto del negocio (opcional)</label>
       <p style="color:#999;font-size:0.78rem;margin:-6px 0 8px;">Un frente, vidriera o local — nos ayuda a tener una idea de dónde se va a vender el producto.</p>
       <input class="may-inp" id="may-foto" type="file" accept="image/*" style="padding:8px;" onchange="previewMayFoto(this)" />
-      <img id="may-foto-preview" style="display:none;max-width:160px;margin:8px 0;border:1px solid #E5E5E5;" />
+      <img id="may-foto-preview" alt="Vista previa de la foto del negocio" style="display:none;max-width:160px;margin:8px 0;border:1px solid #E5E5E5;" />
 
       <!-- Honeypot -->
       <input type="text" id="may-hp" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0;" aria-hidden="true" />
 
-      <div class="may-err" id="may-err"></div>
+      <p class="may-privacidad">Usamos estos datos personales solo para evaluar tu solicitud, contactarte y gestionar tus pedidos mayoristas (Ley 25.326 de Protección de Datos Personales). Podés pedir acceso, corrección o eliminación cuando quieras. Ver la <a href="./privacidad.html" target="_blank" rel="noopener">Política de privacidad</a>.</p>
+
+      <div class="may-err" id="may-err" role="alert"></div>
 
       <button class="may-btn" onclick="submitMayForm()" id="may-submit-btn">Enviar solicitud</button>
       <button class="may-btn-ghost" onclick="closeMayForm()">Cancelar</button>
@@ -811,7 +830,7 @@
       <div style="width:60px;height:60px;border-radius:50%;background:#0A0A0A;color:#FFF;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:16px;">✓</div>
       <h2 class="serif" style="font-size:1.6rem;margin-bottom:8px;letter-spacing:-0.02em;">Solicitud enviada</h2>
       <p style="color:#666;font-size:0.88rem;margin-bottom:8px;">Guardá este código para consultar el estado de tu solicitud:</p>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:2rem;letter-spacing:0.15em;background:#F5F5F5;padding:14px 20px;margin:16px 0;" id="may-confirm-code">···</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:clamp(1.3rem,6vw,1.9rem);letter-spacing:0.08em;background:#F5F5F5;padding:14px 20px;margin:16px 0;overflow-wrap:anywhere;" id="may-confirm-code">···</div>
       <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;">
         Vamos a revisar tu solicitud. Te avisamos por WhatsApp o email cuando esté procesada. Podés consultar el estado cuando quieras.
       </p>
@@ -830,11 +849,8 @@
 
 const DIAS = ['lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
 
-/* Escape helpers — XSS-safe rendering */
-function esc(str) {
-  if (str === null || str === undefined) return '';
-  return String(str).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
+/* Helpers XSS-safe compartidos (tienda-core.js) */
+const { esc, cssUrl, imgSrc, waLink } = window.CattCore;
 
 /* Data load with SW fallback */
 async function loadData() {
@@ -918,13 +934,13 @@ function buildCategorias(data) {
 
     const img = document.createElement('div');
     img.className = 'cat-card-img placeholder';
-    if (cat.imagen) {
+    if (cat.imagen && imgSrc(cat.imagen)) {
       const testImg = new Image();
       testImg.onload = () => {
         img.classList.remove('placeholder');
-        img.style.backgroundImage = `url('./img/${cat.imagen}')`;
+        img.style.backgroundImage = cssUrl(cat.imagen);
       };
-      testImg.src = `./img/${cat.imagen}`;
+      testImg.src = imgSrc(cat.imagen);
     }
 
     const overlay = document.createElement('div');
@@ -968,18 +984,18 @@ function buildDestacados(data) {
   });
   destacados.slice(0, 8).forEach(p => {
     const link = document.createElement('a');
-    link.href = `./producto.html?id=${p.id}`;
+    link.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
     link.className = 'pcard block';
 
     const img = document.createElement('div');
     img.className = 'pcard-img placeholder';
-    if (p.imagenes && p.imagenes.length) {
+    if (p.imagenes && p.imagenes.length && imgSrc(p.imagenes[0])) {
       const testImg = new Image();
       testImg.onload = () => {
         img.classList.remove('placeholder');
-        img.style.backgroundImage = `url('./img/${p.imagenes[0]}')`;
+        img.style.backgroundImage = cssUrl(p.imagenes[0]);
       };
-      testImg.src = `./img/${p.imagenes[0]}`;
+      testImg.src = imgSrc(p.imagenes[0]);
     }
 
     const info = document.createElement('div');
@@ -1044,14 +1060,14 @@ function applyTextos(data) {
 
 /* WhatsApp links (solo consultas generales, no mayoristas) */
 function applyWA(data) {
-  const wa = data.negocio.whatsapp;
-  const msgGeneral = encodeURIComponent('Hola Cattorini! Quería consultar...');
+  const href = waLink(data.negocio.whatsapp, 'Hola Cattorini! Quería consultar...');
+  if (!href) return;
 
   const linkGen = document.getElementById('wa-link');
-  if (linkGen) linkGen.href = `https://wa.me/${wa}?text=${msgGeneral}`;
+  if (linkGen) linkGen.href = href;
 
   const linkFloat = document.getElementById('wa-float');
-  if (linkFloat) linkFloat.href = `https://wa.me/${wa}?text=${msgGeneral}`;
+  if (linkFloat) linkFloat.href = href;
 }
 
 /* Carousel — cross-fade automático + dots opcionales */
@@ -1064,10 +1080,12 @@ function initCarousel(containerId, images, options = {}) {
 
   cont.innerHTML = '';
 
+  images = images.filter(src => imgSrc(src));
+  if (!images.length) return;
   images.forEach((src, i) => {
     const img = document.createElement('img');
     img.className = 'carousel-slide' + (i === 0 ? ' active' : '');
-    img.src = './img/' + src;
+    img.src = imgSrc(src);
     img.alt = alt + ' — foto ' + (i + 1);
     img.loading = i === 0 ? 'eager' : 'lazy';
     /* Detección de orientación para aplicar object-fit adecuado */
@@ -1136,8 +1154,9 @@ function applyMaps(data) {
   const iframe = document.getElementById('maps-iframe');
   if (!iframe) return;
   const query = encodeURIComponent(`${data.negocio.nombre} ${data.negocio.direccion}`);
-  const lat = data.negocio.latitud;
-  const lng = data.negocio.longitud;
+  const lat = Number(data.negocio.latitud);
+  const lng = Number(data.negocio.longitud);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return;
   /* URL que centra en las coordenadas y muestra un pin buscable por nombre */
   iframe.src = `https://www.google.com/maps?q=${query}&ll=${lat},${lng}&z=16&output=embed&hl=es`;
 }
@@ -1164,34 +1183,35 @@ const MAY_RATE_LIMIT_MS = 5000;
 let mayLastSubmit = 0;
 let ubicacionMay = null;
 
-function sanInp(s, max = 200) {
-  if (!s) return '';
-  return String(s).slice(0, max).replace(/[<>]/g, '').trim();
-}
+const sanInp = window.CattCore.sanitizeInput;
 
+/* Código de solicitud: MAY- + 10 caracteres con crypto.getRandomValues.
+   Es el ID del documento solicitudes_mayoristas/{codigo}. */
 function genMayCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 4; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return 'MAY-' + s;
+  return 'MAY-' + window.CattCore.genCodigo();
 }
+let mayCodigoEnCurso = null;
+let mayEnviando = false;
 
 async function openMayForm() {
-  document.getElementById('may-modal').classList.add('open');
+  const modal = document.getElementById('may-modal');
+  modal.classList.add('open');
   document.body.style.overflow = 'hidden';
+  window.CattCore.atraparFoco(modal.querySelector('.may-content'), () => closeMayForm());
+  window.CattCore.focoEnModal(modal, document.getElementById('may-nombre'));
   document.getElementById('may-form-step').style.display = 'block';
   document.getElementById('may-confirm-step').style.display = 'none';
   mayFotoBase64 = null;
   document.getElementById('may-foto-preview').style.display = 'none';
   const fotoInput = document.getElementById('may-foto');
   if (fotoInput) fotoInput.value = '';
-  if (!ubicacionMay && window.Ubicaciones) {
-    ubicacionMay = await window.Ubicaciones.init({
-      provinciaSelect: document.getElementById('may-provincia'),
-      localidadInput: document.getElementById('may-localidad'),
-      localidadList: document.getElementById('loc-list-may')
-    });
-  }
+  /* ubicaciones.js carga con `defer`: esperar a que esté (si no, el select
+     de provincias quedaba vacío). */
+  ubicacionMay = await window.CattCore.initUbicacionSeguro({
+    provinciaSelect: document.getElementById('may-provincia'),
+    localidadInput: document.getElementById('may-localidad'),
+    localidadList: document.getElementById('loc-list-may')
+  });
 }
 
 function closeMayForm(e) {
@@ -1204,8 +1224,11 @@ function closeMayForm(e) {
       return;
     }
   }
-  document.getElementById('may-modal').classList.remove('open');
+  const modal = document.getElementById('may-modal');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
   document.body.style.overflow = '';
+  window.CattCore.devolverFoco(modal);
 }
 
 function saveMySolicitudCode(code, docId) {
@@ -1259,6 +1282,12 @@ function hideMayErr() {
 }
 
 async function submitMayForm() {
+  if (mayEnviando) return;
+  mayEnviando = true;
+  try { await enviarSolicitudMayorista(); } finally { mayEnviando = false; }
+}
+
+async function enviarSolicitudMayorista() {
   hideMayErr();
 
   const now = Date.now();
@@ -1285,16 +1314,20 @@ async function submitMayForm() {
   if (!wa && !email) { showMayErr('Necesitamos WhatsApp o email para contactarte.'); return; }
   if (!provincia || !localidad) { showMayErr('Elegí provincia y localidad.'); return; }
   if (!direccion) { showMayErr('Ingresá la dirección para poder enviarte pedidos por Vía Cargo.'); return; }
-  if (window.Ubicaciones) {
-    const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
-    if (!valida) { showMayErr('Elegí una localidad de la lista sugerida.'); return; }
+  const valida = await window.CattCore.localidadValida(provincia, localidad);
+  if (!valida) { showMayErr('Elegí una localidad de la lista sugerida.'); return; }
+  /* firestore.rules: foto_negocio <= 700.000 caracteres */
+  if (mayFotoBase64 && mayFotoBase64.length > 700000) {
+    showMayErr('La foto es demasiado pesada. Probá con otra o enviá la solicitud sin foto.');
+    return;
   }
 
   const btn = document.getElementById('may-submit-btn');
   btn.disabled = true;
   btn.textContent = 'Enviando...';
 
-  const code = genMayCode();
+  if (!mayCodigoEnCurso) mayCodigoEnCurso = genMayCode();
+  const code = mayCodigoEnCurso;
   const payload = {
     codigo: code,
     creadoEn: (db && firebase.firestore.FieldValue.serverTimestamp()) || new Date().toISOString(),
@@ -1315,21 +1348,32 @@ async function submitMayForm() {
     showMayErr('El sistema de solicitudes no está disponible en este momento. Recargá la página o escribinos por WhatsApp.');
     return;
   }
+  /* El doc ID ES el código: solicitudes_mayoristas/{MAY-XXXXXXXXXX}. El
+     seguimiento lo lee con get() (el público no puede listar). Si se
+     reintenta tras un error de red, se usa el MISMO código: un segundo
+     intento sobre un doc ya creado lo rechazan las reglas y se trata como
+     enviado (no se duplica). */
+  const ref = db.collection('solicitudes_mayoristas').doc(code);
   try {
-    const ref = await db.collection('solicitudes_mayoristas').add(payload);
-    saveMySolicitudCode(code, ref.id);
+    await ref.set(payload);
   } catch (e) {
-    btn.disabled = false;
-    btn.textContent = 'Enviar solicitud';
-    showMayErr('Error al enviar: ' + e.message);
-    console.error('Firestore write error:', e);
-    return;
+    let yaEstaba = false;
+    try { yaEstaba = (await ref.get()).exists; } catch (_) {}
+    if (!yaEstaba) {
+      btn.disabled = false;
+      btn.textContent = 'Enviar solicitud';
+      showMayErr('No pudimos enviar la solicitud. Probá de nuevo en unos segundos (no se va a duplicar).');
+      console.error('Firestore write error:', e);
+      return;
+    }
   }
+  saveMySolicitudCode(code, code);
+  mayCodigoEnCurso = null;
 
   mayLastSubmit = now;
 
   document.getElementById('may-confirm-code').textContent = code;
-  document.getElementById('may-track-link').href = `./seguimiento-mayorista.html?code=${code}`;
+  document.getElementById('may-track-link').href = `./seguimiento-mayorista.html?code=${encodeURIComponent(code)}`;
   document.getElementById('may-form-step').style.display = 'none';
   document.getElementById('may-confirm-step').style.display = 'block';
 

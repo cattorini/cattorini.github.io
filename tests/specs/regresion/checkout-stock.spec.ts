@@ -12,7 +12,7 @@ import { test, expect, Page } from '@playwright/test';
 import { setupPage, getCollection, getFirebaseBackendRequests } from '../../helpers/setup';
 import { ProductoPage } from '../../pages/producto.page';
 import { TiendaPage } from '../../pages/tienda.page';
-import { CODIGO_MASTER_HASH, mayoristaSample } from '../../fixtures/test-data';
+import { CODIGO_MAYO_INDIVIDUAL, CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaSample } from '../../fixtures/test-data';
 
 const STOCK = {
   '1': { variantes: { M: { Blanco: { cantidad: 3, hex: '#ffffff' }, Azul: { cantidad: 0, hex: '#0000ff' } }, L: { Blanco: { cantidad: 10, hex: '#ffffff' } } } }
@@ -127,8 +127,10 @@ test.describe('Checkout con stock por talle/color @regresion @checkout', () => {
 
   test('mayorista: precio mayorista, datos del mayorista y descuento de stock @regresion @mayorista', async ({ page }) => {
     await setupPage(page, {
-      perfil: 'mayorista', codigoHashValido: CODIGO_MASTER_HASH, mayoristaData: mayoristaSample,
-      firebase: { collections: { stock: STOCK } },
+      /* contrato de seguridad: sin código maestro, el perfil se revalida
+         contra mayoristas_activos/{sha256(código individual)} */
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaData: mayoristaSample,
+      firebase: { collections: { stock: STOCK, mayoristas_activos: { [CODIGO_MAYO_INDIVIDUAL_HASH]: mayoristaSample } } },
       cart: [{ key: '1__L__Blanco', id: 1, nombre: 'Camisa Oxford Blanca', categoria: 'Camisas', talle: 'L', color: 'Blanco', qty: 4, precio: 14500 }]
     });
     const tienda = new TiendaPage(page);
@@ -147,13 +149,12 @@ test.describe('Checkout con stock por talle/color @regresion @checkout', () => {
     await expect.poll(async () => (await getCollection(page, 'stock'))['1'].variantes.L.Blanco.cantidad).toBe(6);
   });
 
-  test('mayorista: catálogo muestra precio mayorista con el código master del fixture @regresion @mayorista', async ({ page }) => {
-    await setupPage(page);
+  test('mayorista: catálogo muestra precio mayorista con un código individual activo @regresion @mayorista', async ({ page }) => {
+    await setupPage(page, { firebase: { collections: { mayoristas_activos: { [CODIGO_MAYO_INDIVIDUAL_HASH]: mayoristaSample } } } });
     const tienda = new TiendaPage(page);
     await tienda.goto();
     await tienda.elegirMayorista();
-    const { CODIGO_MASTER } = await import('../../fixtures/test-data');
-    await tienda.ingresarCodigoMayorista(CODIGO_MASTER);
+    await tienda.ingresarCodigoMayorista(CODIGO_MAYO_INDIVIDUAL);
     await expect(tienda.catalog).toBeVisible();
     await expect(tienda.productCard('Camisa Oxford Blanca')).toContainText('14.500');
   });

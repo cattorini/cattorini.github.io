@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { setupPage } from '../../helpers/setup';
 import { PedidosPage } from '../../pages/pedidos.page';
+import { entrarAPedidos } from '../../helpers/portal';
 import { pedidoConEstado } from '../../fixtures/test-data';
 
 test.describe('Pedidos — kanban @pedidos', () => {
 
   test('4 columnas visibles con conteos @pedidos', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: {
         collections: {
           pedidos: {
@@ -20,7 +20,7 @@ test.describe('Pedidos — kanban @pedidos', () => {
       }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await expect(p.appScreen).toBeVisible({ timeout: 5000 });
     await expect(p.cPend).toHaveText('1');
     await expect(p.cPrep).toHaveText('1');
@@ -30,11 +30,10 @@ test.describe('Pedidos — kanban @pedidos', () => {
 
   test('pedido nuevo aparece en columna Pendientes @pedidos', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: { collections: { pedidos: {} } }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await expect(p.appScreen).toBeVisible({ timeout: 5000 });
     await expect(p.cPend).toHaveText('0');
 
@@ -52,7 +51,6 @@ test.describe('Pedidos — kanban @pedidos', () => {
 
   test('filtros mayorista/minorista funcionan @pedidos', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: {
         collections: {
           pedidos: {
@@ -63,7 +61,7 @@ test.describe('Pedidos — kanban @pedidos', () => {
       }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await expect(p.cPend).toHaveText('2');
     await p.filterPill('mayorista').click();
     await expect(p.cPend).toHaveText('1');
@@ -75,11 +73,10 @@ test.describe('Pedidos — kanban @pedidos', () => {
 
   test('click en tarjeta abre modal detalle @pedidos', async ({ page }) => {
     await setupPage(page, {
-      portalSession: true,
       firebase: { collections: { pedidos: { d1: pedidoConEstado('pendiente') } } }
     });
     const p = new PedidosPage(page);
-    await p.goto();
+    await entrarAPedidos(page);
     await p.bodyPend.locator('.card').first().click();
     await expect(p.modalDetail).toHaveClass(/open/);
   });

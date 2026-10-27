@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdnjs.cloudflare.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.googleapis.com;" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Tienda Cattorini — Camisas, pantalones y jeans online</title>
   <meta name="description" content="Comprá online camisas, pantalones y jeans de Cattorini. Fabricación argentina, envíos a todo el país por Vía Cargo. Mayorista y minorista." />
@@ -30,10 +30,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js" integrity="sha384-AQ3POAMqIhwS81FrUH95ekxqBZHeP5tG2JfEL3+7GuTtfRLWnrRh32UxwzM+//A9" crossorigin="anonymous"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js" integrity="sha384-qn4Jh88HhJA8dplNQyGjOh9OGI4izVhrfj/qIFgaKcdgOE06pXqIKGlsCILZcLAC" crossorigin="anonymous"></script>
+  <script src="./tienda-core.js"></script>
   <script src="./ubicaciones.js" defer></script>
 
   <script type="application/ld+json">
@@ -564,9 +564,25 @@
     }
     .confirm-code {
       font-family: 'Cormorant Garamond', serif;
-      font-size: 2.4rem; letter-spacing: 0.15em;
+      font-size: clamp(1.5rem, 7vw, 2.2rem); letter-spacing: 0.1em; word-break: break-all;
       background: #F5F5F5; padding: 16px 24px; margin: 20px 0;
     }
+
+    /* Accesibilidad: label visible solo para lectores de pantalla */
+    .vh {
+      position: absolute !important; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+    .legal-checkout { font-size: 0.72rem; color: #666; line-height: 1.5; margin-top: 8px; }
+    .legal-checkout a { color: #0A0A0A; text-decoration: underline; }
+
+    /* Pie legal (Ley 24.240 / Res. 424/2020 / Res. 270/2020) */
+    .legal-footer { border-top: 1px solid #E5E5E5; background: #FAFAFA; margin-top: 40px; }
+    .lf-inner { max-width: 1400px; margin: 0 auto; padding: 24px; font-size: 0.78rem; color: #666; line-height: 1.6; }
+    .lf-links { display: flex; flex-wrap: wrap; gap: 8px 20px; margin-bottom: 10px; }
+    .lf-links a { color: #0A0A0A; text-decoration: underline; }
+    .lf-arrep { font-weight: 500; }
+    .lf-id { margin: 0; overflow-wrap: anywhere; }
   </style>
 </head>
 <body>
@@ -609,13 +625,25 @@
   <div id="catalog" style="display: none;"></div>
 </main>
 
+<footer class="legal-footer">
+  <div class="lf-inner">
+    <nav class="lf-links" aria-label="Información legal">
+      <a href="./arrepentimiento.html" class="lf-arrep">Botón de arrepentimiento</a>
+      <a href="./terminos.html">Términos y condiciones</a>
+      <a href="./privacidad.html">Política de privacidad</a>
+      <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
+    </nav>
+    <p class="lf-id">Razón social: [RAZÓN SOCIAL] · CUIT: [CUIT] · [CONDICIÓN IVA] · Domicilio: [DOMICILIO] · Contacto: [EMAIL DE CONTACTO]</p>
+  </div>
+</footer>
+
 <!-- Modal bienvenida -->
 <div class="modal-backdrop" id="modal-welcome" style="display: none;" onclick="tryCloseModal(event)">
-  <div class="modal-content" onclick="event.stopPropagation()">
+  <div class="modal-content" onclick="event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="modal-welcome-title">
     <button id="modal-close-btn" onclick="tryCloseModal({target:document.getElementById('modal-welcome')})" style="position:absolute;top:14px;right:20px;background:none;border:none;font-size:1.5rem;cursor:pointer;color:#999;display:none;" aria-label="Cerrar">×</button>
     <div id="modal-step-1">
       <div class="eyebrow mb-2">Bienvenido</div>
-      <h2 class="modal-title">¿Cómo querés comprar?</h2>
+      <h2 class="modal-title" id="modal-welcome-title">¿Cómo querés comprar?</h2>
       <p class="modal-subtitle">Elegí una opción para ver los precios y catálogo que corresponden.</p>
 
       <button class="profile-btn" onclick="goToStep('mayorista')">
@@ -634,8 +662,9 @@
       <h2 class="modal-title">Código de acceso</h2>
       <p class="modal-subtitle" id="msg-mayorista">Ingresá tu código de acceso mayorista.</p>
 
+      <label for="input-codigo" class="vh">Código de acceso mayorista</label>
       <input type="password" id="input-codigo" class="modal-input" placeholder="Código" maxlength="40" autocomplete="off" />
-      <div class="modal-error" id="err-codigo">El código ingresado no es válido.</div>
+      <div class="modal-error" id="err-codigo" role="alert">El código ingresado no es válido.</div>
 
       <button class="btn" onclick="submitCodigo()">Ingresar</button>
       <button class="btn-link" onclick="goToStep(null)">← Volver</button>
@@ -650,12 +679,14 @@
       <h2 class="modal-title">Contanos tu zona</h2>
       <p class="modal-subtitle">Esto nos ayuda a saber si podemos venderte directo o derivarte a un distribuidor local.</p>
 
-      <select id="input-provincia" class="modal-input"></select>
+      <label for="input-provincia" class="vh">Provincia</label>
+      <select id="input-provincia" class="modal-input"><option value="">Cargando provincias...</option></select>
       <div class="loc-wrap" style="margin-bottom: 12px;">
+        <label for="input-localidad" class="vh">Localidad</label>
         <input type="text" id="input-localidad" class="modal-input" placeholder="Elegí primero la provincia" maxlength="60" disabled style="margin-bottom: 0;" />
         <div id="loc-list-1" class="loc-list"></div>
       </div>
-      <div class="modal-error" id="err-localidad">Elegí una localidad válida de la lista.</div>
+      <div class="modal-error" id="err-localidad" role="alert">Elegí una localidad válida de la lista.</div>
 
       <button class="btn" onclick="submitLocalidad()">Continuar</button>
       <button class="btn-link" onclick="goToStep(null)">← Volver</button>
@@ -667,9 +698,9 @@
 
 <!-- Cart drawer -->
 <div class="drawer-back" id="drawer-back" onclick="closeCart()"></div>
-<div class="drawer" id="drawer" role="dialog" aria-label="Tu pedido">
+<div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="drawer-title">
   <div class="drawer-header">
-    <h2>Tu pedido</h2>
+    <h2 id="drawer-title">Tu pedido</h2>
     <button class="drawer-close" onclick="closeCart()" aria-label="Cerrar">×</button>
   </div>
   <div class="drawer-body" id="drawer-body"></div>
@@ -701,23 +732,29 @@
         <p style="font-size:0.76rem;color:#666;margin-top:4px;" id="pago-local-hint">Vas a abonar cuando retires el pedido.</p>
       </div>
 
-      <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" />
+      <label for="in-nombre" class="vh">Nombre y apellido</label>
+      <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" autocomplete="name" />
       <div id="envio-wrap" style="display:none;">
         <!-- Botón editar visible solo para mayoristas con datos pre-cargados -->
         <div id="envio-mayo-header" style="display:none;justify-content:space-between;align-items:center;margin-top:4px;font-size:0.78rem;color:#666;">
           <span>Enviamos a tu dirección registrada</span>
           <button type="button" id="btn-editar-dir" onclick="toggleEditarDireccion()" style="background:transparent;border:1px solid #E5E5E5;padding:4px 10px;font-size:0.72rem;letter-spacing:0.08em;text-transform:uppercase;cursor:pointer;color:#0A0A0A;font-family:inherit;">Editar</button>
         </div>
-        <input type="text" id="in-direccion" class="delivery-input" placeholder="Calle, número, piso" maxlength="120" />
+        <label for="in-direccion" class="vh">Dirección de envío</label>
+        <input type="text" id="in-direccion" class="delivery-input" placeholder="Calle, número, piso" maxlength="120" autocomplete="street-address" />
+        <label for="in-provincia-envio" class="vh">Provincia de envío</label>
         <select id="in-provincia-envio" class="delivery-select"></select>
         <div class="loc-wrap">
+          <label for="in-localidad-envio" class="vh">Localidad de envío</label>
           <input type="text" id="in-localidad-envio" class="delivery-input" placeholder="Elegí primero la provincia" maxlength="60" disabled />
           <div id="loc-list-2" class="loc-list"></div>
         </div>
-        <input type="text" id="in-cp" class="delivery-input" placeholder="Código postal (opcional)" maxlength="10" />
+        <label for="in-cp" class="vh">Código postal</label>
+        <input type="text" id="in-cp" class="delivery-input" placeholder="Código postal (opcional)" maxlength="10" autocomplete="postal-code" />
       </div>
     </div>
 
+    <label for="cart-note" class="vh">Nota adicional</label>
     <textarea class="cart-note" id="cart-note" placeholder="Nota adicional (opcional)" maxlength="400"></textarea>
 
     <!-- Honeypot -->
@@ -726,16 +763,17 @@
     <div id="minimo-warning" style="display:none;background:#FDECEC;color:#900;padding:10px 12px;margin-bottom:10px;font-size:0.82rem;line-height:1.4;"></div>
 
     <button class="btn-primary" id="btn-send" onclick="sendOrder()">Confirmar pedido</button>
+    <p class="legal-checkout">Al confirmar aceptás los <a href="./terminos.html">Términos y condiciones</a> y la <a href="./privacidad.html">Política de privacidad</a>. Tenés 10 días para arrepentirte de la compra.</p>
     <button class="btn-secondary" onclick="clearCart()">Vaciar carrito</button>
   </div>
 </div>
 
 <!-- Modal zona bloqueada en checkout -->
 <div class="confirm-back" id="zona-block-modal">
-  <div class="confirm-content" style="text-align:left;">
+  <div class="confirm-content" style="text-align:left;" role="dialog" aria-modal="true" aria-labelledby="zb-title">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="width:60px;height:60px;border-radius:50%;background:#FDECEC;color:#900;display:inline-flex;align-items:center;justify-content:center;font-size:2rem;margin-bottom:8px;">⚠</div>
-      <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;">No podemos enviarte a esa localidad</h2>
+      <h2 id="zb-title" style="font-family:'Cormorant Garamond',serif;font-size:1.6rem;">No podemos enviarte a esa localidad</h2>
     </div>
     <p style="color:#333;font-size:0.92rem;line-height:1.6;margin-bottom:16px;" id="zb-msg">
       En tu zona tenemos un distribuidor autorizado. Contactalo directamente para comprar al mejor precio.
@@ -751,9 +789,9 @@
 
 <!-- Confirmation modal -->
 <div class="confirm-back" id="confirm-modal">
-  <div class="confirm-content">
-    <div class="confirm-icon">✓</div>
-    <h2 style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
+  <div class="confirm-content" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="confirm-icon" aria-hidden="true">✓</div>
+    <h2 id="confirm-title" style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
     <p style="color:#666;font-size:0.9rem;margin-bottom:8px;">Guardá este código para consultar el estado de tu pedido:</p>
     <div class="confirm-code" id="confirm-code">···</div>
     <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;" id="confirm-msg">
@@ -781,7 +819,7 @@
   </div>
 </div>
 
-<div class="toast" id="toast">···</div>
+<div class="toast" id="toast" role="status" aria-live="polite">···</div>
 
 <script>
 'use strict';
@@ -823,18 +861,8 @@ let lastSubmit = 0;
 let ubicacionGate = null;
 let ubicacionEnvio = null;
 
-/* ---------- XSS-safe render ---------- */
-function esc(s) {
-  if (s === null || s === undefined) return '';
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
-
-/* ---------- SHA-256 ---------- */
-async function sha256(str) {
-  const buf = new TextEncoder().encode(str);
-  const hash = await crypto.subtle.digest('SHA-256', buf);
-  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
-}
+/* ---------- Helpers compartidos (tienda-core.js) ---------- */
+const { esc, cssUrl, imgSrc, waLink } = window.CattCore;
 
 /* ---------- Normalización ---------- */
 function normalizar(str) {
@@ -877,47 +905,36 @@ function limpiarPerfil() {
   localStorage.removeItem('catt_codigo_valido_hash');
 }
 
-/* Rechequeo de perfil mayorista: si el JSON cambió el hash, invalida el perfil */
+/* Rechequeo del perfil mayorista en cada visita contra
+   mayoristas_activos/{sha256(código)} (el código individual que le dio el
+   staff). Ya NO existe código maestro ni se acepta un hash guardado en
+   localStorage sin confirmarlo en Firestore. FAIL-CLOSED: si Firestore no
+   responde, el perfil mayorista se cae y se pide el código de nuevo. */
+let motivoPerfilInvalido = null;
 async function validarPerfilPersistido() {
-  const { perfil } = getPerfilActual();
-  if (perfil !== 'mayorista') return true;
-
-  /* catt_codigo_valido_hash tiene que vivir en localStorage, igual que
-     LS_PERFIL y catt_mayorista_data: si quedaba en sessionStorage, se
-     borraba al cerrar la pestaña/navegador y en la siguiente visita esta
-     función invalidaba el perfil mayorista aunque el código siguiera
-     siendo válido — el autocompletado del checkout "andaba a veces sí, a
-     veces no" dependiendo de si era la misma pestaña de siempre o no. */
-  const codigoGuardado = localStorage.getItem('catt_codigo_valido_hash');
-  if (!codigoGuardado) { limpiarPerfil(); return false; }
-
-  /* Match master */
-  if (codigoGuardado === DATA.config.mayoristas.codigo_hash) return true;
-
-  /* Match mayorista individual */
-  if (db) {
-    try {
-      const doc = await db.collection('mayoristas_activos').doc(codigoGuardado).get();
-      if (doc.exists) return true;
-    } catch (e) { /* si falla, no invalidamos por miedo — dejamos entrar */ return true; }
-  }
-
-  /* Ninguno matcheó → invalidar (limpiarPerfil ya borra catt_codigo_valido_hash) */
+  const r = await window.CattCore.validarMayoristaPersistido(db);
+  if (r.ok) return true;
+  motivoPerfilInvalido = r.motivo;
   limpiarPerfil();
   return false;
 }
 
 /* ---------- Modal ---------- */
-function showModal() {
-  document.getElementById('modal-welcome').style.display = 'flex';
+function showModal(step = null) {
+  const modal = document.getElementById('modal-welcome');
+  modal.style.display = 'flex';
   const perfilActual = getPerfilActual().perfil;
   /* Botón cerrar solo si ya hay perfil activo (cancelar cambio) */
   document.getElementById('modal-close-btn').style.display = perfilActual ? 'block' : 'none';
-  goToStep(null);
+  goToStep(step);
   initModalUbicaciones();
+  window.CattCore.atraparFoco(modal.querySelector('.modal-content'), () => tryCloseModal({ target: modal }));
+  if (step === null) window.CattCore.focoEnModal(modal);
 }
 function hideModal() {
-  document.getElementById('modal-welcome').style.display = 'none';
+  const modal = document.getElementById('modal-welcome');
+  modal.style.display = 'none';
+  window.CattCore.devolverFoco(modal);
 }
 function tryCloseModal(e) {
   if (e.target !== document.getElementById('modal-welcome')) return;
@@ -925,9 +942,11 @@ function tryCloseModal(e) {
   if (perfilActual) hideModal();
 }
 
+/* ubicaciones.js carga con `defer`: si todavía no llegó, initUbicacionSeguro
+   espera a que llegue (antes el select de provincias quedaba vacío para
+   siempre y el visitante no podía identificarse). */
 async function initModalUbicaciones() {
-  if (ubicacionGate || !window.Ubicaciones) return;
-  ubicacionGate = await window.Ubicaciones.init({
+  ubicacionGate = await window.CattCore.initUbicacionSeguro({
     provinciaSelect: document.getElementById('input-provincia'),
     localidadInput: document.getElementById('input-localidad'),
     localidadList: document.getElementById('loc-list-1')
@@ -942,7 +961,7 @@ function goToStep(step) {
     setTimeout(() => document.getElementById('input-codigo').focus(), 100);
   }
   if (step === 'minorista') {
-    setTimeout(() => document.getElementById('input-localidad').focus(), 100);
+    setTimeout(() => document.getElementById('input-provincia').focus(), 100);
   }
   document.getElementById('err-codigo').classList.remove('show');
 }
@@ -958,34 +977,23 @@ async function submitCodigo() {
   }
   const codigo = document.getElementById('input-codigo').value.trim();
   if (!codigo) return;
-  const hash = await sha256(codigo);
 
-  /* 1) Match contra código master (siempre funciona) */
-  let valido = hash === DATA.config.mayoristas.codigo_hash;
-  let mayoristaData = null;
+  /* Solo códigos individuales: mayoristas_activos/{sha256(código)}.
+     No hay código maestro. */
+  const r = await window.CattCore.verificarCodigoMayorista(db, codigo);
 
-  /* 2) Match contra código individual de mayorista en mayoristas_activos/{hash} */
-  if (!valido && db) {
-    try {
-      const doc = await db.collection('mayoristas_activos').doc(hash).get();
-      if (doc.exists) {
-        valido = true;
-        mayoristaData = doc.data();
-      }
-    } catch (e) {
-      console.warn('No se pudo consultar mayoristas_activos:', e);
-    }
+  if (!r.ok && r.motivo === 'error') {
+    /* Falla de red/Firestore: no es un intento fallido, pero tampoco se
+       otorga el perfil (fail-closed). */
+    document.getElementById('err-codigo').textContent = window.CattCore.MSG_NO_VERIFICADO;
+    document.getElementById('err-codigo').classList.add('show');
+    return;
   }
 
-  if (valido) {
-    localStorage.setItem('catt_codigo_valido_hash', hash);
+  if (r.ok) {
+    localStorage.setItem('catt_codigo_valido_hash', r.hash);
     /* Guardar datos del mayorista para auto-fill en checkout */
-    if (mayoristaData) {
-      localStorage.setItem('catt_mayorista_data', JSON.stringify(mayoristaData));
-    } else {
-      /* Login con código master — no tenemos datos específicos */
-      localStorage.removeItem('catt_mayorista_data');
-    }
+    localStorage.setItem('catt_mayorista_data', JSON.stringify(r.data || {}));
     setPerfil('mayorista', { localidad: '', zonaStatus: 'ok' });
     hideModal();
     renderPerfilBadge();
@@ -1016,13 +1024,11 @@ async function submitLocalidad() {
   }
 
   /* Validar que la localidad exista en la provincia (si tenemos el dataset) */
-  if (window.Ubicaciones) {
-    const valida = await window.Ubicaciones.esLocalidadValida(prov, loc);
-    if (!valida) {
-      err.textContent = 'Elegí una localidad de la lista sugerida.';
-      err.classList.add('show');
-      return;
-    }
+  const valida = await window.CattCore.localidadValida(prov, loc);
+  if (!valida) {
+    err.textContent = 'Elegí una localidad de la lista sugerida.';
+    err.classList.add('show');
+    return;
   }
 
   const zonas = DATA.zonas_mayoristas || [];
@@ -1068,7 +1074,10 @@ function renderPerfilBadge() {
 
   const change = document.createElement('a');
   change.textContent = 'Cambiar';
-  change.onclick = () => {
+  change.href = '#';
+  change.setAttribute('role', 'button');
+  change.onclick = (ev) => {
+    ev.preventDefault();
     /* No ocultamos el catálogo: dejamos visible detrás con precios actuales.
        Solo al confirmar un perfil nuevo se re-renderiza. */
     showModal();
@@ -1116,9 +1125,9 @@ function renderZonaBloqueada(zona) {
     t.textContent = 'Tel: ' + may.telefono;
     card.appendChild(t);
   }
-  if (may.whatsapp) {
+  if (may.whatsapp && waLink(may.whatsapp)) {
     const w = document.createElement('a');
-    w.href = `https://wa.me/${may.whatsapp}?text=${encodeURIComponent('Hola! Los contacto porque en Cattorini me indicaron que ustedes son distribuidores en mi zona.')}`;
+    w.href = waLink(may.whatsapp, 'Hola! Los contacto porque en Cattorini me indicaron que ustedes son distribuidores en mi zona.');
     w.target = '_blank';
     w.rel = 'noopener noreferrer';
     w.className = 'btn';
@@ -1231,13 +1240,13 @@ function renderCatalog() {
 
       const imgDiv = document.createElement('div');
       imgDiv.className = 'pcard-img placeholder';
-      if (p.imagenes && p.imagenes.length) {
+      if (p.imagenes && p.imagenes.length && imgSrc(p.imagenes[0])) {
         const testImg = new Image();
         testImg.onload = () => {
           imgDiv.classList.remove('placeholder');
-          imgDiv.style.backgroundImage = `url('./img/${p.imagenes[0]}')`;
+          imgDiv.style.backgroundImage = cssUrl(p.imagenes[0]);
         };
-        testImg.src = `./img/${p.imagenes[0]}`;
+        testImg.src = imgSrc(p.imagenes[0]);
       }
 
       const pricing = precioParaPerfil(p);
@@ -1343,9 +1352,12 @@ function esMayoristaConDatos() {
 
 async function openCart() {
   renderCart();
-  document.getElementById('drawer').classList.add('open');
+  const drawer = document.getElementById('drawer');
+  drawer.classList.add('open');
   document.getElementById('drawer-back').classList.add('open');
   lockBodyScroll();
+  window.CattCore.atraparFoco(drawer, closeCart);
+  window.CattCore.focoEnModal(drawer, drawer.querySelector('.drawer-close'));
   /* Cargar opciones de provincia ANTES de aplicar el modo mayorista
      (sino el select está vacío y no se pueden pre-llenar los datos) */
   await initEnvioUbicaciones();
@@ -1424,14 +1436,16 @@ function toggleEditarDireccion() {
   document.getElementById('in-direccion').focus();
 }
 function closeCart() {
-  document.getElementById('drawer').classList.remove('open');
+  const drawer = document.getElementById('drawer');
+  const estabaAbierto = drawer.classList.contains('open');
+  drawer.classList.remove('open');
   document.getElementById('drawer-back').classList.remove('open');
-  unlockBodyScroll();
+  if (estabaAbierto) unlockBodyScroll();
+  window.CattCore.devolverFoco(drawer);
 }
 
 async function initEnvioUbicaciones() {
-  if (ubicacionEnvio || !window.Ubicaciones) return;
-  ubicacionEnvio = await window.Ubicaciones.init({
+  ubicacionEnvio = await window.CattCore.initUbicacionSeguro({
     provinciaSelect: document.getElementById('in-provincia-envio'),
     localidadInput: document.getElementById('in-localidad-envio'),
     localidadList: document.getElementById('loc-list-2')
@@ -1461,10 +1475,10 @@ function renderCart() {
 
     const img = document.createElement('div');
     img.className = 'cart-item-img placeholder';
-    if (item.imagen) {
+    if (item.imagen && imgSrc(item.imagen)) {
       const t = new Image();
-      t.onload = () => { img.classList.remove('placeholder'); img.style.backgroundImage = `url('./img/${item.imagen}')`; };
-      t.src = `./img/${item.imagen}`;
+      t.onload = () => { img.classList.remove('placeholder'); img.style.backgroundImage = cssUrl(item.imagen); };
+      t.src = imgSrc(item.imagen);
     }
     row.appendChild(img);
 
@@ -1624,10 +1638,7 @@ function clearCart() {
   saveCart([]); renderCart();
 }
 
-function sanitizeInput(s, max = 200) {
-  if (!s) return '';
-  return String(s).slice(0, max).replace(/[<>]/g, '').trim();
-}
+const sanitizeInput = window.CattCore.sanitizeInput;
 
 function showToast(msg) {
   const t = document.getElementById('toast');
@@ -1636,12 +1647,12 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('show'), 2800);
 }
 
-function genTrackingCode() {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  let s = '';
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
-  return s;
-}
+/* Código del pedido en curso: se genera UNA vez por intento de compra y se
+   reutiliza si hay que reintentar (p.ej. se cortó la red justo al
+   confirmar). Como el pedido se guarda en pedidos/{codigo} y la transacción
+   primero mira si ya existe, reintentar nunca crea un segundo pedido. */
+let codigoEnCurso = null;
+let enviandoPedido = false;
 
 /* Verifica si una localidad está bloqueada por zona con mayorista.
    Retorna la zona (con datos del distribuidor) o null si está libre. */
@@ -1666,19 +1677,22 @@ function mostrarZonaBloqueadaCheckout(zona) {
   if (may.whatsapp) bits.push('WA: ' + may.whatsapp);
   document.getElementById('zb-detalle').textContent = bits.join('  ·  ') || 'Contactalo para más info.';
   const waEl = document.getElementById('zb-wa');
-  if (may.whatsapp) {
-    const num = may.whatsapp.replace(/[^0-9]/g, '');
-    const msg = encodeURIComponent(`Hola! Los contacto porque en Cattorini me indicaron que son distribuidores en mi zona.`);
-    waEl.href = `https://wa.me/${num}?text=${msg}`;
+  if (may.whatsapp && waLink(may.whatsapp)) {
+    waEl.href = waLink(may.whatsapp, 'Hola! Los contacto porque en Cattorini me indicaron que son distribuidores en mi zona.');
     waEl.style.display = 'block';
   } else {
     waEl.style.display = 'none';
   }
-  document.getElementById('zona-block-modal').classList.add('open');
+  const modal = document.getElementById('zona-block-modal');
+  modal.classList.add('open');
+  window.CattCore.atraparFoco(modal, cerrarZonaBlock);
+  window.CattCore.focoEnModal(modal);
 }
 
 function cerrarZonaBlock() {
-  document.getElementById('zona-block-modal').classList.remove('open');
+  const modal = document.getElementById('zona-block-modal');
+  modal.classList.remove('open');
+  window.CattCore.devolverFoco(modal);
 }
 
 function saveMyOrderCode(code, docId) {
@@ -1689,7 +1703,26 @@ function saveMyOrderCode(code, docId) {
   } catch {}
 }
 
+/* Guardia contra doble click / doble envío: mientras hay un envío en
+   curso, cualquier otra llamada se ignora y el botón queda deshabilitado. */
 async function sendOrder() {
+  if (enviandoPedido) return;
+  enviandoPedido = true;
+  const btn = document.getElementById('btn-send');
+  const btnTexto = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = 'Enviando...'; }
+  try {
+    await enviarPedido();
+  } finally {
+    enviandoPedido = false;
+    if (btn) { btn.removeAttribute('aria-busy'); btn.textContent = btnTexto || 'Confirmar pedido'; }
+    /* re-evalúa el mínimo mayorista (deja el botón como corresponde) */
+    if (document.getElementById('drawer-footer').style.display !== 'none' && DATA) renderTotals();
+    else if (btn) btn.disabled = false;
+  }
+}
+
+async function enviarPedido() {
   const now = Date.now();
   if (now - lastSubmit < RATE_LIMIT_MS) {
     showToast('Esperá unos segundos antes de reenviar.');
@@ -1741,12 +1774,10 @@ async function sendOrder() {
         showToast('Completá dirección, provincia y localidad.');
         return;
       }
-      if (window.Ubicaciones) {
-        const valida = await window.Ubicaciones.esLocalidadValida(provincia, localidad);
-        if (!valida) {
-          showToast('Elegí una localidad de la lista sugerida.');
-          return;
-        }
+      const valida = await window.CattCore.localidadValida(provincia, localidad);
+      if (!valida) {
+        showToast('Elegí una localidad de la lista sugerida.');
+        return;
       }
     }
   }
@@ -1780,10 +1811,33 @@ async function sendOrder() {
   const envio = entrega === 'envio' ? ((cart_perfil !== 'mayorista' && subtotal >= env.gratis_desde) ? 0 : env.costo_estandar) : 0;
   const total = subtotal + envio;
 
-  const code = genTrackingCode();
+  /* Validaciones de carrito (tope de variantes por producto, cantidades) */
+  try {
+    window.CattCore.validarCarrito(cart);
+  } catch (e) {
+    if (e && e.requiereWhatsApp) {
+      /* Más combinaciones talle/color de una misma prenda que las que
+         admite el checkout online: se ofrece el pedido completo por WhatsApp. */
+      const texto = window.CattCore.textoPedidoWhatsApp(cart, {
+        perfil: cart_perfil, nombre, negocio, entrega, direccion, localidad, provincia, cp, nota
+      });
+      window.CattCore.mostrarPedidoPorWhatsApp((DATA.negocio && DATA.negocio.whatsapp) || '', e.message, texto);
+      return;
+    }
+    showToast(window.CattCore.mensajeErrorCheckout(e));
+    return;
+  }
+
+  if (!db) {
+    showToast('Sistema de pedidos no disponible. Recargá la página.');
+    return;
+  }
+
+  if (!codigoEnCurso) codigoEnCurso = window.CattCore.genCodigo();
+  const code = codigoEnCurso;
   const payload = {
     codigo: code,
-    creadoEn: (db && firebase.firestore.FieldValue.serverTimestamp()) || new Date().toISOString(),
+    creadoEn: firebase.firestore.FieldValue.serverTimestamp(),
     cliente: {
       nombre: nombre || '',
       negocio: negocio || '',
@@ -1809,87 +1863,32 @@ async function sendOrder() {
     estado: 'pendiente'
   };
 
-  let docId = null;
-  if (!db) {
-    showToast('Sistema de pedidos no disponible. Recargá la página.');
-    return;
-  }
-
-  /* Descuento de stock atómico — solo para items con color (= bajo control
-     de stock). Productos viejos sin stock cargado (sin color) no se tocan,
-     por compatibilidad hacia atrás. Si no alcanza el stock para alguno,
-     se corta todo el pedido antes de crearlo (nada de "medio pedido"). */
-  const itemsConStock = cart.filter(i => i.color);
-  const resultantePorItem = {};
-  if (itemsConStock.length) {
-    try {
-      await db.runTransaction(async (tx) => {
-        const idsUnicos = [...new Set(itemsConStock.map(i => String(i.id)))];
-        const refs = idsUnicos.map(id => db.collection('stock').doc(id));
-        const snaps = await Promise.all(refs.map(r => tx.get(r)));
-        const variantesPorId = {};
-        idsUnicos.forEach((id, idx) => {
-          variantesPorId[id] = (snaps[idx].exists && snaps[idx].data().variantes) || {};
-        });
-        itemsConStock.forEach(i => {
-          const variantes = variantesPorId[String(i.id)];
-          const actual = ((variantes[i.talle] || {})[i.color] || {}).cantidad || 0;
-          if (actual < i.qty) {
-            throw new Error(`Sin stock suficiente de "${i.nombre}" (talle ${i.talle}, ${i.color}): quedan ${actual}. Ajustá la cantidad en el carrito.`);
-          }
-          const restante = actual - i.qty;
-          variantes[i.talle] = variantes[i.talle] || {};
-          variantes[i.talle][i.color] = { ...(variantes[i.talle][i.color] || {}), cantidad: restante };
-          resultantePorItem[i.key] = restante;
-        });
-        idsUnicos.forEach((id, idx) => {
-          tx.set(refs[idx], { variantes: variantesPorId[id], actualizadoEn: firebase.firestore.FieldValue.serverTimestamp() });
-        });
-      });
-    } catch (e) {
-      showToast(e.message);
-      return;
-    }
-  }
-
+  /* UNA sola transacción: crea pedidos/{codigo}, descuenta el stock de cada
+     talle/color (solo items con color = bajo control de stock) y registra
+     los movimientos "Venta #codigo". Si algo falla no queda nada a medias. */
   try {
-    const ref = await db.collection('pedidos').add(payload);
-    docId = ref.id;
+    await window.CattCore.crearPedidoAtomico(db, firebase.firestore.FieldValue, code, payload, cart);
   } catch (e) {
-    showToast('Error al enviar: ' + e.message);
-    console.error('Firestore write error:', e);
+    console.error('Checkout error:', e);
+    showToast(window.CattCore.mensajeErrorCheckout(e));
     return;
   }
 
-  /* Auditoría del descuento (no bloqueante: si falla el log, el pedido ya
-     está creado y el stock ya se descontó, no tiene sentido revertir todo). */
-  if (itemsConStock.length) {
-    const fecha = new Date().toISOString().split('T')[0];
-    itemsConStock.forEach(i => {
-      db.collection('stock').doc(String(i.id)).collection('movimientos').add({
-        talle: i.talle, color: i.color, delta: -i.qty,
-        cantidadResultante: resultantePorItem[i.key] ?? null,
-        motivo: 'Venta #' + code, fecha,
-        ts: firebase.firestore.FieldValue.serverTimestamp()
-      }).catch(e => console.warn('No se pudo registrar movimiento de stock:', e.message));
-    });
-  }
-
+  codigoEnCurso = null;
   lastSubmit = now;
-  saveMyOrderCode(code, docId);
+  saveMyOrderCode(code, code);
 
   /* Mostrar confirmación — el QR de pago aplica a envío siempre, y a retiro
      solo si el cliente no eligió pagar en el local. */
   document.getElementById('confirm-code').textContent = '#' + code;
-  document.getElementById('track-link').href = `./seguimiento.html?code=${code}`;
+  document.getElementById('track-link').href = `./seguimiento.html?code=${encodeURIComponent(code)}`;
   const qrBox = document.getElementById('confirm-pago-qr');
   const msgEl = document.getElementById('confirm-msg');
   if (necesitaQR()) {
     qrBox.style.display = 'block';
     msgEl.textContent = 'Tu pedido queda pendiente de pago. Apenas lo recibamos, lo pasamos a preparación.';
     const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
-    const waMsg = encodeURIComponent(`Hola! Quiero pagar mi pedido #${code} por otro medio.`);
-    document.getElementById('confirm-wa-pago').href = `https://wa.me/${wa}?text=${waMsg}`;
+    document.getElementById('confirm-wa-pago').href = waLink(wa, `Hola! Quiero pagar mi pedido #${code} por otro medio.`) || '#';
     /* Titular/banco: doble chequeo para el cliente en caso de que el QR
        se saltee o falle el escaneo. */
     const pago = DATA.config.pago || {};
@@ -1908,14 +1907,19 @@ async function sendOrder() {
     qrBox.style.display = 'none';
     msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.';
   }
-  document.getElementById('confirm-modal').classList.add('open');
-
   saveCart([]);
   closeCart();
+
+  const confirmModal = document.getElementById('confirm-modal');
+  confirmModal.classList.add('open');
+  window.CattCore.atraparFoco(confirmModal, closeConfirm);
+  window.CattCore.focoEnModal(confirmModal, document.getElementById('track-link'));
 }
 
 function closeConfirm() {
-  document.getElementById('confirm-modal').classList.remove('open');
+  const confirmModal = document.getElementById('confirm-modal');
+  confirmModal.classList.remove('open');
+  window.CattCore.devolverFoco(confirmModal);
 }
 
 /* ---------- Init ---------- */
@@ -1935,7 +1939,15 @@ async function init() {
   const { perfil, zonaStatus } = getPerfilActual();
 
   if (!perfil || !valido) {
-    showModal();
+    if (motivoPerfilInvalido === 'error') {
+      /* No se pudo verificar el código contra Firestore → se pide de nuevo */
+      showModal('mayorista');
+      const err = document.getElementById('err-codigo');
+      err.textContent = window.CattCore.MSG_NO_VERIFICADO;
+      err.classList.add('show');
+    } else {
+      showModal();
+    }
     renderPerfilBadge();
   } else if (perfil === 'minorista' && zonaStatus === 'bloqueada') {
     const localidad = localStorage.getItem(LS_LOCALIDAD) || '';

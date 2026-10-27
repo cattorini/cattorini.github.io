@@ -25,8 +25,8 @@ puerto (p.ej. el de `pushcommerce/pages`) los tests corrían contra otro sitio.
 | `npm run test:existente` | Suite E2E original (85 tests) | pasa |
 | `npm run test:regresion` | Flujos críticos que NO se pueden romper: alta de producto + guía de talles + stock por talle/color, checkout minorista/mayorista con descuento de stock, alta/aprobación/validación de mayoristas, aislamiento de red | pasa (hoy y después del arreglo) |
 | `npm run test:seguridad` | E2E que expresan el comportamiento seguro (XSS, acceso de staff, seguimiento por get, checkout atómico, códigos, legal) | **falla hoy** — tiene que pasar después del arreglo |
-| `npm run test:rules` | Reglas de Firestore ACTUALES (bloque de `FIRESTORE-RULES.md`) contra el emulador | **falla hoy** (agujeros confirmados) |
-| `npm run test:rules -- ../firestore.rules` | Las mismas pruebas contra un archivo de reglas nuevo | tiene que pasar |
+| `npm run test:rules` | `../firestore.rules` (las reglas del repo, con el email real del staff reemplazado por `STAFF_EMAIL`) contra el emulador: modelo de seguridad + límites (`rules/limites.test.mjs`) | pasa |
+| `npm run test:rules -- otro.rules` | Las mismas pruebas contra otro archivo de reglas | — |
 | `npm run test:rules:objetivo` | Las pruebas contra `rules/reference/firestore.rules.objetivo` (prueba de que el modelo objetivo es expresable) | pasa |
 | `npm run test:unit` | `sw.js` en Node (caché de imágenes reemplazables y del HTML) | **falla hoy** |
 | `npm run test:datos` | Chequeos sobre el `productos.json` REAL (precios en 0, mayorista absurdo, guía de talles, hash master público) | **falla hoy** (datos a corregir por el cliente) |
@@ -46,13 +46,27 @@ puerto (p.ej. el de `pushcommerce/pages`) los tests corrían contra otro sitio.
 - **Nunca poner códigos, PAT ni contraseñas reales en `tests/`**: la carpeta
   se publica en GitHub Pages junto con el sitio.
 
-### Si se agrega login de staff (Firebase Auth email/contraseña)
+### Login de staff (Firebase Auth email/contraseña)
 
-El mock ya soporta `signInWithEmailAndPassword` / `onAuthStateChanged` y
-registra `auth-password` en el log. Usuario de prueba: `STAFF_EMAIL` /
-`STAFF_PASS` en `fixtures/test-data.ts` (es el mismo email de la allowlist de
-`rules/reference/firestore.rules.objetivo`). El único lugar a adaptar es
-`helpers/portal.ts → entrarAlPortal()`.
+`portal.html` y `pedidos.html` exigen la sesión de staff de Firebase para todo
+lo que toca Firestore (ya no hay login anónimo ni el atajo
+`sessionStorage catt_pedidos_session`). Usuario de prueba: `STAFF_EMAIL` /
+`STAFF_PASS` en `fixtures/test-data.ts` (solo existe en el mock). Helpers:
+`helpers/portal.ts → entrarAlPortal()` (PAT + sesión de staff),
+`entrarAPedidos()` y `loginStaff()`. La opción `portalSession` de
+`setupPage` ya no da acceso a nada (queda para probar que no lo da).
+
+### Reglas: bloque generado y tope de variantes
+
+El bloque `<generado:descuento>` de `firestore.rules` lo escribe
+`node rules/generar-stock-rules.mjs` (y `--check` verifica que esté al día).
+Firestore corta en 1000 expresiones evaluadas por documento: con la validación
+completa del descuento público entran **12 variantes (talle/color) de un mismo
+producto por pedido** (`MAX_DESCUENTO`, tiene que coincidir con
+`MAX_VARIANTES_POR_PRODUCTO` de `tienda-core.js`). Varios productos por pedido
+no tienen problema (el presupuesto es por documento). Los pedidos manuales del
+staff no tienen tope. **Temporal:** cuando exista el Worker de pagos
+(Cloudflare), el descuento de stock pasa al Worker y se levanta el tope.
 
 ## Correr tests
 

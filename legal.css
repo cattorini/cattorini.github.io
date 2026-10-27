@@ -1,0 +1,101 @@
+/* Estilos de las páginas legales (privacidad, términos, arrepentimiento).
+   Misma línea visual que el sitio: blanco/negro, Cormorant Garamond + Inter. */
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-weight: 300;
+  background: #FFFFFF;
+  color: #0A0A0A;
+  line-height: 1.7;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: #0A0A0A; }
+header.lg-header {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(255,255,255,0.96);
+  border-bottom: 1px solid #E5E5E5;
+}
+.lg-header-inner {
+  max-width: 820px; margin: 0 auto; padding: 14px 16px;
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.lg-header img { height: 26px; width: auto; display: block; }
+.lg-back {
+  font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
+  text-decoration: none; white-space: nowrap;
+}
+main.lg-main { max-width: 820px; margin: 0 auto; padding: 40px 16px 56px; }
+.lg-eyebrow {
+  font-size: 0.72rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: #666; font-weight: 500; margin-bottom: 8px;
+}
+h1 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500; font-size: clamp(2rem, 7vw, 2.8rem);
+  letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 12px;
+}
+h2 {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-weight: 500; font-size: 1.5rem; letter-spacing: -0.01em;
+  margin: 36px 0 8px; line-height: 1.2;
+}
+h3 { font-size: 0.95rem; font-weight: 600; margin: 20px 0 4px; }
+p, li { font-size: 0.95rem; color: #333; }
+ul { padding-left: 1.2rem; }
+.lg-updated { color: #666; font-size: 0.82rem; margin-bottom: 24px; }
+.lg-box {
+  background: #F5F5F5; border-left: 3px solid #0A0A0A;
+  padding: 16px 18px; margin: 20px 0; font-size: 0.9rem;
+}
+.lg-box p { margin: 4px 0; }
+/* Marcadores de datos que todavía tiene que mandar el cliente */
+.marcador { background: #FFF3BF; padding: 0 3px; font-weight: 500; }
+.lg-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 12px 0; }
+.lg-table th, .lg-table td { border-bottom: 1px solid #E5E5E5; padding: 8px 6px; text-align: left; vertical-align: top; }
+.lg-table th { font-weight: 500; }
+.lg-table-wrap { overflow-x: auto; }
+
+/* Formulario (arrepentimiento) */
+.lg-form { margin-top: 20px; }
+.lg-form label { display: block; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #666; font-weight: 500; margin: 14px 0 4px; }
+.lg-form input, .lg-form textarea {
+  width: 100%; padding: 12px 14px; border: 1px solid #E5E5E5;
+  font: inherit; font-size: 16px; background: #FFF; color: #0A0A0A;
+}
+.lg-form input:focus, .lg-form textarea:focus { outline: none; border-color: #0A0A0A; }
+.lg-form .hint { font-size: 0.78rem; color: #666; margin-top: 4px; }
+.lg-btn {
+  display: inline-block; width: 100%; margin-top: 20px; padding: 14px 20px;
+  background: #0A0A0A; color: #FFF; border: 1px solid #0A0A0A; cursor: pointer;
+  font: inherit; font-size: 0.8rem; letter-spacing: 0.15em; text-transform: uppercase; font-weight: 500;
+  text-align: center; text-decoration: none;
+}
+.lg-btn:hover { background: #FFF; color: #0A0A0A; }
+.lg-btn.ghost { background: #FFF; color: #0A0A0A; }
+.lg-err { color: #900; font-size: 0.85rem; margin-top: 10px; display: none; }
+.lg-err.show { display: block; }
+.lg-codigo {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.4rem, 7vw, 2rem); letter-spacing: 0.08em;
+  background: #F5F5F5; padding: 14px 18px; margin: 12px 0; text-align: center;
+  overflow-wrap: anywhere;
+}
+.lg-hidden { display: none; }
+
+footer.lg-footer { border-top: 1px solid #E5E5E5; background: #FAFAFA; }
+.lg-footer-inner { max-width: 820px; margin: 0 auto; padding: 24px 16px; font-size: 0.78rem; color: #666; line-height: 1.6; }
+.lg-footer nav { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-bottom: 10px; }
+.lg-footer nav a { text-decoration: underline; }
+.lg-footer .lf-arrep { font-weight: 500; }
+.lg-footer p { margin: 0; font-size: 0.78rem; color: #666; overflow-wrap: anywhere; }
+
+.lg-mt { margin-top: 32px; }
+.lg-mt-sm { margin-top: 16px; }
+.hint { font-size: 0.78rem; color: #666; }
+.lg-pre {
+  white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;
+  background: #F5F5F5; padding: 12px; font-size: 0.8rem; max-width: 100%;
+}
+#arr-ok { scroll-margin-top: 80px; }
