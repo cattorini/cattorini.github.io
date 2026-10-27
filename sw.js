@@ -1,4 +1,4 @@
-/* sw.js de Cattorini — basado en el template estándar de PushCommerce
+/* sw.js de Cattorini — basado en el template estándar de Las Flores Software
  * (~/.claude/skills/new_client/assets/sw-template.js).
  *
  * Objetivo: que NUNCA haga falta pedirle a nadie que borre la caché.

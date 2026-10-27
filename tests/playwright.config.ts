@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /* Puerto configurable: 4173 suele estar ocupado por otros servidores locales
-   (p.ej. el http.server de pushcommerce/pages) y con reuseExistingServer los
+   (p.ej. el http.server de otro proyecto local) y con reuseExistingServer los
    tests terminaban corriendo contra OTRO sitio. */
 const PORT = Number(process.env.CATT_TEST_PORT || 4319);
 

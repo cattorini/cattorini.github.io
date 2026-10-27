@@ -16,7 +16,7 @@ En macOS con Homebrew: `export PATH=/opt/homebrew/opt/openjdk/bin:$PATH`.
 
 El servidor de tests usa el puerto **4319** (variable `CATT_TEST_PORT`). Antes
 usaba 4173 con `reuseExistingServer`, y si había OTRO `http.server` en ese
-puerto (p.ej. el de `pushcommerce/pages`) los tests corrían contra otro sitio.
+puerto (p.ej. el de otro proyecto local) los tests corrían contra otro sitio.
 
 ## Suites (auditoría 2026-10)
 
