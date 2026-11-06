@@ -20,7 +20,7 @@
  * VERSION tiene que cambiar en cada cambio de este archivo
  * (la anterior era 'cattorini-v2').
  */
-const VERSION = 'cattorini-v3';
+const VERSION = 'cattorini-v4';
 const PRECACHE = [
   './',
   './index.html',
@@ -45,7 +45,7 @@ const NUNCA_SW = /\/(portal|pedidos|seguimiento|seguimiento-mayorista|qr)\.html$
 
 /* Imágenes que el portal sobrescribe con el MISMO nombre (portal.html →
    uploadImagen): network-first, con la caché solo como respaldo offline. */
-const IMG_REEMPLAZABLES = /\/img\/(qr-pago\.jpg|logo\.jpeg|fabrica\.jpg|local\.jpg|hero-local\.jpg)$/i;
+const IMG_REEMPLAZABLES = /\/img\/(qr-pago\.jpg|logo\.jpeg|fabrica\.jpg|local\.jpg|hero-temporada\.jpg)$/i;
 
 self.addEventListener('install', (e) => {
   self.skipWaiting();
@@ -92,6 +92,9 @@ self.addEventListener('fetch', (e) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (NUNCA_SW.test(url.pathname)) return;
+  // Video: lo maneja el navegador. Safari pide rangos de bytes (206) y una
+  // respuesta completa desde el SW rompe la reproducción en iPhone.
+  if (req.destination === 'video' || /\.mp4$/i.test(url.pathname)) return;
 
   if (IMG_REEMPLAZABLES.test(url.pathname)) {
     e.respondWith(redPrimero(req));

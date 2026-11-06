@@ -647,9 +647,10 @@
             <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'logo.jpeg','logo')" />Subir nuevo logo</label>
           </div>
           <div>
-            <label class="lbl">Hero (foto local)</label>
-            <div id="img-hero-preview" style="aspect-ratio:3/2;background:#F5F5F5;background-size:cover;background-position:center;margin-bottom:8px;"></div>
-            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'hero-local.jpg','hero')" />Subir imagen del local</label>
+            <label class="lbl">Foto de portada (temporada)</label>
+            <div id="img-hero-preview" style="aspect-ratio:4/5;max-width:220px;background:#F5F5F5;background-size:contain;background-repeat:no-repeat;background-position:center;margin-bottom:8px;"></div>
+            <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'hero-temporada.jpg','hero')" />Subir foto de portada</label>
+            <p class="text-xs mt-2" id="hero-requisitos" style="color:var(--muted);">Vertical, proporción 4:5. Mínimo 1000 × 1250 px (recomendado 1032 × 1280). Hasta 1 MB. Se ve completa, sin recortes.</p>
           </div>
           <div>
             <label class="lbl">Producción</label>
@@ -1731,6 +1732,7 @@ function renderProductRow(cat, ci, p, pi) {
         purgarTalleStock(p.id, t, 'Talle deseleccionado en Catálogo').catch(e => console.warn('Purga de talle falló', t, e));
       } else {
         p.talles_disponibles.push(t);
+        p.talles_disponibles.sort(compararTalles);
       }
       chip.classList.toggle('on');
       markDirty();
@@ -1861,9 +1863,18 @@ function addProducto(ci) {
   markDirty(); renderCategorias(); poblarSelectsStock();
 }
 
+/* Talles numéricos de menor a mayor; los de texto (S, M, L...) quedan después. */
+function compararTalles(a, b) {
+  const [na, nb] = [Number(a), Number(b)];
+  if (!isNaN(na) && !isNaN(nb)) return na - nb;
+  if (!isNaN(na)) return -1;
+  if (!isNaN(nb)) return 1;
+  return String(a).localeCompare(String(b));
+}
+
 /* ---- Imágenes generales ---- */
 function renderImagenes() {
-  const map = { logo: 'logo.jpeg', hero: 'hero-local.jpg', fabrica: 'fabrica.jpg', local: 'local.jpg', qr_pago: 'qr-pago.jpg' };
+  const map = { logo: 'logo.jpeg', hero: 'hero-temporada.jpg', fabrica: 'fabrica.jpg', local: 'local.jpg', qr_pago: 'qr-pago.jpg' };
   Object.entries(map).forEach(([k, filename]) => {
     const el = document.getElementById(`img-${k}-preview`);
     if (el) el.style.backgroundImage = `url('./img/${filename}?v=${Date.now()}')`;
@@ -1871,10 +1882,39 @@ function renderImagenes() {
 }
 
 /* ---- Upload imágenes ---- */
+/* La portada se ve completa en un marco 4:5: otra proporción dejaría franjas. */
+const PORTADA = { minAncho: 1000, minAlto: 1250, proporcion: 4 / 5, tolerancia: 0.03, maxBytes: 1024 * 1024 };
+function problemaFotoPortada(file) {
+  if (file.size > PORTADA.maxBytes) {
+    return Promise.resolve(`La foto pesa ${(file.size / 1048576).toFixed(1)} MB. El máximo es 1 MB.`);
+  }
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: w, naturalHeight: h } = img;
+      if (w < PORTADA.minAncho || h < PORTADA.minAlto) {
+        resolve(`La foto mide ${w} × ${h} px. El mínimo es ${PORTADA.minAncho} × ${PORTADA.minAlto} px.`);
+      } else if (Math.abs(w / h - PORTADA.proporcion) > PORTADA.tolerancia) {
+        resolve(`La foto mide ${w} × ${h} px y tiene que ser vertical, en proporción 4:5 (por ejemplo 1032 × 1280 px).`);
+      } else {
+        resolve(null);
+      }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); resolve('No se pudo leer la imagen.'); };
+    img.src = url;
+  });
+}
+
 async function uploadImagen(input, filename, key) {
   const file = input.files[0];
   if (!file) return;
   try {
+    if (key === 'hero') {
+      const problema = await problemaFotoPortada(file);
+      if (problema) { alert(problema); input.value = ''; return; }
+    }
     setStatus('Subiendo imagen...');
     const b64 = await fileToBase64(file);
     let existing = null;

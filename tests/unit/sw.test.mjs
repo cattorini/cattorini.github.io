@@ -64,7 +64,7 @@ async function disparar(sw, url, extra = {}) {
 const vaALaRed = (sw, url) => sw.fetchCalls.some(c => (typeof c.req === 'string' ? c.req : c.req.url) === url);
 
 describe('sw.js', () => {
-  for (const img of ['qr-pago.jpg', 'logo.jpeg', 'fabrica.jpg', 'local.jpg', 'hero-local.jpg']) {
+  for (const img of ['qr-pago.jpg', 'logo.jpeg', 'fabrica.jpg', 'local.jpg', 'hero-temporada.jpg']) {
     test(`img/${img} (reemplazable desde el portal) no se sirve de caché sin consultar la red`, async () => {
       const refs = readdirSync(root).filter(f => f.endsWith('.html'))
         .flatMap(f => readFileSync(resolve(root, f), 'utf8').match(new RegExp(`img/${img.replace('.', '\\.')}[^"'\\s)]*`, 'g')) || []);

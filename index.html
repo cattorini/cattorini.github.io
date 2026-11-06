@@ -116,6 +116,7 @@
     .hero-media {
       position: relative;
       aspect-ratio: 4/5;
+      max-height: calc(100vh - 110px);
       background: linear-gradient(135deg, #141414 0%, #0a0a0a 100%);
       overflow: hidden;
       border: 1px solid rgba(255,255,255,0.06);
@@ -158,6 +159,12 @@
       object-fit: contain;
       background: #0a0a0a;
     }
+    /* La foto de temporada trae texto: el zoom no la puede cortar. */
+    .hero .carousel-slide.vertical.active { animation: none; }
+    .video-produccion { aspect-ratio: 9/16; max-height: 80vh; margin: 0 auto; background: #0a0a0a; overflow: hidden; }
+    .video-produccion video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .data-fiscal { display: block; width: 110px; margin: 12px auto 0; }
+    .data-fiscal img { display: block; width: 110px; height: auto; background: #fff; }
     /* Efecto Ken Burns leve para dar vida al carrusel */
     .hero .carousel-slide.active {
       animation: kenBurns 8s ease-out both;
@@ -539,8 +546,8 @@
 
 <section id="historia" class="py-24 md:py-32">
   <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 md:gap-20 items-center">
-    <div class="split-img" style="aspect-ratio: 4/5;">
-      <div class="carousel" id="carousel-fabrica"></div>
+    <div class="split-img video-produccion">
+      <video id="video-produccion" muted loop playsinline preload="none" poster="./img/produccion-poster.jpg" aria-label="Video de nuestra producción" data-src="./video/nuestra-produccion.mp4"></video>
     </div>
     <div>
       <div class="eyebrow mb-4">01 — Nuestra Producción</div>
@@ -561,7 +568,7 @@
   <div class="max-w-7xl mx-auto px-6">
     <div class="mb-16 max-w-2xl">
       <div class="eyebrow mb-4">02 — Catálogo</div>
-      <h2 class="section">Tres líneas, un mismo estándar</h2>
+      <h2 class="section">Diferentes líneas, un mismo estándar</h2>
     </div>
     <div class="grid md:grid-cols-3 gap-6" id="categorias-grid"></div>
   </div>
@@ -715,6 +722,7 @@
         <a href="https://www.argentina.gob.ar/produccion/defensadelconsumidor/formulario" target="_blank" rel="noopener noreferrer">Defensa de las y los consumidores</a>
       </nav>
       <p class="legal-id">Razón social: ORIGINAL 59 S.A. · CUIT: 30-71125900-3 · IVA Responsable Inscripto · Domicilio: Av. Sarmiento 454, Las Flores (7200), Provincia de Buenos Aires · Tel. 02244 45-4040</p>
+      <a class="data-fiscal" href="http://qr.afip.gob.ar/?qr=i7AD8EHTOHMta8emihhpow,," target="_blank" rel="noopener noreferrer" aria-label="Data Fiscal de ARCA"><img src="./img/data-fiscal.jpg" alt="Data Fiscal — ARCA, formulario 960" width="404" height="286" loading="lazy" /></a>
     </div>
     <div class="text-xs text-center" style="color: rgba(255,255,255,0.3);">
       © <span id="year"></span> Cattorini · Sitio por <a href="https://lasflores.software" target="_blank" rel="noopener">Las Flores Software</a>
@@ -1072,6 +1080,31 @@ function applyWA(data) {
 }
 
 /* Carousel — cross-fade automático + dots opcionales */
+/* Video de "Nuestra Producción": recién se descarga al acercarse a la sección,
+   se reproduce mientras está a la vista y se pausa al salir. Con "reducir
+   movimiento" activado no arranca solo: queda el póster con controles. */
+function initVideoProduccion() {
+  const video = document.getElementById('video-produccion');
+  if (!video) return;
+  const cargar = () => { if (!video.src) video.src = video.dataset.src; };
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    video.controls = true;
+    video.preload = 'metadata';
+    cargar();
+    return;
+  }
+  new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        cargar();
+        video.play().catch(() => { video.controls = true; });
+      } else {
+        video.pause();
+      }
+    }
+  }, { threshold: 0.25 }).observe(video);
+}
+
 function initCarousel(containerId, images, options = {}) {
   const cont = document.getElementById(containerId);
   if (!cont || !images || !images.length) return;
@@ -1427,9 +1460,7 @@ async function init() {
   initCarousel('carousel-hero', imgs.hero_carousel || [], {
     alt: 'Cattorini', dots: false, interval: 5500
   });
-  initCarousel('carousel-fabrica', imgs.fabrica_carousel || [], {
-    alt: 'Producción Cattorini', interval: 4500
-  });
+  initVideoProduccion();
   initCarousel('carousel-local', imgs.local_carousel || [], {
     alt: 'Local Cattorini Las Flores', interval: 4500
   });

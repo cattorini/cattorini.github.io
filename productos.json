@@ -303,7 +303,7 @@
         ]
       }
     },
-    "Jeans Catto\"s": {
+    "Jeans Catto's": {
       "unidad": "cm",
       "medidas": [
         "Cintura",
@@ -527,13 +527,13 @@
           "talles_disponibles": [
             "38",
             "40",
+            "42",
             "44",
             "46",
             "48",
             "50",
             "52",
-            "54",
-            "42"
+            "54"
           ],
           "disponible": true,
           "destacado": true,
@@ -582,7 +582,7 @@
         },
         {
           "id": 12,
-          "nombre": "Camisa Lawrence. ",
+          "nombre": "Camisa Lawrence.",
           "descripcion": "Camisa sport marca Lawrence, cuadros, dos bolsillos con tapa al bies. Slime fit",
           "precio_minorista": 0,
           "precio_mayorista": 0,
@@ -980,7 +980,7 @@
             "p7-1791558630299-6ltp.jpeg"
           ],
           "fabricacion_propia": true,
-          "tipo_talle": "Jeans Catto\"s"
+          "tipo_talle": "Jeans Catto's"
         },
         {
           "id": 8,
@@ -1006,7 +1006,7 @@
             "p8-1791559030263-2hzp.jpeg"
           ],
           "fabricacion_propia": true,
-          "tipo_talle": "Jeans Catto\"s"
+          "tipo_talle": "Jeans Catto's"
         }
       ]
     }
@@ -1045,11 +1045,7 @@
   "imagenes": {
     "logo": "logo.jpeg",
     "hero_carousel": [
-      "Historia1.jpeg",
-      "Historia2.jpeg",
-      "Historia3.jpeg",
-      "Historia4.jpeg",
-      "Historia5.jpeg"
+      "hero-temporada.jpg"
     ],
     "fabrica_carousel": [
       "Fabrica1.jpeg",
