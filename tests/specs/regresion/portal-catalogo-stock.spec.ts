@@ -111,7 +111,7 @@ test.describe('Portal — catálogo y stock @regresion @portal', () => {
     await portal.abrirTab('catalogo');
     const fila = filaProducto(page, 4);
     await fila.locator('.expandable-head').click();
-    await filaProducto(page, 4).locator('select.inp').selectOption('camisas');
+    await filaProducto(page, 4).locator('select.inp').first().selectOption('camisas');
 
     await expect.poll(async () => (await getCollection(page, 'stock'))['4'].variantes['38']).toBeUndefined();
     const movs = Object.values(await getCollection(page, 'stock/4/movimientos')) as any[];
@@ -124,7 +124,7 @@ test.describe('Portal — catálogo y stock @regresion @portal', () => {
     await portal.abrirTab('catalogo');
     const fila = filaProducto(page, 7);
     await fila.locator('.expandable-head').click();
-    const sel = filaProducto(page, 7).locator('select.inp');
+    const sel = filaProducto(page, 7).locator('select.inp').first();
     await expect(sel).toHaveValue('Jeans Catto"s');
     await expect(filaProducto(page, 7).locator('.talle-chip.on')).toHaveCount(6);
   });

@@ -669,13 +669,22 @@
 
     <!-- Tab Datos de pago -->
     <div class="tab-panel" id="tab-pago">
+      <div class="card mb-4">
+        <h3 class="serif text-xl mb-4">Descuentos y recargos</h3>
+        <div class="grid-2">
+          <div><label class="lbl" for="cfg-descuento">Descuento en efectivo o transferencia (%)</label><input class="inp" id="cfg-descuento" type="number" min="0" max="10" step="1" data-field="config.pago.descuento_contado" /></div>
+          <div><label class="lbl" for="cfg-rec-esp">Recargo talles especiales (%)</label><input class="inp" id="cfg-rec-esp" type="number" min="0" step="1" data-field="config.talles.recargo_especial" /></div>
+          <div><label class="lbl" for="cfg-rec-sup">Recargo talles superespeciales (%)</label><input class="inp" id="cfg-rec-sup" type="number" min="0" step="1" data-field="config.talles.recargo_super" /></div>
+        </div>
+        <p class="text-xs mt-2" style="color:var(--muted);">El descuento se aplica solo a minoristas. Los recargos valen para minoristas y mayoristas. Tope del descuento: 10%.</p>
+      </div>
       <div class="card">
         <h3 class="serif text-xl mb-4">QR de pago</h3>
         <div style="max-width:200px;">
           <div id="img-qr_pago-preview" style="aspect-ratio:1;background:#F5F5F5;background-size:contain;background-repeat:no-repeat;background-position:center;margin-bottom:8px;"></div>
           <label class="img-drop"><input type="file" accept="image/*" style="display:none;" onchange="uploadImagen(this,'qr-pago.jpg','qr_pago')" />Subir QR de pago</label>
         </div>
-        <div class="msg-info mt-4">Es el QR que ven los clientes al confirmar un pedido pendiente de pago (envío, o retiro con pago electrónico). Subí una captura del QR estático de tu billetera virtual (Mercado Pago, etc.). Si cambiás de billetera, solo reemplazá esta imagen — puede tardar unos segundos en subir.</div>
+        <div class="msg-info mt-4">Es el QR que ven los clientes que eligen pagar por QR o transferencia. Subí una captura del QR estático de tu billetera virtual (Mercado Pago, etc.). Si cambiás de billetera, solo reemplazá esta imagen — puede tardar unos segundos en subir.</div>
       </div>
 
       <div class="card mt-4">
@@ -2199,6 +2208,85 @@ async function renderStockEditorInto(productId, cont) {
   renderColorStockBlock(p, stockDoc, cont, renderStockList);
 }
 
+/* Fantasías: cuando un "color" es raya, estampado o cuadro, en la ficha se ve
+   una foto en lugar del círculo de color. Se guarda en p.fantasias, por nombre
+   de color, porque es igual en todos los talles. */
+const TIPOS_FANTASIA = [['', 'Liso'], ['raya', 'Raya'], ['estampado', 'Estampado'], ['cuadro', 'Cuadro']];
+function renderFantasiasBlock(p, stockDoc, cont) {
+  const colores = [...new Set(Object.values(stockDoc.variantes || {}).flatMap(t => Object.keys(t || {})))];
+  if (!colores.length) return;
+  p.fantasias = p.fantasias || {};
+  const box = document.createElement('div');
+  box.className = 'item-row fantasias-block';
+  box.style.marginBottom = '14px';
+  const h = document.createElement('div');
+  h.style.cssText = 'font-weight:500;margin-bottom:4px;';
+  h.textContent = 'Lisos y fantasías';
+  const ayuda = document.createElement('div');
+  ayuda.style.cssText = 'font-size:0.8rem;color:var(--muted);margin-bottom:10px;';
+  ayuda.textContent = 'Si no es liso, elegí el tipo y subí una foto cuadrada de la tela (mínimo 800 × 800 px). Después publicá los cambios.';
+  box.append(h, ayuda);
+  colores.forEach(color => {
+    const fila = document.createElement('div');
+    fila.style.cssText = 'display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:6px 0;';
+    fila.dataset.color = color;
+    const nombre = document.createElement('span');
+    nombre.style.cssText = 'min-width:120px;font-size:0.85rem;';
+    nombre.textContent = color;
+    const sel = document.createElement('select');
+    sel.className = 'inp';
+    sel.style.maxWidth = '130px';
+    TIPOS_FANTASIA.forEach(([v, txt]) => {
+      const o = document.createElement('option'); o.value = v; o.textContent = txt; sel.appendChild(o);
+    });
+    const actual = p.fantasias[color];
+    sel.value = (actual && actual.tipo) || '';
+    const prev = document.createElement('span');
+    prev.style.cssText = 'width:40px;height:40px;background:#F5F5F5 center/cover;border:1px solid #E5E5E5;';
+    if (actual && actual.foto) prev.style.backgroundImage = `url("./img/${encodeURIComponent(actual.foto)}")`;
+    const label = document.createElement('label');
+    label.className = 'btn-ghost';
+    label.style.cursor = 'pointer';
+    label.textContent = 'Subir foto';
+    const input = document.createElement('input');
+    input.type = 'file'; input.accept = 'image/*'; input.style.display = 'none';
+    label.appendChild(input);
+    const mostrar = () => {
+      const esFantasia = !!sel.value;
+      prev.style.display = esFantasia ? '' : 'none';
+      label.style.display = esFantasia ? '' : 'none';
+    };
+    sel.onchange = () => {
+      if (sel.value) p.fantasias[color] = { ...(p.fantasias[color] || {}), tipo: sel.value };
+      else delete p.fantasias[color];
+      mostrar();
+      markDirty();
+    };
+    input.onchange = async () => {
+      const file = input.files[0];
+      if (!file) return;
+      try {
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const safeName = `f${p.id}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${ext}`;
+        setStatus('Subiendo ' + safeName + '...');
+        await ghPut(IMG_PATH + safeName, await fileToBase64(file), null, `chore: agregar ${safeName}`);
+        p.fantasias[color] = { tipo: sel.value, foto: safeName };
+        prev.style.backgroundImage = `url("${URL.createObjectURL(file)}")`;
+        setStatus('Foto subida ✓. Publicá los cambios.', 'ok');
+        markDirty();
+      } catch (e) {
+        setStatus('Error', 'err');
+        alert('Error al subir: ' + e.message);
+      }
+      input.value = '';
+    };
+    fila.append(nombre, sel, prev, label);
+    box.appendChild(fila);
+    mostrar();
+  });
+  cont.appendChild(box);
+}
+
 /* Bloque de talle → colores → stock inicial, reutilizado en dos lugares:
    el tab Stock (renderStockEditorInto) y el propio tab Catálogo, para que
    al cargar un producto nuevo no haga falta cambiar de tab para asignarle
@@ -2212,6 +2300,8 @@ function renderColorStockBlock(p, stockDoc, cont, onChange) {
     cont.innerHTML = '<div style="color:#900;font-size:0.85rem;">Marcá al menos un talle arriba antes de cargar color y stock.</div>';
     return;
   }
+
+  renderFantasiasBlock(p, stockDoc, cont);
 
   talles.forEach(talle => {
     const box = document.createElement('div');

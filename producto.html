@@ -281,6 +281,22 @@
     .color-chip:hover:not(:disabled) { border-color: #0A0A0A; }
     .color-chip.active { border-color: #0A0A0A; background: #FAFAFA; box-shadow: 0 0 0 1px #0A0A0A; }
     .color-chip:disabled { opacity: 0.35; cursor: not-allowed; text-decoration: line-through; }
+    .color-item { display: inline-flex; align-items: center; gap: 4px; }
+    .color-swatch.foto { width: 36px; height: 36px; background-size: cover; background-position: center; }
+    .fantasia-zoom {
+      width: 32px; height: 32px; border: 1px solid #E5E5E5; border-radius: 50%;
+      background: #FFF; cursor: pointer; font-size: 0.9rem; line-height: 1; color: #0A0A0A;
+    }
+    .fantasia-zoom:hover { border-color: #0A0A0A; }
+    .fantasia-box { background: #FFF; max-width: 640px; width: 100%; max-height: 92vh; overflow-y: auto; padding: 20px; position: relative; }
+    .fantasia-img { display: block; width: 100%; max-height: 62vh; object-fit: contain; background: #F5F5F5; }
+    .fantasia-pie { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+    .fantasia-nav { display: flex; gap: 8px; }
+    .fantasia-nav button, .fantasia-elegir {
+      border: 1px solid #0A0A0A; background: #FFF; cursor: pointer; font: inherit; font-size: 0.82rem; padding: 8px 14px; min-height: 40px;
+    }
+    .fantasia-elegir { background: #0A0A0A; color: #FFF; }
+    .fantasia-elegir:disabled { opacity: 0.4; cursor: not-allowed; }
     .color-swatch {
       width: 20px; height: 20px; border-radius: 50%;
       border: 1px solid rgba(0,0,0,0.15); flex-shrink: 0;
@@ -665,6 +681,22 @@
     <a class="data-fiscal" style="display:inline-block;margin-top:12px;" href="http://qr.afip.gob.ar/?qr=i7AD8EHTOHMta8emihhpow,," target="_blank" rel="noopener noreferrer" aria-label="Data Fiscal de ARCA"><img style="display:block;width:110px;height:auto;background:#fff;" src="./img/data-fiscal.jpg" alt="Data Fiscal — ARCA, formulario 960" width="404" height="286" loading="lazy" /></a>
   </div>
 </footer>
+
+<!-- Ampliación de fantasía -->
+<div class="modal-back" id="modal-fantasia" onclick="if(event.target===this)cerrarFantasia()">
+  <div class="fantasia-box" role="dialog" aria-modal="true" aria-labelledby="fantasia-nombre">
+    <button class="modal-close" onclick="cerrarFantasia()" aria-label="Cerrar">×</button>
+    <h3 id="fantasia-nombre" style="margin-bottom:12px;padding-right:32px;"></h3>
+    <img class="fantasia-img" id="fantasia-img" alt="" />
+    <div class="fantasia-pie">
+      <div class="fantasia-nav" id="fantasia-nav">
+        <button type="button" onclick="moverFantasia(-1)" aria-label="Fantasía anterior">←</button>
+        <button type="button" onclick="moverFantasia(1)" aria-label="Fantasía siguiente">→</button>
+      </div>
+      <button type="button" class="fantasia-elegir" id="fantasia-elegir">Elegir esta</button>
+    </div>
+  </div>
+</div>
 
 <!-- Modal guía -->
 <div class="modal-back" id="modal-guia" onclick="if(event.target===this)closeGuia()">
@@ -1159,21 +1191,91 @@ function renderColores() {
   nombres.forEach(nombre => {
     const v = coloresTalle[nombre] || {};
     const cant = v.cantidad || 0;
+    const fantasia = fantasiaDe(nombre);
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = 'color-chip' + (selectedColor === nombre ? ' active' : '');
     chip.disabled = cant <= 0;
     const sw = document.createElement('span');
     sw.className = 'color-swatch';
-    /* hex viene de Firestore: solo colores #RGB/#RRGGBB, nada de url() */
-    sw.style.background = /^#[0-9a-fA-F]{3,8}$/.test(String(v.hex || '')) ? v.hex : '#999';
+    if (fantasia) {
+      sw.classList.add('foto');
+      sw.style.backgroundImage = cssUrl(fantasia.foto);
+    } else {
+      /* hex viene de Firestore: solo colores #RGB/#RRGGBB, nada de url() */
+      sw.style.background = /^#[0-9a-fA-F]{3,8}$/.test(String(v.hex || '')) ? v.hex : '#999';
+    }
     chip.appendChild(sw);
     chip.appendChild(document.createTextNode(nombre + (cant <= 0 ? ' (sin stock)' : '')));
     chip.onclick = () => selectColor(nombre);
-    grid.appendChild(chip);
+    if (fantasia) {
+      /* La ampliación queda disponible aunque no haya stock en este talle. */
+      const item = document.createElement('span');
+      item.className = 'color-item';
+      const zoom = document.createElement('button');
+      zoom.type = 'button';
+      zoom.className = 'fantasia-zoom';
+      zoom.textContent = '⤢';
+      zoom.setAttribute('aria-label', 'Ampliar ' + nombre);
+      zoom.onclick = () => abrirFantasia(nombre);
+      item.append(chip, zoom);
+      grid.appendChild(item);
+    } else {
+      grid.appendChild(chip);
+    }
   });
 
   updateStockInfo();
+}
+
+/* =========== Fantasías (rayas, estampados, cuadros) =========== */
+const TIPOS_FANTASIA = { raya: 'Raya', estampado: 'Estampado', cuadro: 'Cuadro' };
+let fantasiaAbierta = null;
+
+function fantasiaDe(nombre) {
+  const f = (PRODUCT.fantasias || {})[nombre];
+  return f && imgSrc(f.foto) ? f : null;
+}
+
+/* Las fantasías del talle elegido, para recorrerlas dentro de la ampliación. */
+function fantasiasDelTalle() {
+  return Object.keys((stockVariantes && stockVariantes[selectedTalle]) || {}).filter(fantasiaDe);
+}
+
+function abrirFantasia(nombre) {
+  fantasiaAbierta = nombre;
+  const f = fantasiaDe(nombre);
+  const tipo = TIPOS_FANTASIA[f.tipo];
+  document.getElementById('fantasia-nombre').textContent = tipo ? `${nombre} · ${tipo}` : nombre;
+  const img = document.getElementById('fantasia-img');
+  img.src = imgSrc(f.foto);
+  img.alt = 'Fantasía ' + nombre;
+  document.getElementById('fantasia-nav').style.visibility = fantasiasDelTalle().length > 1 ? 'visible' : 'hidden';
+  const cant = (((stockVariantes[selectedTalle] || {})[nombre]) || {}).cantidad || 0;
+  const elegir = document.getElementById('fantasia-elegir');
+  elegir.disabled = cant <= 0;
+  elegir.textContent = cant <= 0 ? 'Sin stock en este talle' : 'Elegir esta';
+  elegir.onclick = () => { selectColor(nombre); cerrarFantasia(); };
+  const modal = document.getElementById('modal-fantasia');
+  if (!modal.classList.contains('open')) {
+    modal.classList.add('open');
+    window.CattCore.atraparFoco(modal, cerrarFantasia);
+    window.CattCore.focoEnModal(modal, modal.querySelector('.modal-close'));
+  }
+}
+
+function moverFantasia(delta) {
+  const lista = fantasiasDelTalle();
+  if (!lista.length) return;
+  const i = lista.indexOf(fantasiaAbierta);
+  abrirFantasia(lista[(i + delta + lista.length) % lista.length]);
+}
+
+function cerrarFantasia() {
+  const modal = document.getElementById('modal-fantasia');
+  if (!modal.classList.contains('open')) return;
+  modal.classList.remove('open');
+  window.CattCore.devolverFoco(modal);
 }
 
 function selectColor(c) {
