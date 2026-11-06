@@ -25,6 +25,7 @@ export default defineConfig({
   expect: { timeout: 5_000 },
 
   use: {
+    serviceWorkers: 'block',
     baseURL: `http://127.0.0.1:${PORT}`,
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',

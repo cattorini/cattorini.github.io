@@ -318,7 +318,7 @@
       subtotal += sub;
       lineas.push('• ' + i.nombre + ' · Talle ' + i.talle + (i.color ? ' · ' + i.color : '') + ' · x' + i.qty + ' · ' + fmtPesos(sub));
     }
-    lineas.push('', 'Subtotal: ' + fmtPesos(subtotal));
+    lineas.push('', (d.perfil === 'mayorista' ? 'Subtotal sin IVA: ' : 'Subtotal: ') + fmtPesos(subtotal));
     if (d.perfil) lineas.push('Perfil: ' + (d.perfil === 'mayorista' ? 'Mayorista' : 'Minorista'));
     if (d.nombre) lineas.push('Nombre: ' + d.nombre);
     if (d.negocio) lineas.push('Negocio: ' + d.negocio);
@@ -377,6 +377,160 @@
     atraparFoco(box, close);
     focoEnModal(back, a);
     return back;
+  }
+
+  /* ================= Precios, recargos y medios de pago ================= */
+
+  const num = (v, porDefecto) => (typeof v === 'number' && isFinite(v) ? v : porDefecto);
+  const conPct = (monto, pct) => Math.round(monto * (1 + pct / 100));
+
+  /* Recargo de un talle según los rangos de SU guía (camisas, pantalones y
+     jeans tienen rangos distintos). Sin rangos cargados, no hay recargo. */
+  function recargoTalle(data, producto, categoria, talle) {
+    const tipoTalle = producto && producto.tipo_talle !== undefined
+      ? producto.tipo_talle : (categoria && categoria.tipo_talle);
+    const guia = data && data.guia_talles && data.guia_talles[tipoTalle];
+    const rangos = guia && guia.rangos;
+    const cfg = (data && data.config && data.config.talles) || {};
+    const n = Number(talle);
+    const dentro = (r) => r && !isNaN(n) && n >= r.desde && n <= r.hasta;
+    if (rangos && dentro(rangos.especial)) {
+      return { tipo: 'especial', etiqueta: 'especial', pct: num(cfg.recargo_especial, 0) };
+    }
+    if (rangos && dentro(rangos.super)) {
+      return { tipo: 'super', etiqueta: 'superespecial', pct: num(cfg.recargo_super, 0) };
+    }
+    return { tipo: 'comun', etiqueta: 'común', pct: 0 };
+  }
+
+  /* Carritos armados antes del recargo por talle: se les aplica una sola vez. */
+  function actualizarRecargosCarrito(cart, data) {
+    let cambio = false;
+    for (const item of cart) {
+      if (item.recargoTalle !== undefined) continue;
+      for (const cat of (data.categorias || [])) {
+        const p = (cat.productos || []).find(x => String(x.id) === String(item.id));
+        if (!p) continue;
+        const { pct } = recargoTalle(data, p, cat, item.talle);
+        item.precio = conPct(item.precio, pct);
+        item.recargoTalle = pct;
+        cambio = true;
+        break;
+      }
+    }
+    return cambio;
+  }
+
+  const descuentoContado = (config) => num(config && config.pago && config.pago.descuento_contado, 0);
+  const ivaMayorista = (config) => num(config && config.mayoristas && config.mayoristas.iva_pct, 21);
+
+  /* Medios de pago que puede elegir un minorista según la entrega. */
+  function mediosDePago(entrega, config) {
+    const pct = descuentoContado(config);
+    const off = pct > 0 ? `${pct}% de descuento. ` : '';
+    const medios = [];
+    if (entrega === 'retiro') {
+      medios.push({ id: 'local', domId: 'tog-pago-local', titulo: 'Efectivo o transferencia en el local', detalle: off + 'Pagás cuando retirás el pedido.' });
+    }
+    medios.push({ id: 'qr', domId: 'tog-pago-qr', titulo: 'QR / Transferencia', detalle: off + 'Pagás apenas confirmás el pedido.' });
+    if (config && config.pago && config.pago.mercadopago_activo) {
+      medios.push({
+        id: 'mercadopago', domId: 'tog-pago-mp', titulo: 'MercadoPago',
+        detalle: 'Tarjeta en cuotas, débito o dinero en cuenta, sin descuento. ' + TEXTO_FINANCIACION
+      });
+    }
+    return medios;
+  }
+
+  const TEXTO_FINANCIACION = 'Los planes de financiación dependen de MercadoPago o MODO.';
+
+  /* Un método guardado puede dejar de valer al cambiar la entrega. */
+  function metodoValido(metodo, entrega, config, perfil) {
+    if (perfil === 'mayorista') return 'convenir';
+    const medios = mediosDePago(entrega, config);
+    return medios.some(m => m.id === metodo) ? metodo : medios[0].id;
+  }
+
+  /* Dibuja el selector de pago del carrito (nada de innerHTML con datos). */
+  function renderMediosDePago(cont, { entrega, perfil, metodo, config, alElegir }) {
+    cont.textContent = '';
+    const titulo = document.createElement('div');
+    titulo.style.cssText = 'font-size:0.78rem;font-weight:500;margin-bottom:4px;';
+    titulo.textContent = perfil === 'mayorista' ? 'Forma de pago' : '¿Cómo vas a pagar?';
+    cont.appendChild(titulo);
+    if (perfil === 'mayorista') {
+      const p = document.createElement('p');
+      p.id = 'pago-convenir';
+      p.style.cssText = 'font-size:0.82rem;color:#333;line-height:1.5;margin:0;';
+      p.textContent = 'Forma de pago a convenir con Cattorini. El pedido queda pendiente de pago hasta que lo acordemos.';
+      cont.appendChild(p);
+      return;
+    }
+    mediosDePago(entrega, config).forEach((m) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.id = m.domId;
+      b.setAttribute('aria-pressed', String(m.id === metodo));
+      b.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:6px;background:' +
+        (m.id === metodo ? '#0A0A0A;color:#FFF;' : '#FFF;color:#0A0A0A;') +
+        'border:1px solid #0A0A0A;cursor:pointer;font:inherit;line-height:1.4;';
+      const t = document.createElement('div');
+      t.style.cssText = 'font-size:0.82rem;font-weight:500;';
+      t.textContent = m.titulo;
+      const d = document.createElement('div');
+      d.style.cssText = 'font-size:0.74rem;opacity:0.8;margin-top:2px;';
+      d.textContent = m.detalle;
+      b.append(t, d);
+      b.onclick = () => alElegir(m.id);
+      cont.appendChild(b);
+    });
+  }
+
+  /* Totales del pedido. Minorista: el precio de lista es el de MercadoPago y
+     pagando en efectivo, QR o transferencia tiene descuento. Mayorista: precios
+     sin IVA, sin descuento y con el flete a coordinar. */
+  function calcularTotales({ cart, perfil, entrega, metodoPago, config }) {
+    const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+    const env = (config && config.envio) || {};
+    if (perfil === 'mayorista') {
+      const ivaPct = ivaMayorista(config);
+      const iva = Math.round(subtotal * ivaPct / 100);
+      return { subtotal, descuentoPct: 0, descuentoPago: 0, ivaPct, iva, envio: 0, total: subtotal + iva };
+    }
+    const descuentoPct = (metodoPago === 'local' || metodoPago === 'qr') ? descuentoContado(config) : 0;
+    const descuentoPago = Math.round(subtotal * descuentoPct / 100);
+    const envio = entrega === 'envio' ? (subtotal >= env.gratis_desde ? 0 : env.costo_estandar) : 0;
+    return { subtotal, descuentoPct, descuentoPago, ivaPct: 0, iva: 0, envio, total: subtotal - descuentoPago + envio };
+  }
+
+  /* Filas de totales, iguales en la tienda y en la página de producto. */
+  function renderTotales(box, t, { perfil, entrega, transportista }) {
+    box.textContent = '';
+    const fila = (cls, izq, der, muted) => {
+      const r = document.createElement('div');
+      r.className = cls;
+      const l = document.createElement('span');
+      if (muted) l.className = 'muted';
+      l.textContent = izq;
+      const d = document.createElement('span');
+      d.textContent = der;
+      r.append(l, d);
+      box.appendChild(r);
+    };
+    if (perfil === 'mayorista') {
+      fila('totals-row', 'Subtotal sin IVA', fmtPesos(t.subtotal), true);
+      fila('totals-row', `IVA (${t.ivaPct}%)`, fmtPesos(t.iva), true);
+      if (entrega === 'envio') fila('totals-row', `Flete (${transportista})`, 'A coordinar', true);
+      fila('totals-row total', 'Total con IVA', fmtPesos(t.total), false);
+      return;
+    }
+    fila('totals-row', 'Subtotal', fmtPesos(t.subtotal), true);
+    if (t.descuentoPago > 0) fila('totals-row', `Descuento por forma de pago (${t.descuentoPct}%)`, '−' + fmtPesos(t.descuentoPago), true);
+    if (entrega === 'envio') {
+      if (t.envio === 0) fila('totals-row', 'Envío', 'Gratis', true);
+      else fila('totals-row', `Envío (${transportista})`, fmtPesos(t.envio), true);
+    }
+    fila('totals-row total', 'Total', fmtPesos(t.total), false);
   }
 
   /* ================= ubicaciones.js (carga diferida) ================= */
@@ -468,6 +622,8 @@
     ErrorCheckout, validarCarrito, crearPedidoAtomico, mensajeErrorCheckout,
     textoPedidoWhatsApp, mostrarPedidoPorWhatsApp,
     esperarUbicaciones, initUbicacionSeguro, localidadValida,
-    focoEnModal, devolverFoco, atraparFoco
+    focoEnModal, devolverFoco, atraparFoco,
+    recargoTalle, actualizarRecargosCarrito, descuentoContado, TEXTO_FINANCIACION,
+    mediosDePago, metodoValido, renderMediosDePago, calcularTotales, renderTotales
   });
 })();

@@ -51,7 +51,8 @@ service cloud.firestore {
         return d.keys().hasAll(['codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
                                 'subtotal', 'envio', 'total', 'nota', 'estado'])
           && d.keys().hasOnly(['codigo', 'creadoEn', 'cliente', 'items', 'modalidad',
-                               'pagaEnLocal', 'subtotal', 'envio', 'total', 'nota', 'estado'])
+                               'pagaEnLocal', 'metodoPago', 'descuentoPago', 'iva',
+                               'subtotal', 'envio', 'total', 'nota', 'estado'])
           && d.codigo == codigo
           && d.codigo.matches('^[A-Z0-9]{10,20}$')
           && d.creadoEn == request.time
@@ -63,7 +64,13 @@ service cloud.firestore {
           && (!('pagaEnLocal' in d) || d.pagaEnLocal is bool)
           && d.subtotal is number && d.subtotal >= 0
           && d.envio is number && d.envio >= 0
-          && d.total is number && d.total == d.subtotal + d.envio
+          && (!('metodoPago' in d) || d.metodoPago in ['local', 'qr', 'mercadopago', 'convenir'])
+          && d.get('descuentoPago', 0) is number && d.get('descuentoPago', 0) >= 0
+          && d.get('descuentoPago', 0) <= d.subtotal * 0.11
+          && (d.get('metodoPago', '') != 'mercadopago' || d.get('descuentoPago', 0) == 0)
+          && d.get('iva', 0) is number && d.get('iva', 0) >= 0
+          && d.total is number
+          && d.total == d.subtotal - d.get('descuentoPago', 0) + d.get('iva', 0) + d.envio
           && d.nota is string && d.nota.size() <= 400
           && d.estado == 'pendiente';
       }

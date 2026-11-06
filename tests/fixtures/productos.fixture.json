@@ -150,7 +150,8 @@
     "mayoristas": {
       "codigo_hash": "bcb1625dafeeb125eff030c86dff6e5786a9466740ce91418f2738cdc3a35294",
       "minimo_compra": 50000,
-      "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo."
+      "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo.",
+      "iva_pct": 21
     },
     "minoristas": {
       "bonificacion_zonas_libres": 0,
@@ -159,7 +160,13 @@
     },
     "pago": {
       "titular": "Titular de Prueba S.A.",
-      "banco": "Banco de Prueba"
+      "banco": "Banco de Prueba",
+      "descuento_contado": 10,
+      "mercadopago_activo": false
+    },
+    "talles": {
+      "recargo_especial": 14,
+      "recargo_super": 18
     }
   },
   "zonas_mayoristas": [],
@@ -224,6 +231,16 @@
           "50",
           "105"
         ]
+      },
+      "rangos": {
+        "especial": {
+          "desde": 44,
+          "hasta": 46
+        },
+        "super": {
+          "desde": 48,
+          "hasta": 48
+        }
       }
     },
     "Jeans Catto\"s": {

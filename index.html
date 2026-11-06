@@ -1018,6 +1018,14 @@ function buildDestacados(data) {
     price.textContent = `$${p.precio_minorista.toLocaleString('es-AR')}`;
     info.appendChild(name);
     info.appendChild(price);
+    const descPct = data.config && data.config.pago && data.config.pago.descuento_contado;
+    if (descPct > 0) {
+      const aviso = document.createElement('div');
+      aviso.className = 'text-xs';
+      aviso.style.cssText = 'color: var(--muted); margin-top: 4px;';
+      aviso.textContent = `${descPct}% de descuento en efectivo o transferencia`;
+      info.appendChild(aviso);
+    }
 
     link.appendChild(img);
     link.appendChild(info);

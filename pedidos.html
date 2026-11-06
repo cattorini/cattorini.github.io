@@ -16,6 +16,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <script src="./tienda-core.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -637,13 +638,23 @@ function trackCode(o) {
   return '#' + (o.id ? o.id.slice(-5).toUpperCase() : '···');
 }
 
+/* Pedidos anteriores a metodoPago: envío era siempre QR y retiro según pagaEnLocal. */
+function metodoDelPedido(o) {
+  if (o.metodoPago) return o.metodoPago;
+  return o.modalidad === 'retiro' && o.pagaEnLocal ? 'local' : 'qr';
+}
+const NOMBRE_PAGO = { local: 'En el local', qr: 'QR / Transferencia', mercadopago: 'MercadoPago', convenir: 'A convenir' };
+
 /* Info de pago a mostrar mientras el pedido está en la primera columna:
    null si ya no aplica (pasó de estado). Envío siempre es QR; retiro puede
    ser "paga en el local" (sin QR) o QR también si el cliente lo eligió. */
 function pagoInfo(o) {
   if (o.estado !== 'pendiente') return null;
-  if (o.modalidad === 'retiro' && o.pagaEnLocal) return { texto: '🏬 Paga en el local', clase: 'local' };
-  return { texto: '💳 Pendiente de pago', clase: 'qr' };
+  const metodo = metodoDelPedido(o);
+  if (metodo === 'local') return { texto: '🏬 Paga en el local', clase: 'local' };
+  if (metodo === 'convenir') return { texto: '🤝 Pago a convenir', clase: 'qr' };
+  if (metodo === 'mercadopago') return { texto: '💳 Esperando a MercadoPago', clase: 'qr' };
+  return { texto: '💳 Pendiente de pago por QR', clase: 'qr' };
 }
 
 /* Precio(s) válidos HOY para un item según el catálogo publicado y el perfil
@@ -658,10 +669,11 @@ function preciosCatalogo(o, it) {
   }
   if (!p) return null;
   const cli = o.cliente || {};
-  if (cli.perfil === 'mayorista') return [Number(p.precio_mayorista)];
-  const out = [Number(p.precio_minorista)];
+  const conRecargo = (n) => Math.round(n * (1 + (Number(it.recargoTalle) || 0) / 100));
+  if (cli.perfil === 'mayorista') return [conRecargo(Number(p.precio_mayorista))];
+  const out = [conRecargo(Number(p.precio_minorista))];
   const bonif = (DATA.config && DATA.config.minoristas && DATA.config.minoristas.bonificacion_zonas_libres) || 0;
-  if (bonif > 0) out.push(Math.round(p.precio_minorista * (1 - bonif / 100)));
+  if (bonif > 0) out.push(conRecargo(Math.round(p.precio_minorista * (1 - bonif / 100))));
   return out;
 }
 
@@ -830,6 +842,7 @@ function showDetail(o) {
   addField('WhatsApp', cli.whatsapp);
   addField('Email', cli.email);
   addField('Modalidad', o.modalidad === 'envio' ? 'Envío a domicilio' : 'Retiro en local');
+  addField('Forma de pago', NOMBRE_PAGO[metodoDelPedido(o)] || '');
   addField('Dirección', cli.direccion);
   addField('Localidad', cli.localidad ? cli.localidad + (cli.provincia ? ', ' + cli.provincia : '') : '');
   addField('Código postal', cli.codigoPostal);
@@ -865,13 +878,16 @@ function showDetail(o) {
     const r = document.createElement('div');
     r.className = 'totals-line ' + (cls || '');
     const l = document.createElement('span'); l.textContent = label;
-    const v = document.createElement('span'); v.textContent = '$' + (val || 0).toLocaleString('es-AR');
+    const v = document.createElement('span'); v.textContent = (val < 0 ? '−$' : '$') + Math.abs(val || 0).toLocaleString('es-AR');
     r.appendChild(l); r.appendChild(v);
     tBox.appendChild(r);
   };
-  addTot('Subtotal', o.subtotal);
-  if (o.modalidad === 'envio') addTot('Envío', o.envio);
-  addTot('Total', o.total, 'total');
+  const esMay = (o.cliente || {}).perfil === 'mayorista';
+  addTot(esMay && o.iva ? 'Subtotal sin IVA' : 'Subtotal', o.subtotal);
+  if (o.descuentoPago) addTot('Descuento por forma de pago', -o.descuentoPago);
+  if (o.iva) addTot('IVA', o.iva);
+  if (o.modalidad === 'envio' && !esMay) addTot('Envío', o.envio);
+  addTot(esMay && o.iva ? 'Total con IVA' : 'Total', o.total, 'total');
   cont.appendChild(tBox);
 
   /* Nota */
@@ -893,7 +909,13 @@ function showDetail(o) {
     /* State buttons */
     const st = document.createElement('div');
     st.className = 'state-btns';
-    const estadoLabels = { pendiente: 'Pendiente de pago', preparando: 'Preparando', listo: 'Listo', enviado: 'Enviado' };
+    const retiroLocal = metodoDelPedido(o) === 'local';
+    const estadoLabels = {
+      pendiente: retiroLocal ? 'Pedido recibido' : 'Pendiente de pago',
+      preparando: 'Preparando',
+      listo: o.modalidad === 'retiro' ? 'Puede retirar' : 'Listo',
+      enviado: o.modalidad === 'retiro' ? 'Retirado' : 'Enviado'
+    };
     ['pendiente','preparando','listo','enviado'].forEach(estado => {
       const b = document.createElement('button');
       b.className = 'state-btn' + (o.estado === estado ? ' active' : '');
@@ -1091,7 +1113,7 @@ function exportCSV() {
       cli.localidad || '',
       cli.perfil || '',
       o.modalidad || '',
-      o.modalidad === 'retiro' ? (o.pagaEnLocal ? 'En el local' : 'QR') : 'QR',
+      NOMBRE_PAGO[metodoDelPedido(o)] || '',
       items,
       o.subtotal || 0,
       o.envio || 0,
@@ -1309,8 +1331,14 @@ async function updateManualTallesAndPrice() {
     const op = document.createElement('option'); op.value = t; op.textContent = t;
     talleSel.appendChild(op);
   });
-  const precio = manualPerfil === 'mayorista' ? p.precio_mayorista : p.precio_minorista;
-  document.getElementById('m-precio').value = precio;
+  /* El precio sugerido incluye el recargo del talle (se puede editar). */
+  const precioManual = () => {
+    const base = manualPerfil === 'mayorista' ? p.precio_mayorista : p.precio_minorista;
+    const { pct } = window.CattCore.recargoTalle(DATA, p, found.cat, talleSel.value);
+    return Math.round(base * (1 + pct / 100));
+  };
+  document.getElementById('m-precio').value = precioManual();
+  talleSel.oninput = () => { document.getElementById('m-precio').value = precioManual(); };
 
   /* Stock (colores + cantidades) vive en Firestore, aparte del catálogo */
   manualStockDoc = null;

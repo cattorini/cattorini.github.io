@@ -32,7 +32,8 @@
     "mayoristas": {
       "codigo_hash": "",
       "minimo_compra": 130000,
-      "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo."
+      "mensaje_bienvenida": "Ingresá tu código de acceso mayorista para ver precios y catálogo exclusivo.",
+      "iva_pct": 21
     },
     "minoristas": {
       "bonificacion_zonas_libres": 0,
@@ -41,7 +42,13 @@
     },
     "pago": {
       "titular": "Original 59 S.A",
-      "banco": "Banco Credicoop"
+      "banco": "Banco Credicoop",
+      "descuento_contado": 10,
+      "mercadopago_activo": false
+    },
+    "talles": {
+      "recargo_especial": 14,
+      "recargo_super": 18
     }
   },
   "zonas_mayoristas": [
@@ -123,6 +130,16 @@
           "88",
           "96"
         ]
+      },
+      "rangos": {
+        "especial": {
+          "desde": 46,
+          "hasta": 48
+        },
+        "super": {
+          "desde": 50,
+          "hasta": 54
+        }
       }
     },
     "Pantalon confort": {
@@ -200,6 +217,16 @@
           "35",
           "22"
         ]
+      },
+      "rangos": {
+        "especial": {
+          "desde": 56,
+          "hasta": 66
+        },
+        "super": {
+          "desde": 68,
+          "hasta": 72
+        }
       }
     },
     "Pantalon vestir": {
@@ -301,6 +328,16 @@
           "37",
           "26"
         ]
+      },
+      "rangos": {
+        "especial": {
+          "desde": 56,
+          "hasta": 66
+        },
+        "super": {
+          "desde": 68,
+          "hasta": 72
+        }
       }
     },
     "Jeans Catto's": {
@@ -444,6 +481,16 @@
           "41",
           "23"
         ]
+      },
+      "rangos": {
+        "especial": {
+          "desde": 54,
+          "hasta": 66
+        },
+        "super": {
+          "desde": 68,
+          "hasta": 80
+        }
       }
     }
   },

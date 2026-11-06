@@ -71,7 +71,7 @@ test.describe('Seguimiento de pedido @seguimiento @pedido', () => {
     await seg.gotoConCodigo(COD);
     await expect(seg.pedidoCard).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#step-label-4')).toHaveText(/Retirado/);
-    await expect(page.locator('#step-label-3')).toHaveText(/Listo para retirar/);
+    await expect(page.locator('#step-label-3')).toHaveText(/Podés retirar tu pedido/);
   });
 
   test('estado enviado con modalidad envío muestra mensaje de despacho @seguimiento', async ({ page }) => {

@@ -198,6 +198,25 @@ describe('pedidos — creación pública validada', () => {
   test('rechaza total incoherente (total != subtotal + envio)', async () => {
     await assertFails(publico.doc('pedidos/' + COD(6)).set(pedidoValido(COD(6), { total: 1 })));
   });
+  test('acepta descuento por forma de pago si el total cierra', async () => {
+    await assertSucceeds(publico.doc('pedidos/ABCDE23456XY').set(pedidoValido('ABCDE23456XY', {
+      metodoPago: 'qr', subtotal: 79000, descuentoPago: 7900, iva: 0, envio: 0, total: 71100 })));
+  });
+  test('acepta IVA mayorista si el total cierra', async () => {
+    await assertSucceeds(publico.doc('pedidos/ABCDE23456XZ').set(pedidoValido('ABCDE23456XZ', {
+      metodoPago: 'convenir', subtotal: 100000, descuentoPago: 0, iva: 21000, envio: 0, total: 121000 })));
+  });
+  test('rechaza un descuento mayor al permitido', async () => {
+    await assertFails(publico.doc('pedidos/ABCDE23456XW').set(pedidoValido('ABCDE23456XW', {
+      metodoPago: 'qr', subtotal: 79000, descuentoPago: 40000, envio: 0, total: 39000 })));
+  });
+  test('rechaza descuento pagando con MercadoPago', async () => {
+    await assertFails(publico.doc('pedidos/ABCDE23456XV').set(pedidoValido('ABCDE23456XV', {
+      metodoPago: 'mercadopago', subtotal: 79000, descuentoPago: 7900, envio: 0, total: 71100 })));
+  });
+  test('rechaza un método de pago desconocido', async () => {
+    await assertFails(publico.doc('pedidos/ABCDE23456XU').set(pedidoValido('ABCDE23456XU', { metodoPago: 'regalo' })));
+  });
   test('rechaza items vacío', async () => {
     await assertFails(publico.doc('pedidos/' + COD(7)).set(pedidoValido(COD(7), { items: [] })));
   });

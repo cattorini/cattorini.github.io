@@ -229,6 +229,7 @@
     .pcard-info { padding-top: 16px; padding-bottom: 8px; }
     .pcard-name { font-size: 0.95rem; font-weight: 500; margin-bottom: 4px; }
     .pcard-price { font-size: 0.9rem; color: #0A0A0A; }
+    .pcard-aviso { font-size: 0.72rem; color: #666; margin-top: 4px; line-height: 1.35; }
     .pcard-price .original { text-decoration: line-through; color: #999; margin-right: 6px; font-size: 0.82rem; }
     .pcard-badge {
       position: absolute; top: 12px; left: 12px;
@@ -724,14 +725,7 @@
         <button id="tog-envio" type="button" onclick="setEntrega('envio')">Envío a domicilio</button>
       </div>
 
-      <div id="retiro-pago-wrap" style="margin-top:10px;">
-        <div style="font-size:0.78rem;font-weight:500;margin-bottom:4px;">¿Cómo vas a pagar?</div>
-        <div class="delivery-toggle">
-          <button id="tog-pago-local" class="active" type="button" onclick="setPagaEnLocal(true)">Pago en el local</button>
-          <button id="tog-pago-qr" type="button" onclick="setPagaEnLocal(false)">Pago electrónico (QR)</button>
-        </div>
-        <p style="font-size:0.76rem;color:#666;margin-top:4px;" id="pago-local-hint">Vas a abonar cuando retires el pedido.</p>
-      </div>
+      <div id="retiro-pago-wrap" style="margin-top:10px;"></div>
 
       <label for="in-nombre" class="vh">Nombre y apellido</label>
       <input type="text" id="in-nombre" class="delivery-input" placeholder="Tu nombre y apellido" maxlength="80" autocomplete="name" />
@@ -854,9 +848,9 @@ let categoriaActual = 'todos';
 let entrega = 'retiro';
 /* Solo relevante para retiro — envío siempre necesita pago QR (decisión de
    producto: el envío es a cargo del comprador y se cobra antes de despachar). */
-let pagaEnLocal = true;
+let metodoPago = 'local';
 function necesitaQR() {
-  return entrega === 'envio' || (entrega === 'retiro' && !pagaEnLocal);
+  return metodoPago === 'qr';
 }
 let lastSubmit = 0;
 let ubicacionGate = null;
@@ -1276,6 +1270,12 @@ function renderCatalog() {
       }
       info.appendChild(name);
       info.appendChild(price);
+      const aviso = document.createElement('div');
+      aviso.className = 'pcard-aviso';
+      const descPct = window.CattCore.descuentoContado(DATA.config);
+      if (pricing.tipo === 'mayorista') aviso.textContent = 'Precio sin IVA';
+      else if (descPct > 0) aviso.textContent = `${descPct}% de descuento en efectivo o transferencia`;
+      if (aviso.textContent) info.appendChild(aviso);
 
       link.appendChild(imgDiv);
       link.appendChild(info);
@@ -1454,6 +1454,7 @@ async function initEnvioUbicaciones() {
 }
 
 function renderCart() {
+  renderPago();
   const body = document.getElementById('drawer-body');
   const footer = document.getElementById('drawer-footer');
   body.innerHTML = '';
@@ -1489,7 +1490,8 @@ function renderCart() {
     info.appendChild(name);
     const meta = document.createElement('div');
     meta.className = 'cart-item-meta';
-    meta.textContent = `${item.categoria} · Talle ${item.talle}` + (item.color ? ` · ${item.color}` : '');
+    meta.textContent = `${item.categoria} · Talle ${item.talle}` + (item.color ? ` · ${item.color}` : '') +
+      (item.recargoTalle ? ` · incluye recargo de talle ${item.recargoTalle}%` : '');
     info.appendChild(meta);
     const price = document.createElement('div');
     price.className = 'cart-item-price';
@@ -1520,50 +1522,13 @@ function renderCart() {
 
 function renderTotals() {
   const cart = getCart();
-  const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
-  const env = DATA.config.envio;
-  const { perfil } = getPerfilActual();
-  let envio = 0;
-  if (entrega === 'envio') {
-    /* El envío mayorista siempre corre por cuenta del comprador — el
-       envío gratis por monto es un beneficio exclusivo de minoristas. */
-    envio = perfil === 'mayorista' ? 0 : (subtotal >= env.gratis_desde ? 0 : env.costo_estandar);
-  }
-  const total = subtotal + envio;
-
-  const box = document.getElementById('totals-box');
-  box.innerHTML = '';
-
-  const r1 = document.createElement('div');
-  r1.className = 'totals-row';
-  const r1L = document.createElement('span'); r1L.className = 'muted'; r1L.textContent = 'Subtotal';
-  const r1R = document.createElement('span'); r1R.textContent = `$${subtotal.toLocaleString('es-AR')}`;
-  r1.appendChild(r1L); r1.appendChild(r1R);
-  box.appendChild(r1);
-
-  if (entrega === 'envio') {
-    const r2 = document.createElement('div');
-    r2.className = 'totals-row';
-    const r2L = document.createElement('span'); r2L.className = 'muted';
-    r2L.textContent = 'Envío (' + env.transportista + ')';
-    const r2R = document.createElement('span');
-    if (perfil === 'mayorista') { r2R.textContent = 'A coordinar'; r2L.textContent = 'Flete (' + env.transportista + ')'; }
-    else if (envio === 0) { r2R.textContent = 'Gratis'; r2R.style.color = '#0A0A0A'; }
-    else { r2R.textContent = `$${envio.toLocaleString('es-AR')}`; }
-    r2.appendChild(r2L); r2.appendChild(r2R);
-    box.appendChild(r2);
-  }
-
-  const r3 = document.createElement('div');
-  r3.className = 'totals-row total';
-  const r3L = document.createElement('span');
-  r3L.textContent = 'Total' + (entrega === 'retiro' ? ' estimado' : '');
-  const r3R = document.createElement('span');
-  r3R.textContent = `$${total.toLocaleString('es-AR')}`;
-  r3.appendChild(r3L); r3.appendChild(r3R);
-  box.appendChild(r3);
-
-  actualizarMinimoMayorista(perfil, subtotal);
+  const perfil = getPerfilActual().perfil;
+  metodoPago = window.CattCore.metodoValido(metodoPago, entrega, DATA.config, perfil);
+  const t = window.CattCore.calcularTotales({ cart, perfil, entrega, metodoPago, config: DATA.config });
+  window.CattCore.renderTotales(document.getElementById('totals-box'), t, {
+    perfil, entrega, transportista: DATA.config.envio.transportista
+  });
+  actualizarMinimoMayorista(perfil, t.subtotal);
 }
 
 /* Mínimo de compra mayorista — si no llega, avisar y bloquear "Confirmar
@@ -1593,8 +1558,7 @@ function setEntrega(modo) {
   document.getElementById('tog-retiro').classList.toggle('active', modo === 'retiro');
   document.getElementById('tog-envio').classList.toggle('active', modo === 'envio');
   document.getElementById('envio-wrap').style.display = modo === 'envio' ? 'block' : 'none';
-  /* El pago en el local solo tiene sentido si vas a estar físicamente ahí */
-  document.getElementById('retiro-pago-wrap').style.display = modo === 'retiro' ? 'block' : 'none';
+  renderPago();
 
   /* Si es mayorista con datos + envío + tiene dirección + no editó todavía → mostrar header con "Editar" */
   if (modo === 'envio' && esMayoristaConDatos()) {
@@ -1616,13 +1580,13 @@ function setEntrega(modo) {
   renderTotals();
 }
 
-function setPagaEnLocal(val) {
-  pagaEnLocal = val;
-  document.getElementById('tog-pago-local').classList.toggle('active', val);
-  document.getElementById('tog-pago-qr').classList.toggle('active', !val);
-  document.getElementById('pago-local-hint').textContent = val
-    ? 'Vas a abonar cuando retires el pedido.'
-    : 'Vas a poder pagar con QR apenas confirmes la compra.';
+function renderPago() {
+  const perfil = getPerfilActual().perfil;
+  metodoPago = window.CattCore.metodoValido(metodoPago, entrega, DATA.config, perfil);
+  window.CattCore.renderMediosDePago(document.getElementById('retiro-pago-wrap'), {
+    entrega, perfil, metodo: metodoPago, config: DATA.config,
+    alElegir: (m) => { metodoPago = m; renderPago(); renderTotals(); }
+  });
 }
 
 function chgCartQty(idx, delta) {
@@ -1799,9 +1763,12 @@ async function enviarPedido() {
   const zonaStatus = localStorage.getItem(LS_ZONA_STATUS) || 'libre';
   const localidadPerfil = localStorage.getItem(LS_LOCALIDAD) || '';
 
-  const subtotal = cart.reduce((s, i) => s + (i.precio * i.qty), 0);
+  metodoPago = window.CattCore.metodoValido(metodoPago, entrega, DATA.config, cart_perfil);
+  const { subtotal, descuentoPago, iva, envio, total } = window.CattCore.calcularTotales({
+    cart, perfil: cart_perfil, entrega, metodoPago, config: DATA.config
+  });
 
-  /* Mínimo de compra mayorista — el botón ya se deshabilita en renderTotals,
+  /* Mínimo de compra mayorista (sin IVA) — el botón ya se deshabilita en renderTotals,
      esto es la defensa real por si se saltea el UI (devtools, etc). */
   const minimoMayo = (DATA.config.mayoristas && DATA.config.mayoristas.minimo_compra) || 0;
   if (cart_perfil === 'mayorista' && minimoMayo > 0 && subtotal < minimoMayo) {
@@ -1809,9 +1776,6 @@ async function enviarPedido() {
     return;
   }
 
-  const env = DATA.config.envio;
-  const envio = entrega === 'envio' ? (cart_perfil === 'mayorista' ? 0 : (subtotal >= env.gratis_desde ? 0 : env.costo_estandar)) : 0;
-  const total = subtotal + envio;
 
   /* Validaciones de carrito (tope de variantes por producto, cantidades) */
   try {
@@ -1856,11 +1820,13 @@ async function enviarPedido() {
     },
     items: cart.map(i => ({
       id: i.id, nombre: i.nombre, categoria: i.categoria,
-      talle: i.talle, color: i.color || null, qty: i.qty, precio: i.precio
+      talle: i.talle, color: i.color || null, qty: i.qty, precio: i.precio,
+      recargoTalle: i.recargoTalle || 0
     })),
     modalidad: entrega,
-    pagaEnLocal: entrega === 'retiro' ? pagaEnLocal : false,
-    subtotal, envio, total,
+    metodoPago,
+    pagaEnLocal: metodoPago === 'local',
+    subtotal, descuentoPago, iva, envio, total,
     nota,
     estado: 'pendiente'
   };
@@ -1902,9 +1868,12 @@ async function enviarPedido() {
     } else {
       datosBox.style.display = 'none';
     }
-  } else if (entrega === 'retiro') {
+  } else if (metodoPago === 'convenir') {
     qrBox.style.display = 'none';
-    msgEl.textContent = 'Tu pedido queda a la espera de que lo confirmemos. Vas a abonarlo cuando pases a retirarlo por el local.';
+    msgEl.textContent = 'Tu pedido queda pendiente de pago. Nos comunicamos con vos para acordar la forma de pago.';
+  } else if (metodoPago === 'local') {
+    qrBox.style.display = 'none';
+    msgEl.textContent = 'Recibimos tu pedido. Te avisamos cuando puedas pasar a retirarlo y lo abonás en el local.';
   } else {
     qrBox.style.display = 'none';
     msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.';
@@ -1927,6 +1896,10 @@ function closeConfirm() {
 /* ---------- Init ---------- */
 async function init() {
   DATA = await loadData();
+  if (DATA) {
+    const carrito = getCart();
+    if (window.CattCore.actualizarRecargosCarrito(carrito, DATA)) saveCart(carrito);
+  }
   if (!DATA) {
     document.getElementById('skel-container').innerHTML = '<p style="text-align:center;padding:60px 20px;color:#666;">No se pudo cargar el catálogo. Recargá la página.</p>';
     return;

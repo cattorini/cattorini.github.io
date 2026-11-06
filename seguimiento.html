@@ -321,11 +321,13 @@ function volverBusqueda() {
   window.location.href = './seguimiento.html';
 }
 
-function necesitaQRSeguimiento(modalidad, pagaEnLocal) {
-  return modalidad === 'envio' || (modalidad === 'retiro' && !pagaEnLocal);
+/* Pedidos anteriores a metodoPago: envío era siempre QR y retiro según pagaEnLocal. */
+function metodoDelPedido(d) {
+  if (d.metodoPago) return d.metodoPago;
+  return d.modalidad === 'retiro' && d.pagaEnLocal ? 'local' : 'qr';
 }
 
-function renderTimeline(estado, modalidad, pagaEnLocal) {
+function renderTimeline(estado, modalidad, metodo) {
   const orden = ['pendiente','preparando','listo','enviado'];
   const idx = orden.indexOf(estado);
   // Un pedido cancelado no avanza: se oculta la línea de tiempo y queda solo el mensaje.
@@ -340,29 +342,33 @@ function renderTimeline(estado, modalidad, pagaEnLocal) {
   const l1 = document.getElementById('step-label-1');
   const l3 = document.getElementById('step-label-3');
   const l4 = document.getElementById('step-label-4');
-  if (l1) l1.textContent = necesitaQRSeguimiento(modalidad, pagaEnLocal) ? 'Pendiente de pago' : 'Espera confirmación';
+  if (l1) l1.textContent = metodo === 'local' ? 'Pedido recibido' : 'Pendiente de pago';
   if (modalidad === 'envio') {
     if (l3) l3.textContent = 'Listo';
     if (l4) l4.textContent = 'Enviado';
   } else {
-    if (l3) l3.textContent = 'Listo para retirar';
+    if (l3) l3.textContent = 'Podés retirar tu pedido';
     if (l4) l4.textContent = 'Retirado';
   }
 }
 
-function statusMsgFor(estado, modalidad, pagaEnLocal) {
+function statusMsgFor(estado, modalidad, metodo) {
   const esEnvio = modalidad === 'envio';
-  const conQR = necesitaQRSeguimiento(modalidad, pagaEnLocal);
+  const direccion = (DATA && DATA.negocio && DATA.negocio.direccion) || 'nuestro local';
+  const PENDIENTE = {
+    local: 'Recibimos tu pedido. Te avisamos cuando esté listo y lo abonás en el local, en efectivo o por transferencia.',
+    qr: 'Tu pedido está pendiente de pago. Escaneá el QR que te mostramos al confirmar (o volvé a esta página desde el link que te dimos) o escribinos por WhatsApp si preferís pagar por otro medio.',
+    mercadopago: 'Estamos esperando la confirmación de MercadoPago. Si ya pagaste, no hagas nada: se actualiza solo.',
+    convenir: 'Tu pedido está pendiente de pago. Nos comunicamos con vos para acordar la forma de pago.'
+  };
   const MSGS = {
-    pendiente: conQR
-      ? 'Tu pedido está pendiente de pago. Escaneá el QR que te mostramos al confirmar (o volvé a esta página desde el link que te dimos) o escribinos por WhatsApp si preferís pagar por otro medio.'
-      : 'Tu pedido fue recibido y está a la espera de que lo confirmemos. Lo vas a abonar cuando pases a retirarlo por el local.',
-    preparando: conQR
+    pendiente: PENDIENTE[metodo] || PENDIENTE.qr,
+    preparando: metodo === 'qr' || metodo === 'mercadopago'
       ? '¡Recibimos tu pago! Tu pedido está en preparación.'
       : 'Estamos preparando tu pedido. En breve estará listo.',
     listo: esEnvio
       ? 'Tu pedido está listo. Lo estamos despachando a la logística de Vía Cargo.'
-      : 'Tu pedido está listo. Ya podés pasar a buscarlo por el local.',
+      : `Ya podés retirar tu pedido en ${direccion}.`,
     enviado: esEnvio
       ? 'Tu pedido fue despachado a Vía Cargo. Vas a recibir el seguimiento por WhatsApp cuando esté en camino.'
       : 'Tu pedido fue retirado. ¡Gracias por elegirnos!',
@@ -381,8 +387,9 @@ function renderPedido(doc) {
   const code = d.codigo || doc.id || '?';
 
   document.getElementById('code-display').textContent = '#' + code;
-  document.getElementById('status-msg').textContent = statusMsgFor(d.estado, d.modalidad, d.pagaEnLocal);
-  renderTimeline(d.estado, d.modalidad, d.pagaEnLocal);
+  const metodo = metodoDelPedido(d);
+  document.getElementById('status-msg').textContent = statusMsgFor(d.estado, d.modalidad, metodo);
+  renderTimeline(d.estado, d.modalidad, metodo);
 
   /* Cliente */
   const cliBox = document.getElementById('detalle-cliente');
@@ -402,9 +409,9 @@ function renderPedido(doc) {
     addRow('Dirección', cli.direccion);
     addRow('Localidad', (cli.localidad ? cli.localidad : '') + (cli.provincia ? ', ' + cli.provincia : ''));
     addRow('Código postal', cli.codigoPostal);
-  } else {
-    addRow('Pago', d.pagaEnLocal ? 'En el local, al retirar' : 'Electrónico (QR)');
   }
+  const NOMBRE_PAGO = { local: 'En el local, al retirar', qr: 'QR / Transferencia', mercadopago: 'MercadoPago', convenir: 'A convenir' };
+  addRow('Pago', NOMBRE_PAGO[metodo] || '');
   if (cli.perfil === 'mayorista') addRow('Perfil', 'Cliente mayorista');
 
   /* Items */
@@ -424,17 +431,20 @@ function renderPedido(doc) {
   /* Totales */
   const tBox = document.getElementById('detalle-totales');
   tBox.innerHTML = '';
+  const esMayorista = (d.cliente || {}).perfil === 'mayorista';
   const addT = (l, v, cls) => {
     const row = document.createElement('div');
     row.className = 'totals-line ' + (cls || '');
     const ll = document.createElement('span'); ll.textContent = l;
-    const rr = document.createElement('span'); rr.textContent = '$' + (v || 0).toLocaleString('es-AR');
+    const rr = document.createElement('span'); rr.textContent = (v < 0 ? '−$' : '$') + Math.abs(v || 0).toLocaleString('es-AR');
     row.appendChild(ll); row.appendChild(rr);
     tBox.appendChild(row);
   };
-  addT('Subtotal', d.subtotal);
-  if (d.modalidad === 'envio') addT('Envío', d.envio);
-  addT('Total', d.total, 'total');
+  addT(esMayorista && d.iva ? 'Subtotal sin IVA' : 'Subtotal', d.subtotal);
+  if (d.descuentoPago) addT('Descuento por forma de pago', -d.descuentoPago);
+  if (d.iva) addT('IVA', d.iva);
+  if (d.modalidad === 'envio' && !esMayorista) addT('Envío', d.envio);
+  addT(esMayorista && d.iva ? 'Total con IVA' : 'Total', d.total, 'total');
 
   /* Nota */
   if (d.nota) {
@@ -451,7 +461,7 @@ function renderPedido(doc) {
   /* QR de pago — solo mientras esté pendiente de pago y el pedido lo requiera
      (envío siempre, retiro solo si no eligió pagar en el local) */
   const pagoBox = document.getElementById('pago-qr-box');
-  if (necesitaQRSeguimiento(d.modalidad, d.pagaEnLocal) && d.estado === 'pendiente') {
+  if (metodo === 'qr' && d.estado === 'pendiente') {
     pagoBox.style.display = 'block';
     if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
       document.getElementById('pago-qr-wa').href = waLink(DATA.negocio.whatsapp, `Hola! Quiero pagar mi pedido #${code} por otro medio.`) || '#';

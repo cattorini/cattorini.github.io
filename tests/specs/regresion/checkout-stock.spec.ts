@@ -88,7 +88,7 @@ test.describe('Checkout con stock por talle/color @regresion @checkout', () => {
     expect(codigo).toMatch(/^[A-Z0-9]{5,20}$/);
     const pedidos = await pedidoPorCodigo(page, codigo);
     expect(pedidos).toHaveLength(1);
-    expect(pedidos[0]).toMatchObject({ estado: 'pendiente', modalidad: 'retiro', subtotal: 44000, total: 44000 });
+    expect(pedidos[0]).toMatchObject({ estado: 'pendiente', modalidad: 'retiro', subtotal: 44000, descuentoPago: 4400, metodoPago: 'local', total: 39600 });
     expect(pedidos[0].items[0]).toMatchObject({ id: 1, talle: 'M', color: 'Blanco', qty: 2, precio: 22000 });
     expect(pedidos[0].cliente).toMatchObject({ nombre: 'Cliente Regresión', perfil: 'minorista' });
 

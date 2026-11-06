@@ -105,8 +105,9 @@ test.describe('Flete mayorista según política del cliente @tienda @mayorista @
     const box = page.locator('#totals-box');
     await expect(box).toContainText('A coordinar');
     await expect(box).toContainText('Flete');
-    // subtotal 5 × 14.500 = 72.500 y el total no suma ningún flete
-    await expect(box.locator('.totals-row.total')).toContainText('72.500');
+    // subtotal sin IVA 5 × 14.500 = 72.500, IVA 15.225 y el total no suma ningún flete
+    await expect(box).toContainText('Subtotal sin IVA');
+    await expect(box.locator('.totals-row.total')).toContainText('87.725');
   });
 
   test('mayorista: el aviso de envío informa el flete por bulto @mayorista', async ({ page }) => {
