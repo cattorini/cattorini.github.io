@@ -44,7 +44,8 @@
       "titular": "Original 59 S.A",
       "banco": "Banco Credicoop",
       "descuento_contado": 10,
-      "mercadopago_activo": false
+      "mercadopago_activo": false,
+      "avisos_activos": false
     },
     "talles": {
       "recargo_especial": 14,

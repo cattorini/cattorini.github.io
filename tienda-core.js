@@ -533,6 +533,45 @@
     fila('totals-row total', 'Total', fmtPesos(t.total), false);
   }
 
+  /* ================= Pago online y aviso de venta (Worker) ================= */
+
+  const WORKER_URL = 'https://lfs-pagos.juliancarroccio.workers.dev';
+
+  async function llamarWorker(ruta, codigo, opciones) {
+    return fetch(`${WORKER_URL}/v1/cattorini/${ruta}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ codigo }),
+      ...opciones
+    });
+  }
+
+  /* Pide el link de pago del pedido. El navegador solo manda el código: el
+     monto lo calcula el Worker. Tira ErrorCheckout con un mensaje para mostrar. */
+  async function linkDePago(codigo) {
+    let res;
+    try {
+      res = await llamarWorker('checkout', codigo);
+    } catch (e) {
+      throw new ErrorCheckout('No pudimos abrir MercadoPago. Revisá tu conexión y probá de nuevo: tu pedido ya quedó guardado.');
+    }
+    const datos = await res.json().catch(() => ({}));
+    if (res.ok && /^https:\/\/([a-z0-9-]+\.)*mercadopago\.com(\.ar)?\//.test(String(datos.init_point || ''))) {
+      return datos.init_point;
+    }
+    if (datos.error === 'PRECIO_CAMBIO') {
+      throw new ErrorCheckout('Los precios cambiaron desde que armaste el pedido. Escribinos por WhatsApp y lo resolvemos.');
+    }
+    throw new ErrorCheckout('No pudimos abrir MercadoPago. Probá de nuevo en unos minutos: tu pedido ya quedó guardado.');
+  }
+
+  /* Avisa al negocio de la venta. No frena la compra si falla: el Worker
+     vuelve a revisar los pedidos sin avisar. */
+  function avisarVenta(codigo, config) {
+    if (!(config && config.pago && config.pago.avisos_activos)) return;
+    llamarWorker('notificar', codigo, { keepalive: true }).catch(() => {});
+  }
+
   /* ================= ubicaciones.js (carga diferida) ================= */
 
   /* ubicaciones.js se carga con `defer`. Si productos.json llega antes, los
@@ -624,6 +663,7 @@
     esperarUbicaciones, initUbicacionSeguro, localidadValida,
     focoEnModal, devolverFoco, atraparFoco,
     recargoTalle, actualizarRecargosCarrito, descuentoContado, TEXTO_FINANCIACION,
-    mediosDePago, metodoValido, renderMediosDePago, calcularTotales, renderTotales
+    mediosDePago, metodoValido, renderMediosDePago, calcularTotales, renderTotales,
+    linkDePago, avisarVenta
   });
 })();

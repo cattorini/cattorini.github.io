@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://lfs-pagos.juliancarroccio.workers.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Seguimiento de pedido — Cattorini</title>
   <meta name="description" content="Consultá el estado de tu pedido en Cattorini." />
@@ -173,6 +173,12 @@
       <div class="code-display" id="code-display">···</div>
 
       <div class="status-msg" id="status-msg">···</div>
+
+      <div id="pago-mp-box" style="display:none;background:#F5F5F5;padding:20px;margin-bottom:16px;text-align:center;">
+        <p id="pago-mp-msg" style="font-size:0.9rem;line-height:1.5;margin-bottom:12px;"></p>
+        <button type="button" id="pago-mp-btn" style="background:#0A0A0A;color:#FFF;border:none;padding:14px 28px;font:inherit;font-size:0.8rem;letter-spacing:0.12em;text-transform:uppercase;cursor:pointer;">Pagar con MercadoPago</button>
+        <p id="pago-mp-err" role="alert" style="color:#900;font-size:0.82rem;margin-top:10px;"></p>
+      </div>
 
       <div id="pago-qr-box" style="display:none;background:#F5F5F5;padding:20px;margin-bottom:16px;text-align:center;">
         <img src="./img/qr-pago.jpg" alt="QR de pago" style="display:block;width:220px;height:220px;max-width:100%;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin:0 auto 10px;" />
@@ -458,6 +464,8 @@ function renderPedido(doc) {
     document.getElementById('wa-consulta').href = waLink(DATA.negocio.whatsapp, `Hola! Quería consultar sobre mi pedido #${code}.`) || '#';
   }
 
+  renderPagoOnline(d, code, metodo);
+
   /* QR de pago — solo mientras esté pendiente de pago y el pedido lo requiera
      (envío siempre, retiro solo si no eligió pagar en el local) */
   const pagoBox = document.getElementById('pago-qr-box');
@@ -478,6 +486,43 @@ function renderPedido(doc) {
   } else {
     pagoBox.style.display = 'none';
   }
+}
+
+/* Solo lo que informa el Worker: los parámetros que MercadoPago agrega a la
+   URL de vuelta se ignoran, porque cualquiera los puede escribir a mano. */
+function renderPagoOnline(d, code, metodo) {
+  const box = document.getElementById('pago-mp-box');
+  const estado = (d.pago && d.pago.estado) || '';
+  const MENSAJES = {
+    '': 'Todavía no pagaste este pedido.',
+    iniciado: 'Todavía no recibimos tu pago. Si ya pagaste, no hagas nada: se actualiza solo.',
+    pendiente: 'MercadoPago todavía no acreditó tu pago. Se actualiza solo.',
+    en_revision: 'MercadoPago está revisando tu pago. Se actualiza solo.',
+    rechazado: 'MercadoPago rechazó el pago. Podés probar de nuevo con otro medio.',
+    cancelado: 'El pago se canceló. Podés probar de nuevo.',
+    vencido: 'El link de pago venció. Podés generar uno nuevo.',
+    aprobado: '¡Pago recibido! Gracias por tu compra.',
+    reembolsado: 'Te devolvimos el dinero de este pago.'
+  };
+  if (metodo !== 'mercadopago' || d.estado === 'cancelado' || !(estado in MENSAJES)) {
+    box.style.display = 'none';
+    return;
+  }
+  box.style.display = 'block';
+  document.getElementById('pago-mp-msg').textContent = MENSAJES[estado];
+  const btn = document.getElementById('pago-mp-btn');
+  btn.style.display = ['', 'iniciado', 'rechazado', 'cancelado', 'vencido'].includes(estado) ? 'inline-block' : 'none';
+  btn.onclick = async () => {
+    const err = document.getElementById('pago-mp-err');
+    err.textContent = '';
+    btn.disabled = true;
+    try {
+      window.location.href = await window.CattCore.linkDePago(code);
+    } catch (e) {
+      err.textContent = e.message;
+      btn.disabled = false;
+    }
+  };
 }
 
 async function cargarPedido(code) {

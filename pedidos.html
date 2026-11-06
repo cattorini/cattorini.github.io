@@ -17,6 +17,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
   <script src="./tienda-core.js"></script>
+  <script src="./pagos-panel.js"></script>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -263,6 +264,7 @@
     <button class="tab-btn active" data-tab="cola">Cola activa</button>
     <button class="tab-btn" data-tab="metricas">Métricas</button>
     <button class="tab-btn" data-tab="historial">Historial</button>
+    <button class="tab-btn" data-tab="pagos">Pagos online</button>
   </div>
 
   <div class="tab-panel active" id="tab-cola">
@@ -315,6 +317,8 @@
       </div>
     </div>
   </div>
+
+  <div class="tab-panel" id="tab-pagos"><div id="pagos-online"></div></div>
 
   <div class="tab-panel" id="tab-historial">
     <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
@@ -649,11 +653,20 @@ const NOMBRE_PAGO = { local: 'En el local', qr: 'QR / Transferencia', mercadopag
    null si ya no aplica (pasó de estado). Envío siempre es QR; retiro puede
    ser "paga en el local" (sin QR) o QR también si el cliente lo eligió. */
 function pagoInfo(o) {
-  if (o.estado !== 'pendiente') return null;
   const metodo = metodoDelPedido(o);
+  /* Una alerta de MercadoPago se ve aunque el pedido ya esté en otra columna. */
+  const alertaMp = o.pago && { en_disputa: '⚠️ Pago en disputa', contracargo: '⚠️ Contracargo', monto_inconsistente: '⚠️ Revisar monto del pago', reembolsado: '↩️ Pago devuelto' }[o.pago.estado];
+  if (alertaMp) return { texto: alertaMp, clase: 'qr' };
+  if (o.pago && o.pago.alerta === 'pago_duplicado') return { texto: '⚠️ Pago duplicado', clase: 'qr' };
+  if (o.estado !== 'pendiente') return null;
   if (metodo === 'local') return { texto: '🏬 Paga en el local', clase: 'local' };
   if (metodo === 'convenir') return { texto: '🤝 Pago a convenir', clase: 'qr' };
-  if (metodo === 'mercadopago') return { texto: '💳 Esperando a MercadoPago', clase: 'qr' };
+  if (metodo === 'mercadopago') {
+    const est = o.pago && o.pago.estado;
+    if (est === 'rechazado') return { texto: '❌ MercadoPago rechazó el pago', clase: 'qr' };
+    if (est === 'en_revision') return { texto: '⏳ MercadoPago está revisando', clase: 'qr' };
+    return { texto: '💳 Esperando a MercadoPago', clase: 'qr' };
+  }
   return { texto: '💳 Pendiente de pago por QR', clase: 'qr' };
 }
 
@@ -1150,8 +1163,25 @@ document.querySelectorAll('.tab-btn').forEach(b => {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     b.classList.add('active');
     document.getElementById('tab-' + b.dataset.tab).classList.add('active');
+    if (b.dataset.tab === 'pagos') montarPagosOnline();
   });
 });
+
+/* Se monta recién al abrir la pestaña: es un listener más sobre Firestore. */
+let pagosOnline = null;
+function montarPagosOnline() {
+  if (pagosOnline || !db) return;
+  pagosOnline = window.PagosPanel.montar(document.getElementById('pagos-online'), {
+    db,
+    coleccion: 'pedidos',
+    limite: 500,
+    incluir: (d) => d.metodoPago === 'mercadopago',
+    titulo: (d) => '#' + d.id + ' · ' + ((d.cliente && d.cliente.nombre) || ''),
+    detalle: (d) => (d.items || []).length + ' prenda(s) · ' + (d.modalidad === 'envio' ? 'Envío' : 'Retiro'),
+    monto: (d) => d.total,
+    pago: (d) => d.pago || { metodo: 'mercadopago', estado: 'iniciado' }
+  });
+}
 
 /* =========== Manual order =========== */
 let manualPerfil = 'minorista';

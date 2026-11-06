@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://lfs-pagos.juliancarroccio.workers.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Tienda Cattorini — Camisas, pantalones y jeans online</title>
   <meta name="description" content="Comprá online camisas, pantalones y jeans de Cattorini. Fabricación argentina, envíos a todo el país por Vía Cargo. Mayorista y minorista." />
@@ -1845,6 +1845,22 @@ async function enviarPedido() {
   codigoEnCurso = null;
   lastSubmit = now;
   saveMyOrderCode(code, code);
+  window.CattCore.avisarVenta(code, DATA.config);
+
+  /* MercadoPago: el pedido ya existe, se paga allá y vuelve a seguimiento. */
+  if (metodoPago === 'mercadopago') {
+    try {
+      const url = await window.CattCore.linkDePago(code);
+      saveCart([]);
+      window.location.href = url;
+      return;
+    } catch (e) {
+      showToast(window.CattCore.mensajeErrorCheckout(e));
+      saveCart([]);
+      window.location.href = `./seguimiento.html?code=${encodeURIComponent(code)}`;
+      return;
+    }
+  }
 
   /* Mostrar confirmación — el QR de pago aplica a envío siempre, y a retiro
      solo si el cliente no eligió pagar en el local. */

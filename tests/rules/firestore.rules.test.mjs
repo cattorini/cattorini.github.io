@@ -172,6 +172,65 @@ beforeEach(async () => {
 });
 
 /* ======================================================================== */
+describe('pedidos — Worker de pagos', () => {
+  const WORKER_EMAIL = 'pagos-worker@cattorinioriginal.com';
+  const worker = () => env.authenticatedContext('worker-uid', {
+    email: WORKER_EMAIL, email_verified: true,
+    firebase: { sign_in_provider: 'password', identities: { email: [WORKER_EMAIL] } }
+  }).firestore();
+  const sembrar = async (cod, extra = {}) => {
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('pedidos/' + cod).set({
+        ...pedidoValido(cod), creadoEn: new Date(), metodoPago: 'mercadopago', ...extra
+      });
+    });
+  };
+
+  test('el pago aprobado pasa el pedido a preparando', async () => {
+    await sembrar(COD(301));
+    await assertSucceeds(worker().doc('pedidos/' + COD(301)).update({
+      estado: 'preparando', pago: { metodo: 'mercadopago', estado: 'aprobado' } }));
+  });
+  test('no puede tocar los ítems ni el total', async () => {
+    await sembrar(COD(302));
+    await assertFails(worker().doc('pedidos/' + COD(302)).update({ total: 1 }));
+  });
+  test('no puede mover un pedido listo a preparando', async () => {
+    await sembrar(COD(303), { estado: 'listo' });
+    await assertFails(worker().doc('pedidos/' + COD(303)).update({ estado: 'preparando' }));
+  });
+  test('no puede borrar pedidos', async () => {
+    await sembrar(COD(304));
+    await assertFails(worker().doc('pedidos/' + COD(304)).delete());
+  });
+  test('marca el aviso de venta enviado', async () => {
+    await sembrar(COD(305));
+    await assertSucceeds(worker().doc('pedidos/' + COD(305)).update({ avisoEnviado: true }));
+  });
+  test('el staff no puede marcar pagado un pago de MercadoPago', async () => {
+    await sembrar(COD(306));
+    await assertFails(staff.doc('pedidos/' + COD(306)).update({ pago: { metodo: 'mercadopago', estado: 'aprobado' } }));
+  });
+  test('el staff sí mueve el estado de ese pedido', async () => {
+    await sembrar(COD(307));
+    await assertSucceeds(staff.doc('pedidos/' + COD(307)).update({ estado: 'preparando' }));
+  });
+  test('el público no escribe ni lee el detalle del pago', async () => {
+    await sembrar(COD(308));
+    await assertFails(publico.doc('pedidos/' + COD(308) + '/pagos/1').set({ fee: 0 }));
+    await assertFails(publico.doc('pedidos/' + COD(308) + '/pagos/1').get());
+    await assertFails(publico.doc('pedidos/' + COD(308)).update({ pago: { metodo: 'mercadopago', estado: 'aprobado' } }));
+  });
+  test('el público no puede crear un pedido con pago aprobado', async () => {
+    await assertFails(publico.doc('pedidos/' + COD(309)).set(pedidoValido(COD(309), { pago: { estado: 'aprobado' } })));
+  });
+  test('el Worker escribe el detalle y el staff lo lee', async () => {
+    await sembrar(COD(310));
+    await assertSucceeds(worker().doc('pedidos/' + COD(310) + '/pagos/1').set({ fee: 10 }));
+    await assertSucceeds(staff.doc('pedidos/' + COD(310) + '/pagos/1').get());
+  });
+});
+
 describe('pedidos — creación pública validada', () => {
   test('público crea un pedido válido con ID == código', async () => {
     await assertSucceeds(publico.doc('pedidos/' + COD(1)).set(pedidoValido(COD(1))));

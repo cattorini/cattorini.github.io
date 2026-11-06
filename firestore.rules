@@ -25,6 +25,14 @@ service cloud.firestore {
         && request.auth.token.email in ['cattorinilasflores@gmail.com'];
     }
 
+    /* Usuario dedicado del Worker de pagos: NO es staff. Sus permisos se limitan
+       a los campos del pago y a pasar el pedido pagado a preparación. */
+    function isPagosWorker() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == 'password'
+        && request.auth.token.email == 'pagos-worker@cattorinioriginal.com';
+    }
+
     function pedidoPath(codigo) {
       return /databases/$(database)/documents/pedidos/$(codigo);
     }
@@ -78,7 +86,26 @@ service cloud.firestore {
          código de 10 caracteres, pero puede marcar `manual: true`. */
       allow create: if isStaff() || pedidoValido();
       allow get: if true;
-      allow list, update, delete: if isStaff();
+      allow list: if isStaff() || isPagosWorker();
+      allow delete: if isStaff();
+      /* El staff maneja el pedido, pero el resultado de un pago de MercadoPago
+         lo escribe solo el Worker. */
+      allow update: if isStaff() && (
+        resource.data.get('metodoPago', '') != 'mercadopago'
+        || !request.resource.data.diff(resource.data).affectedKeys().hasAny(['pago', 'avisoEnviado'])
+      );
+      allow update: if isPagosWorker()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pago', 'estado', 'actualizadoEn', 'avisoEnviado'])
+        && (!('pago' in request.resource.data) || request.resource.data.pago.metodo == 'mercadopago')
+        && (request.resource.data.estado == resource.data.estado
+            || (resource.data.estado == 'pendiente' && request.resource.data.estado == 'preparando'));
+
+      /* Detalle de cada pago (comisión, neto): nunca público. */
+      match /pagos/{paymentId} {
+        allow read: if isStaff();
+        allow create, update: if isPagosWorker();
+        allow delete: if false;
+      }
     }
 
     /* ============ SOLICITUDES MAYORISTAS ============ */
