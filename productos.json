@@ -715,16 +715,23 @@
         },
         {
           "id": 18,
-          "nombre": "Camisa sport confort rayas.",
-          "descripcion": "Camisa sport confort Cattorini. Manga corta rayas color negro.",
-          "precio_minorista": 1,
-          "precio_mayorista": 1,
+          "nombre": "Camisa manga corta. Rayas.",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color negro.",
+          "precio_minorista": 69,
+          "precio_mayorista": 28.9,
           "tipo_talle": "camisas confort",
-          "talles_disponibles": [],
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
           "disponible": false,
           "destacado": false,
           "fabricacion_propia": true,
-          "imagenes": []
+          "imagenes": [
+            "p18-1794233452722-rfoo.jpeg"
+          ]
         }
       ]
     },
