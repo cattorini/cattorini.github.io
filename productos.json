@@ -615,6 +615,24 @@
             "p12-1792415139376-y3sj.jpeg",
             "p12-1792415141573-x9nk.jpeg"
           ]
+        },
+        {
+          "id": 13,
+          "nombre": "Camisa Sport confort Cattorini.  Manga Corta. ",
+          "descripcion": "Mil rayas. Color marino",
+          "precio_minorista": 1,
+          "precio_mayorista": 1,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": []
         }
       ]
     },
@@ -823,6 +841,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 13
+    "next_product_id": 14
   }
 }
