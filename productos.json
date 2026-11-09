@@ -781,6 +781,26 @@
           "imagenes": [
             "p21-1794234439125-id2j.jpeg"
           ]
+        },
+        {
+          "id": 22,
+          "nombre": "Camisa manga corta. Cuadros",
+          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color blanco",
+          "precio_minorista": 69,
+          "precio_mayorista": 28.9,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "42",
+            "44",
+            "46",
+            "50"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p22-1794235574402-lg6i.jpeg"
+          ]
         }
       ]
     },
@@ -989,6 +1009,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 22
+    "next_product_id": 23
   }
 }
