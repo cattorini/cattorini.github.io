@@ -677,12 +677,13 @@
         },
         {
           "id": 16,
-          "nombre": "Camisa sport confort cuadros",
-          "descripcion": "Camisa sport confort Cattorini. Manga corta cuadros. Color celeste",
-          "precio_minorista": 1,
-          "precio_mayorista": 1,
+          "nombre": "Camisa manga corta. Cuadros",
+          "descripcion": "Camisa Cattorini confort  manga corta cuadros. Color celeste",
+          "precio_minorista": 69,
+          "precio_mayorista": 28.9,
           "tipo_talle": "camisas confort",
           "talles_disponibles": [
+            "40",
             "42",
             "44"
           ],
