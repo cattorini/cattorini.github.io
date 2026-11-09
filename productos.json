@@ -732,6 +732,26 @@
           "imagenes": [
             "p18-1794233452722-rfoo.jpeg"
           ]
+        },
+        {
+          "id": 19,
+          "nombre": "Camisa manga corta. Rayas",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color Lila.\n",
+          "precio_minorista": 69,
+          "precio_mayorista": 28.9,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "48"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p19-1794233697064-ojoi.jpeg"
+          ]
         }
       ]
     },
@@ -940,6 +960,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 19
+    "next_product_id": 20
   }
 }
