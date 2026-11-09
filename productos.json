@@ -618,8 +618,8 @@
         },
         {
           "id": 13,
-          "nombre": "Camisa Sport confort Cattorini.  Manga Corta. ",
-          "descripcion": "Mil rayas. Color marino",
+          "nombre": "Camisa sport confort rayas",
+          "descripcion": "Camisa Cattorini sport manga cirta. Mil rayas. Color marino",
           "precio_minorista": 1,
           "precio_mayorista": 1,
           "tipo_talle": "camisas confort",
@@ -638,8 +638,8 @@
         },
         {
           "id": 14,
-          "nombre": "Camisa Sport confort Cattorini. Manga corta",
-          "descripcion": "Camisa rayas color marino.",
+          "nombre": "Camisa sport confort rayas",
+          "descripcion": "Camisa sport confort Cattorini. Manga corta. Color marino.\n",
           "precio_minorista": 1,
           "precio_mayorista": 1,
           "tipo_talle": "camisas confort",
@@ -653,6 +653,26 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p14-1794229686676-2gwy.jpeg"
+          ]
+        },
+        {
+          "id": 15,
+          "nombre": "Camisa sport confort cuadros ",
+          "descripcion": "Camisa sport confort Cattorini. Manga corta. Color celeste",
+          "precio_minorista": 1,
+          "precio_mayorista": 6,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p15-1794230124964-fe0g.jpeg"
           ]
         }
       ]
@@ -862,6 +882,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 15
+    "next_product_id": 16
   }
 }
