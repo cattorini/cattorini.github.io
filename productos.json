@@ -674,6 +674,24 @@
           "imagenes": [
             "p15-1794230124964-fe0g.jpeg"
           ]
+        },
+        {
+          "id": 16,
+          "nombre": "Camisa sport confort cuadros",
+          "descripcion": "Camisa sport confort Cattorini. Manga corta cuadros. Color celeste",
+          "precio_minorista": 1,
+          "precio_mayorista": 1,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "42",
+            "44"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p16-1794230479423-89pw.jpeg"
+          ]
         }
       ]
     },
@@ -882,6 +900,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 16
+    "next_product_id": 17
   }
 }
