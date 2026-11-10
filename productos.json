@@ -801,6 +801,28 @@
           "imagenes": [
             "p22-1794235574402-lg6i.jpeg"
           ]
+        },
+        {
+          "id": 23,
+          "nombre": "Camisa manga corta Oxford",
+          "descripcion": "Camisa Cattorini confort manga corta. Color celeste. Oxford 10.0% algodon",
+          "precio_minorista": 1,
+          "precio_mayorista": 1,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46",
+            "48",
+            "50"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p23-1794312821400-fbf3.jpeg"
+          ]
         }
       ]
     },
@@ -1009,6 +1031,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 23
+    "next_product_id": 24
   }
 }
