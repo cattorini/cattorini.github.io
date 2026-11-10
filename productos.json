@@ -806,8 +806,8 @@
           "id": 23,
           "nombre": "Camisa manga corta Oxford",
           "descripcion": "Camisa Cattorini confort manga corta. Color celeste. Oxford 10.0% algodon",
-          "precio_minorista": 1,
-          "precio_mayorista": 1,
+          "precio_minorista": 92,
+          "precio_mayorista": 35.9,
           "tipo_talle": "camisas confort",
           "talles_disponibles": [
             "40",
@@ -823,6 +823,44 @@
           "imagenes": [
             "p23-1794314184820-bfqm.jpeg"
           ]
+        },
+        {
+          "id": 24,
+          "nombre": "Camisa manga corta Poplin",
+          "descripcion": "Camisa Cattorini confort. Manga corta. Color lila. Poplin 100% algodon.",
+          "precio_minorista": 92,
+          "precio_mayorista": 35.9,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p24-1794315297883-qoua.jpeg",
+            "p24-1794315302972-4q51.jpeg"
+          ]
+        },
+        {
+          "id": 25,
+          "nombre": "Camisa manga corta Lino",
+          "descripcion": "Camisa Cattorini confort. Manga corta. Color rosa dior. Tela lino compuesta por lino y algodon.",
+          "precio_minorista": 92,
+          "precio_mayorista": 35.9,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": []
         }
       ]
     },
@@ -1031,6 +1069,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 24
+    "next_product_id": 26
   }
 }
