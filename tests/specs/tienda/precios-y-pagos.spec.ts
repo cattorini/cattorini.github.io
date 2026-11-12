@@ -127,6 +127,9 @@ test.describe('Medios de pago minorista @tienda @checkout', () => {
     await tienda.confirmarPedido();
     await expect(tienda.confirmModal).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#confirm-pago-qr')).toBeVisible();
+    await expect(page.locator('#confirm-pago-qr')).toContainText('envianos el comprobante por WhatsApp');
+    const yaPague = decodeURIComponent((await page.locator('#confirm-ya-pague').getAttribute('href')) || '');
+    expect(yaPague).toMatch(/^https:\/\/wa\.me\/\d+\?text=Hola! Ya pagué el pedido #[A-Z0-9]{10}\. Te adjunto el comprobante\.$/);
     const [p] = Object.values(await getCollection(page, 'pedidos')) as any[];
     expect(p).toMatchObject({ metodoPago: 'qr', pagaEnLocal: false, subtotal: 44000, descuentoPago: 4400, iva: 0, total: 39600 });
   });
@@ -211,5 +214,6 @@ test.describe('Seguimiento según forma de pago @seguimiento', () => {
   test('pedido viejo sin metodoPago sigue funcionando @seguimiento', async ({ page }) => {
     await abrir(page, { modalidad: 'envio', pagaEnLocal: false });
     await expect(page.locator('#pago-qr-box')).toBeVisible();
+    await expect(page.locator('#pago-ya-pague')).toHaveAttribute('href', /Ya%20pagu%C3%A9%20el%20pedido%20%23K7M2Q9X4PZ/);
   });
 });

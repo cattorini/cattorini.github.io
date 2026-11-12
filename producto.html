@@ -816,6 +816,8 @@
         <div id="confirm-pago-titular" style="font-weight:500;"></div>
         <div id="confirm-pago-banco" style="color:#666;"></div>
       </div>
+      <p style="font-size:0.85rem;line-height:1.5;margin-bottom:10px;"><strong>Una vez que pagues, envianos el comprobante por WhatsApp.</strong></p>
+      <a id="confirm-ya-pague" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#0A0A0A;color:#FFF;padding:12px;text-decoration:none;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:500;margin-bottom:12px;">Ya pagué</a>
       <p style="color:#666;font-size:0.82rem;line-height:1.5;">
         ¿Preferís pagar por otro medio? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
       </p>
@@ -1949,6 +1951,7 @@ async function enviarPedido() {
     msgEl.textContent = 'Tu pedido queda pendiente de pago. Apenas lo recibamos, lo pasamos a preparación.';
     const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
     document.getElementById('confirm-wa-pago').href = waLink(wa, `Hola! Quiero pagar mi pedido #${code} por otro medio.`) || '#';
+    document.getElementById('confirm-ya-pague').href = waLink(wa, `Hola! Ya pagué el pedido #${code}. Te adjunto el comprobante.`) || '#';
     const pago = DATA.config.pago || {};
     const datosBox = document.getElementById('confirm-pago-datos');
     if (pago.titular || pago.banco) {
