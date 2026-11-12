@@ -2845,7 +2845,7 @@ function renderSolicitudes() {
           resp.textContent = 'Código entregado (guardado en claro por la versión anterior del portal): ' +
             sol.respuesta.codigoMayorista + '. Conviene regenerarlo desde "Activos" para que deje de figurar acá.';
         } else {
-          resp.textContent = 'Aceptada. El código se mostró una sola vez al aceptarla y no se guarda; si el mayorista lo perdió, usá "Regenerar código" en Activos.';
+          resp.textContent = 'Aceptada. El mayorista puede ver su código una sola vez en el seguimiento de su solicitud (o se lo mandás por WhatsApp). Si lo perdió, usá "Regenerar código" en Activos.';
         }
       } else {
         resp.textContent = 'Motivo: ' + (sol.respuesta.motivo || '');
@@ -2925,6 +2925,11 @@ function datosActivoDesde(s, extra) {
   };
 }
 
+/* Código para que el mayorista lo vea UNA vez en la página de su solicitud
+   (colección privada: lo entrega y lo borra el Worker). */
+const porEntregarRef = (db, solicitudId) => db.collection('codigos_por_entregar').doc(String(solicitudId));
+const porEntregar = (codigo, hash) => ({ codigo, hash, creadoEn: serverTs() });
+
 /* Aceptar solicitud — UNA transacción:
    - relee la solicitud y aborta si ya no está pendiente (doble click, otra pestaña),
    - crea mayoristas_activos/{sha256(código)},
@@ -2953,6 +2958,7 @@ function aceptarSolicitud(sol, btn) {
           solicitudCodigo: sol.codigo || ''
         }));
         tx.update(solRef, { estado: 'aceptada', respuesta: { resueltoEn: serverTs() } });
+        tx.set(porEntregarRef(db, sol.id), porEntregar(codigo, codigoHash));
       });
       mostrarModalCodigo({
         titulo: 'Solicitud aceptada',
@@ -3195,6 +3201,7 @@ function crearMayoristaManual() {
         solicitudId: codigoSol,
         solicitudCodigo: codigoSol
       }));
+      batch.set(porEntregarRef(db, codigoSol), porEntregar(codigo, codigoHash));
       batch.set(db.collection('solicitudes_mayoristas').doc(codigoSol), {
         codigo: codigoSol,
         creadoEn: serverTs(),
@@ -3427,6 +3434,7 @@ function regenerarCodigo(m, btn) {
         datos = { ...vSnap.data() };
         tx.set(nuevoRef, { ...datos, regeneradoAt: serverTs() });
         tx.delete(viejoRef);
+        if (m.solicitudId) tx.set(porEntregarRef(db, m.solicitudId), porEntregar(nuevoCodigo, nuevoHash));
         if (solSnap && solSnap.exists) {
           const r = solSnap.data().respuesta || {};
           tx.update(solRef, { respuesta: { resueltoEn: r.resueltoEn || serverTs(), codigoRegeneradoEn: serverTs() } });
@@ -3453,7 +3461,10 @@ function eliminarActivo(m, btn) {
     if (btn) btn.disabled = true;
     try {
       const db = await staffDb();
-      await db.collection('mayoristas_activos').doc(m.id).delete();
+      const batch = db.batch();
+      batch.delete(db.collection('mayoristas_activos').doc(m.id));
+      if (m.solicitudId) batch.delete(porEntregarRef(db, m.solicitudId));
+      await batch.commit();
     } catch (e) {
       if (!manejarErrorStaff(e)) alert('Error: ' + e.message);
       if (btn) btn.disabled = false;

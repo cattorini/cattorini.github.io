@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://www.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://firestore.googleapis.com https://lfs-pagos.juliancarroccio.workers.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'" />
 
   <title>Estado de solicitud mayorista — Cattorini</title>
   <meta name="robots" content="noindex, nofollow" />
@@ -149,7 +149,7 @@
   <!-- Detalle -->
   <div id="solicitud-card" style="display:none;">
     <div class="card">
-      <div class="eyebrow">Código de solicitud</div>
+      <div class="eyebrow" id="code-label">Código de solicitud</div>
       <div class="code-display" id="code-display">···</div>
       <div class="status-badge" id="status-badge">···</div>
 
@@ -157,10 +157,17 @@
         <div class="aceptada-box">
           <div style="font-size:2rem;">🎉</div>
           <h2 style="margin:12px 0 8px;">¡Tu solicitud fue aprobada!</h2>
-          <!-- El código de acceso mayorista NUNCA se muestra acá: el staff lo
-               manda una sola vez por WhatsApp. Esta página solo muestra el estado. -->
+          <!-- El código de acceso se muestra UNA sola vez: lo entrega el Worker
+               y lo borra en el mismo paso. Nunca queda guardado en la solicitud. -->
           <div id="codigo-mayorista-msg">
-            <p style="color:#333;font-size:0.95rem;margin-top:12px;line-height:1.6;" id="codigo-mayorista-msg-text">Te enviamos tu código de acceso por WhatsApp. Si no lo recibiste, escribinos y te lo reenviamos.</p>
+            <p style="color:#333;font-size:0.95rem;margin-top:12px;line-height:1.6;" id="codigo-mayorista-msg-text">Tu código de acceso se muestra <strong>una sola vez</strong>. Tené a mano dónde anotarlo antes de verlo.</p>
+            <button type="button" class="btn" id="ver-codigo-btn" style="width:100%;margin-top:12px;">Ver mi código de acceso</button>
+            <p id="ver-codigo-err" role="alert" style="color:#900;font-size:0.85rem;margin-top:10px;"></p>
+          </div>
+          <div id="codigo-acceso-box" style="display:none;margin-top:12px;">
+            <div style="font-size:0.85rem;color:#666;">Tu código de acceso mayorista:</div>
+            <div class="code-display" id="codigo-acceso" style="user-select:all;"></div>
+            <p style="color:#900;font-size:0.85rem;line-height:1.5;"><strong>Guardalo ahora:</strong> no se vuelve a mostrar. Usalo en la tienda para ver los precios mayoristas.</p>
           </div>
         </div>
         <a id="wa-aceptada" target="_blank" rel="noopener noreferrer" class="btn" style="width:100%;text-align:center;margin-bottom:8px;">Escribir por WhatsApp</a>
@@ -292,6 +299,40 @@ function volverBusqueda() {
   window.location.href = './seguimiento-mayorista.html';
 }
 
+const WORKER_URL = 'https://lfs-pagos.juliancarroccio.workers.dev';
+
+/* Pide al Worker el código de acceso. Se entrega una sola vez: después de
+   mostrarlo ya no existe en ningún lado. */
+async function verCodigoAcceso(solicitud) {
+  const btn = document.getElementById('ver-codigo-btn');
+  const err = document.getElementById('ver-codigo-err');
+  err.textContent = '';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${WORKER_URL}/v1/cattorini/codigo-mayorista`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ solicitud })
+    });
+    const datos = await res.json().catch(() => ({}));
+    if (res.ok && typeof datos.codigo === 'string') {
+      document.getElementById('codigo-acceso').textContent = datos.codigo;
+      document.getElementById('codigo-acceso-box').style.display = 'block';
+      document.getElementById('codigo-mayorista-msg').style.display = 'none';
+      return;
+    }
+    if (res.status === 404 || res.status === 410) {
+      err.textContent = 'Tu código ya se mostró o venció. Si no lo guardaste, pedinos uno nuevo por WhatsApp.';
+      btn.style.display = 'none';
+      return;
+    }
+    throw new Error();
+  } catch (e) {
+    err.textContent = 'No pudimos traer tu código. Probá de nuevo en unos minutos o escribinos por WhatsApp.';
+    btn.disabled = false;
+  }
+}
+
 function renderSolicitud(d) {
   document.getElementById('search-card').style.display = 'none';
   document.getElementById('not-found-card').style.display = 'none';
@@ -308,13 +349,19 @@ function renderSolicitud(d) {
   document.getElementById('rechazada-content').style.display = 'none';
   document.getElementById('pendiente-content').style.display = 'none';
 
+  /* Aceptada: el código de solicitud ya no sirve para nada; se oculta. */
+  document.getElementById('code-display').style.display = d.estado === 'aceptada' ? 'none' : '';
+  const codeLabel = document.getElementById('code-label');
+  if (codeLabel) codeLabel.style.display = d.estado === 'aceptada' ? 'none' : '';
+
   if (d.estado === 'aceptada') {
     document.getElementById('aceptada-content').style.display = 'block';
+    document.getElementById('ver-codigo-btn').onclick = () => verCodigoAcceso(d.codigo);
     /* El código de acceso no se muestra nunca en esta página (aunque el
        documento lo trajera): lo entrega el staff por WhatsApp. */
     if (DATA && DATA.negocio && DATA.negocio.whatsapp) {
       document.getElementById('wa-aceptada').href = waLink(DATA.negocio.whatsapp,
-        `Hola! Mi solicitud mayorista ${d.codigo} fue aprobada. No recibí el código de acceso.`) || '#';
+        `Hola! Mi solicitud mayorista ${d.codigo} fue aprobada. Necesito mi código de acceso.`) || '#';
     }
   } else if (d.estado === 'rechazada') {
     document.getElementById('rechazada-content').style.display = 'block';

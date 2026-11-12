@@ -241,6 +241,15 @@ service cloud.firestore {
       }
     }
 
+    /* ============ CÓDIGOS POR ENTREGAR ============ */
+    /* Código de acceso mayorista para mostrarse UNA vez en la página de la
+       solicitud. Nadie lo lee desde el navegador: lo entrega el Worker y lo
+       borra en el mismo paso. */
+    match /codigos_por_entregar/{solicitud} {
+      allow create, update, delete: if isStaff();
+      allow get, delete: if isPagosWorker();
+    }
+
     /* Todo lo demás: cerrado (deny by default). */
   }
 }

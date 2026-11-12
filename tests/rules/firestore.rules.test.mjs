@@ -231,6 +231,29 @@ describe('pedidos — Worker de pagos', () => {
   });
 });
 
+describe('codigos_por_entregar — código mayorista de un solo uso', () => {
+  const WORKER_EMAIL = 'pagos-worker@cattorinioriginal.com';
+  const worker = () => env.authenticatedContext('worker2-uid', {
+    email: WORKER_EMAIL, email_verified: true,
+    firebase: { sign_in_provider: 'password', identities: { email: [WORKER_EMAIL] } }
+  }).firestore();
+  const RUTA = 'codigos_por_entregar/MAY-K7M2Q9X4PZ';
+  test('el staff lo crea; el público no lo lee, ni lo crea ni lo borra', async () => {
+    await assertSucceeds(staff.doc(RUTA).set({ codigo: 'CATT-ABCDEFGHJK', hash: 'h', creadoEn: ts() }));
+    await assertFails(publico.doc(RUTA).get());
+    await assertFails(publico.doc(RUTA).delete());
+    await assertFails(anonimo.doc(RUTA).get());
+    await assertFails(publico.doc('codigos_por_entregar/MAY-OTRO123456').set({ codigo: 'x' }));
+  });
+  test('el Worker lo lee y lo borra, pero no lo escribe ni lista', async () => {
+    await env.withSecurityRulesDisabled(async (ctx) => { await ctx.firestore().doc(RUTA).set({ codigo: 'c' }); });
+    await assertSucceeds(worker().doc(RUTA).get());
+    await assertFails(worker().collection('codigos_por_entregar').get());
+    await assertFails(worker().doc(RUTA).set({ codigo: 'otro' }));
+    await assertSucceeds(worker().doc(RUTA).delete());
+  });
+});
+
 describe('pedidos — creación pública validada', () => {
   test('público crea un pedido válido con ID == código', async () => {
     await assertSucceeds(publico.doc('pedidos/' + COD(1)).set(pedidoValido(COD(1))));

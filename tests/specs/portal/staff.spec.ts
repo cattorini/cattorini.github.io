@@ -80,10 +80,13 @@ test.describe('Portal — mayoristas sin código en claro @portal @mayorista @se
     expect(JSON.stringify(sol)).not.toContain(codigo);
     expect(JSON.stringify(sol)).not.toContain(sha256(codigo));
     expect(Object.keys(await getCollection(page, 'mayoristas_activos'))).toEqual([sha256(codigo)]);
+    /* queda listo para mostrarse una sola vez, fuera de la solicitud */
+    const porEntregar = (await getCollection(page, 'codigos_por_entregar')).SOLDOC1;
+    expect(porEntregar).toMatchObject({ codigo, hash: sha256(codigo) });
     /* se escribió en UNA transacción */
     const log = await getFirebaseLog(page);
     const commit = log.find(e => e.op === 'tx-commit' && e.paths.some((p: string) => p.includes('mayoristas_activos')));
-    expect(commit.paths).toEqual(expect.arrayContaining(['set:mayoristas_activos/' + sha256(codigo), 'update:solicitudes_mayoristas/SOLDOC1']));
+    expect(commit.paths).toEqual(expect.arrayContaining(['set:mayoristas_activos/' + sha256(codigo), 'update:solicitudes_mayoristas/SOLDOC1', 'set:codigos_por_entregar/SOLDOC1']));
   });
 
   test('alta manual: solicitud con ID = código MAY- de 10 caracteres, sin código mayorista, en un batch @portal', async ({ page }) => {
