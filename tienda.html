@@ -550,7 +550,7 @@
       backdrop-filter: blur(4px);
       z-index: 70;
       display: none; align-items: center; justify-content: center;
-      padding: 20px;
+      padding: 12px;
     }
     .confirm-back.open { display: flex; }
     .confirm-content {
@@ -584,6 +584,23 @@
     .lf-links a { color: #0A0A0A; text-decoration: underline; }
     .lf-arrep { font-weight: 500; }
     .lf-id { margin: 0; overflow-wrap: anywhere; }
+  
+    /* Confirmación del pedido: tiene que entrar en la pantalla sin scroll. */
+    .cm-box { background: #FFF; max-width: 400px; width: 100%; padding: 20px 20px 16px; text-align: center; max-height: calc(100dvh - 24px); overflow-y: auto; }
+    .cm-head { display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .cm-icon { width: 30px; height: 30px; border-radius: 50%; background: #0A0A0A; color: #FFF; display: inline-flex; align-items: center; justify-content: center; font-size: 1rem; flex-shrink: 0; }
+    .cm-title { font-family: 'Cormorant Garamond', serif; font-size: 1.45rem; line-height: 1.1; margin: 0; }
+    .cm-label { color: #666; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; margin: 12px 0 4px; }
+    .cm-code { font-family: 'Cormorant Garamond', serif; font-size: 1.5rem; letter-spacing: 0.12em; word-break: break-all; background: #F5F5F5; padding: 6px 12px; }
+    .cm-msg { color: #555; font-size: 0.8rem; line-height: 1.4; margin: 10px 0; }
+    .cm-qr { background: #F5F5F5; padding: 12px; margin-bottom: 12px; }
+    .cm-qr-img { display: block; width: min(168px, 32dvh); height: auto; aspect-ratio: 1; object-fit: contain; background: #FFF; border: 1px solid #E5E5E5; margin: 8px auto; }
+    .cm-small { color: #555; font-size: 0.74rem; line-height: 1.4; margin: 0 0 8px; }
+    .cm-small a { color: #0A0A0A; text-decoration: underline; }
+    .cm-btn { display: block; width: 100%; text-align: center; background: #0A0A0A; color: #FFF; padding: 10px; text-decoration: none; font: inherit; font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; font-weight: 500; border: 1px solid #0A0A0A; cursor: pointer; margin-bottom: 8px; }
+    .cm-btn-sec { background: #FFF; color: #0A0A0A; }
+    .cm-actions { display: flex; gap: 8px; }
+    .cm-actions .cm-btn { margin-bottom: 0; }
   </style>
 </head>
 <body>
@@ -784,35 +801,24 @@
 
 <!-- Confirmation modal -->
 <div class="confirm-back" id="confirm-modal">
-  <div class="confirm-content" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-    <div class="confirm-icon" aria-hidden="true">✓</div>
-    <h2 id="confirm-title" style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;margin-bottom:8px;">¡Pedido encolado!</h2>
-    <p style="color:#666;font-size:0.9rem;margin-bottom:8px;">Guardá este código para consultar el estado de tu pedido:</p>
-    <div class="confirm-code" id="confirm-code">···</div>
-    <p style="color:#666;font-size:0.82rem;margin-bottom:20px;line-height:1.5;" id="confirm-msg">
-      Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.
-    </p>
+  <div class="cm-box" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+    <div class="cm-head"><span class="cm-icon" aria-hidden="true">✓</span><h2 id="confirm-title" class="cm-title">¡Pedido encolado!</h2></div>
+    <p class="cm-label">Código para seguir tu pedido</p>
+    <div class="cm-code" id="confirm-code">···</div>
+    <p class="cm-msg" id="confirm-msg">Vamos a preparar tu pedido y coordinar la entrega.</p>
 
-    <div id="confirm-pago-qr" style="display:none;background:#F5F5F5;padding:20px;margin-bottom:20px;">
-      <p style="font-weight:500;font-size:0.9rem;margin-bottom:4px;">Pedido pendiente de pago</p>
-      <p style="color:#666;font-size:0.82rem;margin-bottom:14px;line-height:1.5;">
-        Escaneá el QR con cualquier billetera virtual que ofrezca pagos QR (Mercado Pago, Cuenta DNI, etc.) para abonar tu pedido.
-      </p>
-      <img src="./img/qr-pago.jpg" alt="QR de pago" style="display:block;width:220px;height:220px;max-width:100%;object-fit:contain;background:#FFF;border:1px solid #E5E5E5;margin:0 auto 14px;" />
-      <div id="confirm-pago-datos" style="font-size:0.82rem;line-height:1.6;margin-bottom:14px;display:none;">
-        <div style="color:#666;">Verificá que el pago sea a nombre de:</div>
-        <div id="confirm-pago-titular" style="font-weight:500;"></div>
-        <div id="confirm-pago-banco" style="color:#666;"></div>
-      </div>
-      <p style="font-size:0.85rem;line-height:1.5;margin-bottom:10px;"><strong>Una vez que pagues, envianos el comprobante por WhatsApp.</strong></p>
-      <a id="confirm-ya-pague" target="_blank" rel="noopener noreferrer" style="display:block;text-align:center;background:#0A0A0A;color:#FFF;padding:12px;text-decoration:none;font-size:0.78rem;letter-spacing:0.12em;text-transform:uppercase;font-weight:500;margin-bottom:12px;">Ya pagué</a>
-      <p style="color:#666;font-size:0.82rem;line-height:1.5;">
-        ¿Preferís pagar por otro medio? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer" style="color:#0A0A0A;text-decoration:underline;">Escribinos por WhatsApp</a>.
-      </p>
+    <div id="confirm-pago-qr" class="cm-qr" style="display:none;">
+      <p class="cm-small">Escaneá el QR con tu billetera (Mercado Pago, Cuenta DNI, etc.)</p>
+      <img src="./img/qr-pago.jpg" alt="QR de pago" class="cm-qr-img" />
+      <div id="confirm-pago-datos" class="cm-small" style="display:none;">A nombre de <strong id="confirm-pago-titular"></strong> · <span id="confirm-pago-banco"></span></div>
+      <a id="confirm-ya-pague" target="_blank" rel="noopener noreferrer" class="cm-btn">Ya pagué · enviar comprobante</a>
+      <p class="cm-small">¿Otro medio de pago? <a id="confirm-wa-pago" target="_blank" rel="noopener noreferrer">Escribinos por WhatsApp</a></p>
     </div>
 
-    <a id="track-link" class="btn" style="display:inline-block;padding:14px 28px;text-align:center;text-decoration:none;">Ver estado del pedido</a>
-    <button class="btn-secondary" onclick="closeConfirm()" style="margin-top:10px;">Seguir comprando</button>
+    <div class="cm-actions">
+      <a id="track-link" class="cm-btn">Ver estado del pedido</a>
+      <button type="button" class="cm-btn cm-btn-sec" onclick="closeConfirm()">Seguir comprando</button>
+    </div>
   </div>
 </div>
 
@@ -1872,7 +1878,7 @@ async function enviarPedido() {
   const msgEl = document.getElementById('confirm-msg');
   if (necesitaQR()) {
     qrBox.style.display = 'block';
-    msgEl.textContent = 'Tu pedido queda pendiente de pago. Apenas lo recibamos, lo pasamos a preparación.';
+    msgEl.textContent = 'Pagá con el QR y mandanos el comprobante: apenas lo recibamos, preparamos tu pedido.';
     const wa = (DATA.negocio && DATA.negocio.whatsapp) || '';
     document.getElementById('confirm-wa-pago').href = waLink(wa, `Hola! Quiero pagar mi pedido #${code} por otro medio.`) || '#';
     document.getElementById('confirm-ya-pague').href = waLink(wa, `Hola! Ya pagué el pedido #${code}. Te adjunto el comprobante.`) || '#';
@@ -1895,7 +1901,7 @@ async function enviarPedido() {
     msgEl.textContent = 'Recibimos tu pedido. Te avisamos cuando puedas pasar a retirarlo y lo abonás en el local.';
   } else {
     qrBox.style.display = 'none';
-    msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega. Podés consultar el estado cuando quieras.';
+    msgEl.textContent = 'Vamos a preparar tu pedido y coordinar la entrega.';
   }
   saveCart([]);
   closeCart();

@@ -127,7 +127,13 @@ test.describe('Medios de pago minorista @tienda @checkout', () => {
     await tienda.confirmarPedido();
     await expect(tienda.confirmModal).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#confirm-pago-qr')).toBeVisible();
-    await expect(page.locator('#confirm-pago-qr')).toContainText('envianos el comprobante por WhatsApp');
+    await expect(page.locator('#confirm-msg')).toContainText('mandanos el comprobante');
+    /* Entra en la pantalla sin scroll, incluso en un celular chico */
+    for (const [w, h] of [[375, 667], [390, 844], [1280, 720]]) {
+      await page.setViewportSize({ width: w, height: h });
+      const sinScroll = await page.locator('.cm-box').evaluate(el => el.scrollHeight <= el.clientHeight + 1);
+      expect(sinScroll, `${w}x${h}`).toBe(true);
+    }
     const yaPague = decodeURIComponent((await page.locator('#confirm-ya-pague').getAttribute('href')) || '');
     expect(yaPague).toMatch(/^https:\/\/wa\.me\/\d+\?text=Hola! Ya pagué el pedido #[A-Z0-9]{10}\. Te adjunto el comprobante\.$/);
     const [p] = Object.values(await getCollection(page, 'pedidos')) as any[];
