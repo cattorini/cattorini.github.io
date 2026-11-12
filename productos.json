@@ -909,6 +909,31 @@
           "destacado": false,
           "fabricacion_propia": true,
           "imagenes": []
+        },
+        {
+          "id": 26,
+          "nombre": "Nada",
+          "descripcion": "Nada",
+          "precio_minorista": 100,
+          "precio_mayorista": 80,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "38"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [],
+          "fantasias": {
+            "cuadros": {
+              "tipo": "estampado",
+              "foto": "f26-1794493363742-65jf.png"
+            },
+            "Azul": {
+              "tipo": "cuadro",
+              "foto": "f26-1794493481307-gi3t.png"
+            }
+          }
         }
       ]
     },
@@ -1113,6 +1138,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 26
+    "next_product_id": 27
   }
 }
