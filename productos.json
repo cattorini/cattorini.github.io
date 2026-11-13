@@ -849,7 +849,8 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p22-1794235574402-lg6i.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 23,
@@ -909,7 +910,27 @@
           "disponible": true,
           "destacado": false,
           "fabricacion_propia": true,
-          "imagenes": []
+          "imagenes": [],
+          "fantasias": {}
+        },
+        {
+          "id": 27,
+          "nombre": "Camisa manga corta Rayas",
+          "descripcion": "Camisa Cattorini manga corta. Rayas color verde seco. 65%pol 35%alg",
+          "precio_minorista": 69000,
+          "precio_mayorista": 28900,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [],
+          "fantasias": {}
         }
       ]
     },
@@ -1114,6 +1135,6 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 27
+    "next_product_id": 28
   }
 }
