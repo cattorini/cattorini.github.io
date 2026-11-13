@@ -64,6 +64,8 @@
     }
 
     /* Header */
+    header.header-oculto { transform: translateY(-100%); }
+    @media (prefers-reduced-motion: no-preference) { header { transition: transform .25s ease; } }
     header {
       position: sticky; top: 0; z-index: 40;
       background: rgba(255,255,255,0.95);
@@ -621,7 +623,7 @@
   <div id="perfil-badge" style="display: none;"></div>
   <div class="cat-strip" id="cat-strip"></div>
   <div class="search-strip">
-    <input type="text" id="search" placeholder="Buscar prenda..." aria-label="Buscar prenda" maxlength="60" />
+    <input type="text" id="search" placeholder="Buscar prenda..." aria-label="Buscar prenda" maxlength="60" autocomplete="off" />
     <button class="search-clear" id="search-clear" type="button">×</button>
   </div>
   <div class="info-banner" id="info-envio">···</div>
@@ -1282,7 +1284,10 @@ function renderCatalog() {
       aviso.className = 'pcard-aviso';
       const descPct = window.CattCore.descuentoContado(DATA.config);
       if (pricing.tipo === 'mayorista') aviso.textContent = 'Precio sin IVA';
-      else if (descPct > 0) aviso.textContent = `${descPct}% de descuento en efectivo o transferencia`;
+      else if (descPct > 0) {
+        const conDescuento = Math.round(pricing.precio * (1 - descPct / 100));
+        aviso.textContent = `$${conDescuento.toLocaleString('es-AR')} en efectivo o transferencia (${descPct}% off)`;
+      }
       if (aviso.textContent) info.appendChild(aviso);
 
       link.appendChild(imgDiv);
@@ -1918,6 +1923,26 @@ function closeConfirm() {
   window.CattCore.devolverFoco(confirmModal);
 }
 
+/* El header (categorías, buscador, aviso de envío) ocupa mucho alto: se
+   esconde al bajar y vuelve apenas se sube un poco. */
+function ocultarHeaderAlBajar() {
+  const header = document.querySelector('header');
+  let ultimo = window.scrollY;
+  let pendiente = false;
+  window.addEventListener('scroll', () => {
+    if (pendiente) return;
+    pendiente = true;
+    requestAnimationFrame(() => {
+      const y = window.scrollY;
+      const enFoco = header.contains(document.activeElement) && document.activeElement !== document.body;
+      if (y < 80 || y < ultimo - 4 || enFoco) header.classList.remove('header-oculto');
+      else if (y > ultimo + 4) header.classList.add('header-oculto');
+      ultimo = y;
+      pendiente = false;
+    });
+  }, { passive: true });
+}
+
 /* ---------- Init ---------- */
 async function init() {
   DATA = await loadData();
@@ -1964,7 +1989,17 @@ async function init() {
     renderCatalog();
   }
 
-  document.getElementById('search').addEventListener('input', applyFilter);
+  /* El buscador arranca vacío: el navegador no lo recuerda al recargar ni al
+     volver atrás (bfcache). */
+  const buscador = document.getElementById('search');
+  buscador.value = '';
+  applyFilter();
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted && buscador.value) { buscador.value = ''; applyFilter(); }
+  });
+  ocultarHeaderAlBajar();
+
+  buscador.addEventListener('input', applyFilter);
   document.getElementById('search-clear').addEventListener('click', () => {
     document.getElementById('search').value = '';
     applyFilter();

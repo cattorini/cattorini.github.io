@@ -161,6 +161,8 @@
     }
     /* La foto de temporada trae texto: el zoom no la puede cortar. */
     .hero .carousel-slide.vertical.active { animation: none; }
+    .historia-collage { aspect-ratio: 9/16; max-height: 80vh; margin: 0 auto; width: 100%; background: #0a0a0a; }
+    .historia-collage .carousel-slide { object-fit: contain; }
     .video-produccion { aspect-ratio: 9/16; max-height: 80vh; margin: 0 auto; background: #0a0a0a; overflow: hidden; }
     .video-produccion video { width: 100%; height: 100%; object-fit: cover; display: block; }
     .data-fiscal { display: block; width: 110px; margin: 12px auto 0; }
@@ -512,6 +514,7 @@
     </a>
     <div class="hidden md:flex items-center gap-8">
       <a href="#historia" class="nav-link">Historia</a>
+      <a href="#produccion" class="nav-link">Producción</a>
       <a href="#categorias" class="nav-link">Catálogo</a>
       <a href="#mayoristas" class="nav-link">Mayoristas</a>
       <a href="#contacto" class="nav-link">Contacto</a>
@@ -546,13 +549,28 @@
 
 <section id="historia" class="py-24 md:py-32">
   <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 md:gap-20 items-center">
+    <div>
+      <div class="eyebrow mb-4">01 — Nuestra historia</div>
+      <h2 class="section mb-6" id="historia-titulo">Nuestra historia</h2>
+      <p class="text-lg leading-relaxed mb-6" id="historia-texto" style="white-space: pre-line;">Más de sesenta años vistiendo a los florenses y abasteciendo a comercios de todo el país.</p>
+    </div>
+    <div class="split-img historia-collage">
+      <div class="carousel" id="carousel-historia"></div>
+    </div>
+  </div>
+</section>
+
+<div class="divider max-w-7xl mx-auto"></div>
+
+<section id="produccion" class="py-24 md:py-32">
+  <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-12 md:gap-20 items-center">
     <div class="split-img video-produccion">
       <video id="video-produccion" muted loop playsinline preload="none" poster="./img/produccion-poster.jpg" aria-label="Video de nuestra producción" data-src="./video/nuestra-produccion.mp4"></video>
     </div>
     <div>
-      <div class="eyebrow mb-4">01 — Nuestra Producción</div>
+      <div class="eyebrow mb-4">02 — Nuestra Producción</div>
       <h2 class="section mb-6" id="fabrica-titulo">Nuestra Producción</h2>
-      <p class="text-lg leading-relaxed mb-6" id="fabrica-texto">
+      <p class="text-lg leading-relaxed mb-6" id="fabrica-texto" style="white-space: pre-line;">
         Más de sesenta años vistiendo a Las Flores y a comercios de todo el país. Seleccionamos cada prenda con el mismo criterio desde 1959: buena tela, buena terminación y el respeto por los plazos de entrega.
       </p>
       <p class="text-base" style="color: var(--muted);">
@@ -567,7 +585,7 @@
 <section id="categorias" class="py-24 md:py-32">
   <div class="max-w-7xl mx-auto px-6">
     <div class="mb-16 max-w-2xl">
-      <div class="eyebrow mb-4">02 — Catálogo</div>
+      <div class="eyebrow mb-4">03 — Catálogo</div>
       <h2 class="section">Diferentes líneas, un mismo estándar</h2>
     </div>
     <div class="grid md:grid-cols-3 gap-6" id="categorias-grid"></div>
@@ -580,7 +598,7 @@
   <div class="max-w-7xl mx-auto px-6">
     <div class="mb-16 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
       <div>
-        <div class="eyebrow mb-4">03 — Destacados</div>
+        <div class="eyebrow mb-4">04 — Destacados</div>
         <h2 class="section">Selección de temporada</h2>
       </div>
       <a href="./tienda.html" class="btn btn-outline">Ver todo el catálogo</a>
@@ -593,7 +611,7 @@
 
 <section id="confianza" class="py-24 md:py-32">
   <div class="max-w-4xl mx-auto px-6 text-center">
-    <div class="eyebrow mb-4">04 — Confianza</div>
+    <div class="eyebrow mb-4">05 — Confianza</div>
     <div class="stars mb-4" aria-label="4.3 estrellas de 5">★★★★★</div>
     <div class="text-4xl serif mb-2">4,3 / 5</div>
     <p style="color: var(--muted);" class="mb-8">Basado en 23 reseñas de Google</p>
@@ -607,7 +625,7 @@
 
 <section id="mayoristas" class="py-24 md:py-32 bg-black text-white">
   <div class="max-w-4xl mx-auto px-6 text-center">
-    <div class="eyebrow mb-4" style="color: rgba(255,255,255,0.5);">05 — Mayoristas</div>
+    <div class="eyebrow mb-4" style="color: rgba(255,255,255,0.5);">06 — Mayoristas</div>
     <h2 class="section mb-8" id="mayoristas-titulo">¿Sos comerciante?</h2>
     <p class="text-lg leading-relaxed mb-10 max-w-2xl mx-auto" style="color: rgba(255,255,255,0.7);" id="mayoristas-texto">
       Trabajamos con comercios de todo el país. Precios especiales, envíos por Vía Cargo y catálogo exclusivo para mayoristas. Solicitá tu código de acceso.
@@ -1023,7 +1041,8 @@ function buildDestacados(data) {
       const aviso = document.createElement('div');
       aviso.className = 'text-xs';
       aviso.style.cssText = 'color: var(--muted); margin-top: 4px;';
-      aviso.textContent = `${descPct}% de descuento en efectivo o transferencia`;
+      const conDescuento = Math.round(p.precio_minorista * (1 - descPct / 100));
+      aviso.textContent = `$${conDescuento.toLocaleString('es-AR')} en efectivo o transferencia (${descPct}% off)`;
       info.appendChild(aviso);
     }
 
@@ -1044,6 +1063,12 @@ function applyTextos(data) {
     if (tit && t.hero.titulo) tit.textContent = t.hero.titulo;
     if (sub && t.hero.subtitulo) sub.textContent = t.hero.subtitulo;
     if (cta && t.hero.cta) cta.textContent = t.hero.cta;
+  }
+  if (t.historia) {
+    const tit = document.getElementById('historia-titulo');
+    const txt = document.getElementById('historia-texto');
+    if (tit && t.historia.titulo) tit.textContent = t.historia.titulo;
+    if (txt && t.historia.texto) txt.textContent = t.historia.texto;
   }
   if (t.fabrica) {
     const tit = document.getElementById('fabrica-titulo');
@@ -1468,6 +1493,9 @@ async function init() {
   initCarousel('carousel-hero', imgs.hero_carousel || [], {
     alt: 'Cattorini', dots: false, interval: 5500
   });
+  initCarousel('carousel-historia', imgs.historia_carousel || [], {
+    alt: 'Historia de Cattorini', interval: 5000
+  });
   initVideoProduccion();
   initCarousel('carousel-local', imgs.local_carousel || [], {
     alt: 'Local Cattorini Las Flores', interval: 4500
@@ -1538,7 +1566,8 @@ async function init() {
     }
 
     /* --- Aplicar animaciones a cada sección --- */
-    animarSplit('#historia', true);
+    animarSplit('#historia', false);
+    animarSplit('#produccion', true);
     animarSeccion('#categorias', { start: 'top 80%' });
     animarSeccion('#destacados');
     animarSeccion('#confianza');

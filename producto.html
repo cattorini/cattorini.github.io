@@ -1030,10 +1030,12 @@ function renderAvisoPago(pricing) {
     return;
   }
   if (pct > 0) {
+    const { precio } = precioConTalle();
+    const conDescuento = Math.round(precio * (1 - pct / 100));
     const fuerte = document.createElement('strong');
-    fuerte.textContent = `${pct}% de descuento sobre el valor final`;
+    fuerte.textContent = `$${conDescuento.toLocaleString('es-AR')} en efectivo o transferencia`;
     el.appendChild(fuerte);
-    el.appendChild(document.createTextNode(' si abonás en efectivo en el local o por transferencia/QR. Lo ves reflejado en el carrito. '));
+    el.appendChild(document.createTextNode(` (${pct}% de descuento sobre el valor final, en el local o por QR). Se aplica en el carrito. `));
   }
   el.appendChild(document.createTextNode(window.CattCore.TEXTO_FINANCIACION));
 }
@@ -1144,6 +1146,7 @@ async function selectTalle(t) {
   document.getElementById('talle-selected').style.fontWeight = '500';
   document.getElementById('add-cart-btn').disabled = false;
   renderPrecio();
+  renderAvisoPago(precioParaPerfil(PRODUCT));
   renderTalles();
   /* Los colores dependen del stock cargado en Firestore para este producto;
      si todavía no llegó, esperamos el fetch antes de dibujar los chips. */

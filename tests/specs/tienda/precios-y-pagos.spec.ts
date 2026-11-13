@@ -22,6 +22,8 @@ test.describe('Precios por talle @tienda', () => {
 
     await prod.elegirTalle('46');
     await expect(page.locator('#p-price')).toContainText('$34.200');
+    // el precio de contado también incluye el recargo del talle: 34.200 - 10%
+    await expect(page.locator('#p-aviso-pago')).toContainText('$30.780 en efectivo o transferencia');
     await expect(page.locator('#talle-recargo-msg')).toContainText('recargo del 14%');
 
     await prod.elegirTalle('48');
@@ -68,6 +70,7 @@ test.describe('Medios de pago minorista @tienda @checkout', () => {
     const prod = new ProductoPage(page);
     await prod.goto(1);
     await prod.esperarCarga();
+    await expect(page.locator('#p-aviso-pago')).toContainText('$19.800 en efectivo o transferencia');
     await expect(page.locator('#p-aviso-pago')).toContainText('10% de descuento sobre el valor final');
     await expect(page.locator('#p-aviso-pago')).toContainText('MercadoPago o MODO');
     await expect(page.locator('#p-price')).toContainText('$22.000');
@@ -78,7 +81,8 @@ test.describe('Medios de pago minorista @tienda @checkout', () => {
     await setupPage(page, minorista);
     const tienda = new TiendaPage(page);
     await tienda.goto();
-    await expect(page.locator('.pcard-aviso').first()).toContainText('10% de descuento en efectivo o transferencia');
+    // camisa de $22.000 -> $19.800 con el 10%
+    await expect(page.locator('.pcard-aviso').first()).toHaveText('$19.800 en efectivo o transferencia (10% off)');
   });
 
   test('retiro: local y QR con descuento; envío no ofrece el local @minorista', async ({ page }) => {
