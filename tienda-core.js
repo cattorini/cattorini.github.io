@@ -572,6 +572,25 @@
     llamarWorker('notificar', codigo, { keepalive: true }).catch(() => {});
   }
 
+  /* ================= Estadísticas por prenda ================= */
+
+  /* Clave del mes en UTC, igual que la arma firestore.rules (v_202611). */
+  function claveMes(prefijo, fecha) {
+    const d = fecha || new Date();
+    return prefijo + d.getUTCFullYear() + String(d.getUTCMonth() + 1).padStart(2, '0');
+  }
+
+  /* Suma 1 a "vistas" o "carrito" de una prenda (total y del mes). Sin datos
+     de la persona. Si falla, no molesta a nadie. */
+  function contarEstadistica(db, FieldValue, productoId, tipo) {
+    if (!db || !FieldValue || !/^[0-9]{1,6}$/.test(String(productoId))) return;
+    const total = tipo === 'carrito' ? 'carrito' : 'vistas';
+    const mes = claveMes(total === 'carrito' ? 'c_' : 'v_');
+    db.collection('estadisticas').doc(String(productoId))
+      .set({ [total]: FieldValue.increment(1), [mes]: FieldValue.increment(1) }, { merge: true })
+      .catch(() => {});
+  }
+
   /* ================= ubicaciones.js (carga diferida) ================= */
 
   /* ubicaciones.js se carga con `defer`. Si productos.json llega antes, los
@@ -664,6 +683,7 @@
     focoEnModal, devolverFoco, atraparFoco,
     recargoTalle, actualizarRecargosCarrito, descuentoContado, TEXTO_FINANCIACION,
     mediosDePago, metodoValido, renderMediosDePago, calcularTotales, renderTotales,
-    linkDePago, avisarVenta
+    linkDePago, avisarVenta,
+    claveMes, contarEstadistica
   });
 })();

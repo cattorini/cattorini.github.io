@@ -241,6 +241,34 @@ service cloud.firestore {
       }
     }
 
+    /* ============ ESTADÍSTICAS POR PRENDA ============ */
+    /* Contadores anónimos: el público solo puede sumar de a 1 al total y al
+       mes en curso (clave armada con la hora del servidor, en UTC). */
+    match /estadisticas/{productId} {
+      function claveMes(prefijo) {
+        return prefijo + string(request.time.year())
+          + (request.time.month() < 10 ? '0' : '') + string(request.time.month());
+      }
+      function nuevoContador(total, prefijo) {
+        let d = request.resource.data;
+        let mes = claveMes(prefijo);
+        return d.keys().hasOnly([total, mes]) && d[total] == 1 && d[mes] == 1;
+      }
+      function sumaUno(total, prefijo) {
+        let d = request.resource.data;
+        let a = resource.data;
+        let mes = claveMes(prefijo);
+        return d.diff(a).affectedKeys().hasOnly([total, mes])
+          && d[total] == a.get(total, 0) + 1
+          && d[mes] == a.get(mes, 0) + 1;
+      }
+      allow create: if productId.matches('^[0-9]{1,6}$')
+        && (nuevoContador('vistas', 'v_') || nuevoContador('carrito', 'c_'));
+      allow update: if sumaUno('vistas', 'v_') || sumaUno('carrito', 'c_');
+      allow read: if isStaff();
+      allow delete: if isStaff();
+    }
+
     /* ============ CÓDIGOS POR ENTREGAR ============ */
     /* Código de acceso mayorista para mostrarse UNA vez en la página de la
        solicitud. Nadie lo lee desde el navegador: lo entrega el Worker y lo

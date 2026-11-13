@@ -958,6 +958,7 @@ function renderProduct() {
   renderGallery();
   renderTalles();
   cargarStockProducto();
+  window.CattCore.contarEstadistica(db, window.firebase && firebase.firestore && firebase.firestore.FieldValue, PRODUCT.id, 'vistas');
 
   renderInfoEnvio();
 
@@ -1421,6 +1422,7 @@ function addToCart() {
     });
   }
   saveCart(cart);
+  window.CattCore.contarEstadistica(db, window.firebase && firebase.firestore && firebase.firestore.FieldValue, PRODUCT.id, 'carrito');
   showToast(`Agregado · Talle ${selectedTalle}${selectedColor ? ' · ' + selectedColor : ''} ×${qty}`);
 }
 

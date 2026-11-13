@@ -254,6 +254,34 @@ describe('codigos_por_entregar — código mayorista de un solo uso', () => {
   });
 });
 
+describe('estadisticas — contadores por prenda', () => {
+  const ahora = new Date();
+  const mes = (p) => p + ahora.getUTCFullYear() + String(ahora.getUTCMonth() + 1).padStart(2, '0');
+  const inc = (n) => firebase.firestore.FieldValue.increment(n);
+  test('el público suma 1 a vistas y al mes (crea y actualiza)', async () => {
+    const ref = publico.doc('estadisticas/501');
+    await assertSucceeds(ref.set({ vistas: inc(1), [mes('v_')]: inc(1) }, { merge: true }));
+    await assertSucceeds(ref.set({ vistas: inc(1), [mes('v_')]: inc(1) }, { merge: true }));
+    await assertSucceeds(ref.set({ carrito: inc(1), [mes('c_')]: inc(1) }, { merge: true }));
+  });
+  test('no puede sumar más de 1, poner un número ni tocar otro mes', async () => {
+    const ref = publico.doc('estadisticas/502');
+    await assertSucceeds(ref.set({ vistas: inc(1), [mes('v_')]: inc(1) }, { merge: true }));
+    await assertFails(ref.set({ vistas: inc(5), [mes('v_')]: inc(5) }, { merge: true }));
+    await assertFails(ref.set({ vistas: 1000, [mes('v_')]: 1000 }, { merge: true }));
+    await assertFails(ref.set({ vistas: inc(1), v_199001: inc(1) }, { merge: true }));
+    await assertFails(ref.set({ vistas: inc(1) }, { merge: true }));
+    await assertFails(ref.set({ vistas: inc(1), [mes('v_')]: inc(1), carrito: inc(1) }, { merge: true }));
+  });
+  test('no puede leer, borrar ni usar un id raro; el staff lee', async () => {
+    await assertFails(publico.doc('estadisticas/abc').set({ vistas: 1, [mes('v_')]: 1 }));
+    await assertFails(publico.doc('estadisticas/501').get());
+    await assertFails(publico.collection('estadisticas').get());
+    await assertFails(publico.doc('estadisticas/501').delete());
+    await assertSucceeds(staff.collection('estadisticas').get());
+  });
+});
+
 describe('pedidos — creación pública validada', () => {
   test('público crea un pedido válido con ID == código', async () => {
     await assertSucceeds(publico.doc('pedidos/' + COD(1)).set(pedidoValido(COD(1))));

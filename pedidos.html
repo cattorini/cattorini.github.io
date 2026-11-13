@@ -158,6 +158,9 @@
       font-size: 0.85rem;
       display: flex; justify-content: space-between;
     }
+    .vistos-tabla { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .vistos-tabla th, .vistos-tabla td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #E5E5E5; }
+    .vistos-tabla td:nth-child(n+3), .vistos-tabla th:nth-child(n+3) { text-align: right; white-space: nowrap; }
     .totals-line { padding: 8px 0; font-size: 0.9rem; display: flex; justify-content: space-between; }
     .totals-line.total { font-weight: 500; font-size: 1.05rem; padding-top: 12px; border-top: 1px solid #E5E5E5; margin-top: 8px; }
 
@@ -265,6 +268,7 @@
     <button class="tab-btn" data-tab="metricas">Métricas</button>
     <button class="tab-btn" data-tab="historial">Historial</button>
     <button class="tab-btn" data-tab="pagos">Pagos online</button>
+    <button class="tab-btn" data-tab="vistos">Más vistos</button>
   </div>
 
   <div class="tab-panel active" id="tab-cola">
@@ -319,6 +323,16 @@
   </div>
 
   <div class="tab-panel" id="tab-pagos"><div id="pagos-online"></div></div>
+
+  <div class="tab-panel" id="tab-vistos">
+    <div class="filters" id="vistos-periodo">
+      <button class="filter-pill active" data-periodo="total">Desde el inicio</button>
+      <button class="filter-pill" data-periodo="mes">Este mes</button>
+      <button class="filter-pill" data-periodo="anterior">Mes anterior</button>
+    </div>
+    <p style="font-size:0.8rem;color:#666;margin:0 0 12px;">Vistas = veces que se abrió la ficha de la prenda (no personas distintas). "Al carrito" = veces que se agregó. Se cuenta desde el 13/11/2026.</p>
+    <div style="overflow-x:auto;"><table class="vistos-tabla" id="vistos-tabla"></table></div>
+  </div>
 
   <div class="tab-panel" id="tab-historial">
     <div style="margin-bottom:16px;display:flex;gap:8px;flex-wrap:wrap;">
@@ -1164,6 +1178,65 @@ document.querySelectorAll('.tab-btn').forEach(b => {
     b.classList.add('active');
     document.getElementById('tab-' + b.dataset.tab).classList.add('active');
     if (b.dataset.tab === 'pagos') montarPagosOnline();
+    if (b.dataset.tab === 'vistos') cargarMasVistos();
+  });
+});
+
+/* ---------- Más vistos ---------- */
+let estadisticas = null;
+let periodoVistos = 'total';
+
+function nombreProducto(id) {
+  for (const cat of ((DATA && DATA.categorias) || [])) {
+    const p = (cat.productos || []).find(x => String(x.id) === String(id));
+    if (p) return p.nombre;
+  }
+  return 'Prenda #' + id + ' (ya no está en el catálogo)';
+}
+
+async function cargarMasVistos() {
+  const tabla = document.getElementById('vistos-tabla');
+  if (!db) return;
+  tabla.textContent = 'Cargando…';
+  try {
+    const snap = await db.collection('estadisticas').get();
+    estadisticas = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderMasVistos();
+  } catch (e) {
+    tabla.textContent = 'No se pudieron cargar las estadísticas.';
+  }
+}
+
+function renderMasVistos() {
+  const tabla = document.getElementById('vistos-tabla');
+  const ahora = new Date();
+  const anterior = new Date(Date.UTC(ahora.getUTCFullYear(), ahora.getUTCMonth() - 1, 1));
+  const campos = {
+    total: ['vistas', 'carrito'],
+    mes: [window.CattCore.claveMes('v_', ahora), window.CattCore.claveMes('c_', ahora)],
+    anterior: [window.CattCore.claveMes('v_', anterior), window.CattCore.claveMes('c_', anterior)]
+  }[periodoVistos];
+  const filas = (estadisticas || [])
+    .map(e => ({ nombre: nombreProducto(e.id), vistas: e[campos[0]] || 0, carrito: e[campos[1]] || 0 }))
+    .filter(f => f.vistas || f.carrito)
+    .sort((a, b) => b.vistas - a.vistas || b.carrito - a.carrito);
+  tabla.textContent = '';
+  if (!filas.length) { tabla.textContent = 'Todavía no hay visitas en este período.'; return; }
+  const fila = (celdas, th) => {
+    const tr = document.createElement('tr');
+    celdas.forEach(c => { const td = document.createElement(th ? 'th' : 'td'); td.textContent = c; tr.appendChild(td); });
+    tabla.appendChild(tr);
+  };
+  fila(['#', 'Prenda', 'Vistas', 'Al carrito', '% que la agrega'], true);
+  filas.forEach((f, i) => fila([String(i + 1), f.nombre, f.vistas.toLocaleString('es-AR'), f.carrito.toLocaleString('es-AR'),
+    f.vistas ? Math.round(f.carrito * 100 / f.vistas) + '%' : '—']));
+}
+
+document.querySelectorAll('#vistos-periodo .filter-pill').forEach(b => {
+  b.addEventListener('click', () => {
+    document.querySelectorAll('#vistos-periodo .filter-pill').forEach(x => x.classList.toggle('active', x === b));
+    periodoVistos = b.dataset.periodo;
+    renderMasVistos();
   });
 });
 
