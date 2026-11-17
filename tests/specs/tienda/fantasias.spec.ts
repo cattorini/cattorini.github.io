@@ -6,7 +6,8 @@ import { entrarAlPortal } from '../../helpers/portal';
 const STOCK = { 1: { variantes: { M: {
   Blanco: { cantidad: 3, hex: '#ffffff' },
   'Raya azul': { cantidad: 2, hex: '#000000' },
-  'Cuadro rojo': { cantidad: 0, hex: '#000000' }
+  'Cuadro rojo': { cantidad: 1, hex: '#000000' },
+  'Sin stock': { cantidad: 0, hex: '#000000' }
 } } } };
 const conFantasias = (c: any) => {
   c.categorias[0].productos[0].fantasias = {
@@ -44,7 +45,7 @@ test.describe('Fantasías @tienda', () => {
 
     await page.getByRole('button', { name: 'Fantasía siguiente' }).click();
     await expect(page.locator('#fantasia-nombre')).toHaveText('Cuadro rojo · Cuadro');
-    await expect(page.locator('#fantasia-elegir')).toBeDisabled();
+    await expect(page.locator('#fantasia-elegir')).toBeEnabled();
 
     await page.getByRole('button', { name: 'Fantasía anterior' }).click();
     await page.locator('#fantasia-elegir').click();

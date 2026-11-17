@@ -143,6 +143,20 @@
       max-width: 1400px; margin: 0 auto;
     }
     .cat-strip::-webkit-scrollbar { display: none; }
+    .talle-strip {
+      display: flex; align-items: center; gap: 6px; padding: 8px 24px;
+      overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #E5E5E5;
+      background: #FFF; max-width: 1400px; margin: 0 auto; font-size: 0.78rem;
+    }
+    .talle-strip::-webkit-scrollbar { display: none; }
+    .talle-strip .talle-hint { color: #666; white-space: nowrap; }
+    .talle-strip .talle-label { color: #0A0A0A; font-weight: 500; white-space: nowrap; margin-right: 4px; }
+    .talle-pill {
+      flex-shrink: 0; min-width: 40px; padding: 6px 10px; border: 1px solid #E5E5E5; background: #FFF;
+      font: inherit; font-size: 0.78rem; cursor: pointer; color: #0A0A0A;
+    }
+    .talle-pill.active { background: #0A0A0A; color: #FFF; border-color: #0A0A0A; }
+    .sin-resultados { text-align: center; color: #666; padding: 48px 20px; font-size: 0.95rem; }
     .cat-pill {
       flex-shrink: 0; padding: 8px 18px;
       font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
@@ -622,6 +636,7 @@
   </div>
   <div id="perfil-badge" style="display: none;"></div>
   <div class="cat-strip" id="cat-strip"></div>
+  <div class="talle-strip" id="talle-strip"></div>
   <div class="search-strip">
     <input type="text" id="search" placeholder="Buscar prenda..." aria-label="Buscar prenda" maxlength="60" autocomplete="off" />
     <button class="search-clear" id="search-clear" type="button">×</button>
@@ -855,6 +870,9 @@ const RATE_LIMIT_MS = 2500;
 
 let DATA = null;
 let categoriaActual = 'todos';
+let talleActual = '';
+/* id de producto -> variantes de stock (null si no se pudo leer: se muestra todo) */
+let STOCK = null;
 let entrega = 'retiro';
 /* Solo relevante para retiro — envío siempre necesita pago QR (decisión de
    producto: el envío es a cargo del comprador y se cobra antes de despachar). */
@@ -1167,11 +1185,55 @@ function renderCatStrip() {
     btn.textContent = c.nombre;
     btn.onclick = () => {
       categoriaActual = c.id;
+      talleActual = '';
       renderCatStrip();
+      renderTalleStrip();
       applyFilter();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     };
     strip.appendChild(btn);
+  });
+}
+
+/* Filtro por talle: cada categoría tiene su propia escala (un 40 de camisa
+   no es un 40 de pantalón), así que primero se elige la categoría. Solo se
+   ofrecen talles que hoy tienen stock en esa categoría. */
+function renderTalleStrip() {
+  const strip = document.getElementById('talle-strip');
+  strip.textContent = '';
+  if (categoriaActual === 'todos') {
+    const hint = document.createElement('span');
+    hint.className = 'talle-hint';
+    hint.textContent = 'Para buscar por talle, elegí primero Camisas, Pantalones o Jeans.';
+    strip.appendChild(hint);
+    return;
+  }
+  const cat = DATA.categorias.find(c => c.id === categoriaActual);
+  const talles = new Set();
+  document.querySelectorAll(`.cat-section[data-cat-id="${CSS.escape(categoriaActual)}"] .pcard`).forEach(card => {
+    JSON.parse(card.dataset.talles || '[]').forEach(t => talles.add(t));
+  });
+  /* Orden de la guía de talles (S, M, L… o 38, 40…), no alfabético. */
+  const orden = [];
+  (cat ? cat.productos || [] : []).forEach(p => {
+    const guia = DATA.guia_talles[p.tipo_talle !== undefined ? p.tipo_talle : cat.tipo_talle];
+    Object.keys((guia && guia.tabla) || {}).forEach(t => { if (!orden.includes(t)) orden.push(t); });
+  });
+  const pos = t => (orden.includes(t) ? orden.indexOf(t) : 1000 + (Number(t) || 0));
+  const ordenados = [...talles].sort((a, b) => pos(a) - pos(b) || (Number(a) - Number(b)) || String(a).localeCompare(String(b)));
+  if (!ordenados.length) return;
+  const label = document.createElement('span');
+  label.className = 'talle-label';
+  label.textContent = `Talle de ${cat ? cat.nombre.toLowerCase() : 'la prenda'}:`;
+  strip.appendChild(label);
+  ['', ...ordenados].forEach(t => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'talle-pill' + (talleActual === t ? ' active' : '');
+    b.textContent = t || 'Todos';
+    b.setAttribute('aria-pressed', String(talleActual === t));
+    b.onclick = () => { talleActual = t; renderTalleStrip(); applyFilter(); };
+    strip.appendChild(b);
   });
 }
 
@@ -1237,10 +1299,14 @@ function renderCatalog() {
     (categoria.productos || []).forEach((p, idx) => {
       if (!p.disponible) return;
       if (perfil === 'mayorista' && p.fabricacion_propia === false) return;
+      /* Sin stock en ningún talle/color: queda guardado pero no se muestra. */
+      const visibles = STOCK ? window.CattCore.tallesVisibles(STOCK[String(p.id)]) : null;
+      if (visibles && !visibles.length) return;
       const link = document.createElement('a');
       link.href = `./producto.html?id=${encodeURIComponent(p.id)}`;
       link.className = 'pcard';
       link.dataset.name = normalizar(p.nombre);
+      link.dataset.talles = JSON.stringify(visibles || p.talles_disponibles || []);
       link.style.animationDelay = `${Math.min(idx * 60, 400)}ms`;
 
       const imgDiv = document.createElement('div');
@@ -1299,11 +1365,13 @@ function renderCatalog() {
     cat.appendChild(section);
   });
 
+  renderTalleStrip();
   applyFilter();
 }
 
 function applyFilter() {
   const query = normalizar(document.getElementById('search').value);
+  let total = 0;
   document.querySelectorAll('.cat-section').forEach(section => {
     const catMatch = categoriaActual === 'todos' || section.dataset.catId === categoriaActual;
     if (!catMatch) { section.classList.add('hidden-cat'); return; }
@@ -1311,11 +1379,27 @@ function applyFilter() {
     let anyVisible = false;
     section.querySelectorAll('.pcard').forEach(card => {
       const nameMatch = !query || card.dataset.name.includes(query);
-      card.style.display = nameMatch ? '' : 'none';
-      if (nameMatch) anyVisible = true;
+      const talleMatch = !talleActual || JSON.parse(card.dataset.talles || '[]').includes(talleActual);
+      const ok = nameMatch && talleMatch;
+      card.style.display = ok ? '' : 'none';
+      if (ok) { anyVisible = true; total++; }
     });
     section.classList.toggle('hidden-cat', !anyVisible);
   });
+  const catalogo = document.getElementById('catalog');
+  let vacio = document.getElementById('sin-resultados');
+  if (!vacio && catalogo) {
+    vacio = document.createElement('p');
+    vacio.id = 'sin-resultados';
+    vacio.className = 'sin-resultados';
+    catalogo.appendChild(vacio);
+  }
+  if (vacio) {
+    vacio.style.display = total ? 'none' : 'block';
+    vacio.textContent = talleActual
+      ? `No hay prendas en talle ${talleActual} con stock en este momento.`
+      : 'No encontramos prendas con esa búsqueda.';
+  }
 }
 
 /* ---------- Query param inicial ---------- */
@@ -1946,6 +2030,7 @@ function ocultarHeaderAlBajar() {
 /* ---------- Init ---------- */
 async function init() {
   DATA = await loadData();
+  STOCK = await window.CattCore.cargarStockTodo(db);
   if (DATA) {
     const carrito = getCart();
     if (window.CattCore.actualizarRecargosCarrito(carrito, DATA)) saveCart(carrito);
@@ -1957,6 +2042,7 @@ async function init() {
 
   categoriaActual = getInitialCat();
   renderCatStrip();
+  renderTalleStrip();
   renderInfoEnvio();
   updateCartCount();
 

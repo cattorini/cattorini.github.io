@@ -30,7 +30,7 @@ async function pedidoPorCodigo(page: Page, codigo: string) {
 
 test.describe('Checkout con stock por talle/color @regresion @checkout', () => {
 
-  test('ficha de producto: talles según guía, colores con stock y "sin stock" deshabilitado @regresion', async ({ page }) => {
+  test('ficha de producto: solo talles y colores con stock (lo que está en 0 no se ve) @regresion', async ({ page }) => {
     await setupPage(page, {
       perfil: 'minorista', provincia: 'Buenos Aires', localidad: 'Bahía Blanca', zonaStatus: 'libre',
       firebase: { collections: { stock: STOCK } }
@@ -38,11 +38,12 @@ test.describe('Checkout con stock por talle/color @regresion @checkout', () => {
     const prod = new ProductoPage(page);
     await prod.goto(1);
     await prod.esperarCarga();
-    /* talles = claves de la guía "camisas" (S..XXL), todos disponibles en el fixture */
-    await expect(page.locator('#talles-grid button')).toHaveText(['S', 'M', 'L', 'XL', 'XXL']);
+    /* con stock cargado solo aparecen los talles que tienen unidades (M y L) */
+    await expect(page.locator('#talles-grid button')).toHaveText(['M', 'L']);
     await prod.elegirTalle('M');
-    await expect(page.locator('#colores-grid .color-chip')).toHaveCount(2);
-    await expect(page.locator('#colores-grid .color-chip', { hasText: 'Azul' })).toBeDisabled();
+    /* Azul está cargado en 0: queda guardado pero no se muestra */
+    await expect(page.locator('#colores-grid .color-chip')).toHaveCount(1);
+    await expect(page.locator('#colores-grid .color-chip', { hasText: 'Azul' })).toHaveCount(0);
     await expect(page.locator('#add-cart-btn')).toBeDisabled();   // falta elegir color
     await page.locator('#colores-grid .color-chip', { hasText: 'Blanco' }).click();
     await expect(page.locator('#add-cart-btn')).toBeEnabled();

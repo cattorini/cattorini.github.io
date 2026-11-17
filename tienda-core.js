@@ -572,6 +572,37 @@
     llamarWorker('notificar', codigo, { keepalive: true }).catch(() => {});
   }
 
+  /* ================= Stock visible al cliente ================= */
+
+  /* Lo que se carga con stock 0 queda guardado para cuando se repone, pero el
+     cliente no lo ve. Un producto sin stock cargado todavía (sin variantes)
+     se sigue mostrando como siempre. */
+  function tieneStockCargado(variantes) {
+    return !!variantes && Object.values(variantes).some(t => t && Object.keys(t).length);
+  }
+  function tallesConStock(variantes) {
+    return Object.keys(variantes || {}).filter(t =>
+      Object.values(variantes[t] || {}).some(v => v && Number(v.cantidad) > 0));
+  }
+  /* null = sin stock cargado (no se filtra); si no, los talles con stock. */
+  function tallesVisibles(variantes) {
+    return tieneStockCargado(variantes) ? tallesConStock(variantes) : null;
+  }
+
+  /* Stock de todas las prendas en una lectura. Si falla, se muestra todo:
+     mejor ver una prenda de más que esconder una que se vende. */
+  async function cargarStockTodo(db) {
+    if (!db) return null;
+    try {
+      const snap = await db.collection('stock').get();
+      const out = {};
+      snap.forEach(d => { out[d.id] = (d.data() || {}).variantes || {}; });
+      return out;
+    } catch (e) {
+      return null;
+    }
+  }
+
   /* ================= Estadísticas por prenda ================= */
 
   /* Clave del mes en UTC, igual que la arma firestore.rules (v_202611). */
@@ -684,6 +715,7 @@
     recargoTalle, actualizarRecargosCarrito, descuentoContado, TEXTO_FINANCIACION,
     mediosDePago, metodoValido, renderMediosDePago, calcularTotales, renderTotales,
     linkDePago, avisarVenta,
-    claveMes, contarEstadistica
+    claveMes, contarEstadistica,
+    tieneStockCargado, tallesConStock, tallesVisibles, cargarStockTodo
   });
 })();

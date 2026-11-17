@@ -1089,7 +1089,10 @@ function renderTalles() {
      ('', ver portal.html addProducto) no debe heredar la de la categoría. */
   const tipoTalle = PRODUCT.tipo_talle !== undefined ? PRODUCT.tipo_talle : CATEGORIA.tipo_talle;
   const talles = DATA.guia_talles[tipoTalle] ? Object.keys(DATA.guia_talles[tipoTalle].tabla) : (PRODUCT.talles_disponibles || []);
-  const disponibles = PRODUCT.talles_disponibles || [];
+  /* Con stock cargado se muestran solo los talles que tienen unidades; lo que
+     está en 0 queda guardado pero no se ofrece. Sin stock cargado, como antes. */
+  const conStock = window.CattCore.tallesVisibles(stockVariantes);
+  const disponibles = (PRODUCT.talles_disponibles || []).filter(t => !conStock || conStock.includes(t));
 
   /* Los talles se agrupan por tipo: el recargo se explica antes de elegir. */
   const cfgTalles = DATA.config.talles || {};
@@ -1098,9 +1101,11 @@ function renderTalles() {
     { tipo: 'especial', titulo: `Talles especiales · +${cfgTalles.recargo_especial || 0}%` },
     { tipo: 'super', titulo: `Talles superespeciales · +${cfgTalles.recargo_super || 0}%` }
   ];
-  const conRecargo = talles.some(t => window.CattCore.recargoTalle(DATA, PRODUCT, CATEGORIA, t).pct > 0);
+  const conRecargo = talles.some(t => disponibles.includes(t) && window.CattCore.recargoTalle(DATA, PRODUCT, CATEGORIA, t).pct > 0);
+  renderSinStock(conStock && !disponibles.length);
   GRUPOS.forEach(g => {
-    const delGrupo = talles.filter(t => window.CattCore.recargoTalle(DATA, PRODUCT, CATEGORIA, t).tipo === g.tipo);
+    const delGrupo = talles.filter(t => disponibles.includes(t)
+      && window.CattCore.recargoTalle(DATA, PRODUCT, CATEGORIA, t).tipo === g.tipo);
     if (!delGrupo.length) return;
     const wrap = document.createElement('div');
     wrap.className = 'talle-grupo';
@@ -1129,6 +1134,20 @@ function renderTalles() {
     grid.appendChild(wrap);
   });
   renderAvisoRecargo();
+}
+
+/* Prenda sin stock (alguien entró por un link viejo o compartido). */
+function renderSinStock(agotado) {
+  let aviso = document.getElementById('sin-stock-msg');
+  if (!aviso) {
+    aviso = document.createElement('p');
+    aviso.id = 'sin-stock-msg';
+    aviso.className = 'talle-recargo-msg';
+    aviso.textContent = 'Esta prenda no tiene stock en este momento. Escribinos por WhatsApp y te avisamos cuando vuelva.';
+    document.getElementById('talles-grid').before(aviso);
+  }
+  aviso.style.display = agotado ? 'block' : 'none';
+  document.getElementById('add-cart-btn').disabled = agotado || !selectedTalle;
 }
 
 function renderAvisoRecargo() {
@@ -1168,7 +1187,8 @@ function cargarStockProducto() {
   if (!db) { stockVariantes = {}; return Promise.resolve(); }
   stockLoadPromise = db.collection('stock').doc(String(PRODUCT.id)).get()
     .then(snap => { stockVariantes = (snap.exists && snap.data().variantes) || {}; })
-    .catch(() => { stockVariantes = {}; });
+    .catch(() => { stockVariantes = {}; })
+    .then(() => renderTalles());
   return stockLoadPromise;
 }
 
@@ -1177,7 +1197,8 @@ function renderColores() {
   const grid = document.getElementById('colores-grid');
   const addBtn = document.getElementById('add-cart-btn');
   const coloresTalle = (stockVariantes && stockVariantes[selectedTalle]) || {};
-  const nombres = Object.keys(coloresTalle);
+  /* Los colores en 0 quedan cargados para cuando se reponen, pero no se ven. */
+  const nombres = Object.keys(coloresTalle).filter(n => ((coloresTalle[n] || {}).cantidad || 0) > 0);
 
   grid.innerHTML = '';
 
@@ -1251,7 +1272,8 @@ function fantasiaDe(nombre) {
 
 /* Las fantasías del talle elegido, para recorrerlas dentro de la ampliación. */
 function fantasiasDelTalle() {
-  return Object.keys((stockVariantes && stockVariantes[selectedTalle]) || {}).filter(fantasiaDe);
+  const colores = (stockVariantes && stockVariantes[selectedTalle]) || {};
+  return Object.keys(colores).filter(n => fantasiaDe(n) && ((colores[n] || {}).cantidad || 0) > 0);
 }
 
 function abrirFantasia(nombre) {

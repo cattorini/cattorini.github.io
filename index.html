@@ -1485,6 +1485,15 @@ async function init() {
   buildHorarios(data);
   buildCategorias(data);
   buildDestacados(data);
+  /* Los destacados agotados se ocultan cuando llega el stock. */
+  window.CattCore.cargarStockTodo(db).then((stock) => {
+    if (!stock) return;
+    data.categorias.forEach(cat => cat.productos.forEach(p => {
+      const t = window.CattCore.tallesVisibles(stock[String(p.id)]);
+      if (t && !t.length) p.disponible = false;
+    }));
+    buildDestacados(data);
+  });
   applyWA(data);
   applyMaps(data);
 
