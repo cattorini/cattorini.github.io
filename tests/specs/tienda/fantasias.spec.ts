@@ -11,6 +11,7 @@ const STOCK = { 1: { variantes: { M: {
 } } } };
 const conFantasias = (c: any) => {
   c.categorias[0].productos[0].fantasias = {
+    'Sin stock': { tipo: 'estampado', foto: 'cat-pantalones.jpg' },
     'Raya azul': { tipo: 'raya', foto: 'cat-camisas.jpg' },
     'Cuadro rojo': { tipo: 'cuadro', foto: 'cat-jeans.jpg' },
     Maliciosa: { tipo: 'raya', foto: '../x"onerror=alert(1)' }
@@ -47,6 +48,11 @@ test.describe('Fantasías @tienda', () => {
     await expect(page.locator('#fantasia-nombre')).toHaveText('Cuadro rojo · Cuadro');
     await expect(page.locator('#fantasia-elegir')).toBeEnabled();
 
+    // la fantasía sin stock no entra en el recorrido
+    await page.getByRole('button', { name: 'Fantasía siguiente' }).click();
+    await expect(page.locator('#fantasia-nombre')).toHaveText('Raya azul · Raya');
+    await page.getByRole('button', { name: 'Fantasía siguiente' }).click();
+    await expect(page.locator('#fantasia-nombre')).toHaveText('Cuadro rojo · Cuadro');
     await page.getByRole('button', { name: 'Fantasía anterior' }).click();
     await page.locator('#fantasia-elegir').click();
     await expect(modal).toBeHidden();

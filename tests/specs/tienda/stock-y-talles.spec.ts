@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { setupPage } from '../../helpers/setup';
 import { TiendaPage } from '../../pages/tienda.page';
 import { ProductoPage } from '../../pages/producto.page';
+import { CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaSample } from '../../fixtures/test-data';
 
 const minorista = { perfil: 'minorista' as const, provincia: 'Buenos Aires', localidad: 'Bahía Blanca', zonaStatus: 'libre' };
 /* fixture: 1 y 2 camisas (S..XXL), 4 y 5 pantalones (38..48). */
@@ -82,5 +83,51 @@ test.describe('Filtro por talle @tienda', () => {
     await expect(page.locator('#sin-resultados')).toBeVisible();
     await page.locator('#search').fill('');
     await expect(page.locator('#sin-resultados')).toBeHidden();
+  });
+});
+
+test.describe('Stock oculto: casos borde @tienda @regresion', () => {
+  test('si no se puede leer el stock, se muestra todo (mejor de más que esconder ventas) @regresion', async ({ page }) => {
+    await setupPage(page, { ...minorista, firebase: { collections: { stock: STOCK }, failReadsFrom: ['stock'] } });
+    const tienda = new TiendaPage(page);
+    await tienda.goto();
+    await expect(page.locator('.pcard[href*="id=2"]')).toHaveCount(1);
+  });
+
+  test('al reponer, la prenda vuelve a aparecer sola @regresion', async ({ page }) => {
+    const repuesto = { ...STOCK, 2: { variantes: { M: { Negro: { cantidad: 4, hex: '#000' } }, L: { Negro: { cantidad: 0, hex: '#000' } } } } };
+    await setupPage(page, { ...minorista, firebase: { collections: { stock: repuesto } } });
+    const tienda = new TiendaPage(page);
+    await tienda.goto();
+    await expect(page.locator('.pcard[href*="id=2"]')).toHaveCount(1);
+    const prod = new ProductoPage(page);
+    await prod.goto(2);
+    await prod.esperarCarga();
+    await expect(page.locator('#talles-grid .talle-btn')).toHaveText(['M']);
+  });
+
+  test('el mayorista tampoco ve lo agotado @mayorista', async ({ page }) => {
+    await setupPage(page, {
+      perfil: 'mayorista', codigoHashValido: CODIGO_MAYO_INDIVIDUAL_HASH, mayoristaData: mayoristaSample,
+      firebase: { collections: { stock: STOCK, mayoristas_activos: { [CODIGO_MAYO_INDIVIDUAL_HASH]: mayoristaSample } } }
+    });
+    const tienda = new TiendaPage(page);
+    await tienda.goto();
+    await expect(page.locator('.pcard[href*="id=1"]')).toHaveCount(1);
+    await expect(page.locator('.pcard[href*="id=2"]')).toHaveCount(0);
+  });
+
+  test('el filtro por talle se combina con el buscador @tienda', async ({ page }) => {
+    await setupPage(page, { ...minorista, firebase: { collections: { stock: STOCK } }, mutarCatalogo: (c: any) => {
+      c.categorias[1].productos[0].nombre = 'Pantalón Sport';
+      c.categorias[1].productos[1].nombre = 'Pantalón Vestir';
+    } });
+    const tienda = new TiendaPage(page);
+    await tienda.goto();
+    await page.locator('.cat-pill', { hasText: 'Pantalones' }).click();
+    await page.locator('#talle-strip .talle-pill', { hasText: /^40$/ }).click();
+    await page.locator('#search').fill('vestir');
+    await expect(page.locator('.pcard[href*="id=5"]')).toBeVisible();
+    await expect(page.locator('.pcard[href*="id=4"]')).toBeHidden();
   });
 });
