@@ -22,9 +22,10 @@ test.describe('Portal — catálogo y stock @regresion @portal', () => {
     await expect(fila).toBeVisible();
 
     const inputs = fila.locator('.grid-2 input');
-    await inputs.nth(0).fill('Camisa Test Regresión');
-    await inputs.nth(1).fill('25000');
-    await inputs.nth(2).fill('16000');
+    await fila.locator('input[data-campo="articulo"]').fill('9999');
+    await inputs.nth(1).fill('Camisa Test Regresión');
+    await inputs.nth(2).fill('25000');
+    await inputs.nth(3).fill('16000');
 
     /* Guía de talles por producto */
     await fila.locator('select.inp').selectOption('camisas');

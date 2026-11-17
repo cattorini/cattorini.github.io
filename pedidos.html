@@ -656,6 +656,14 @@ function trackCode(o) {
   return '#' + (o.id ? o.id.slice(-5).toUpperCase() : '···');
 }
 
+/* Código del ítem: el que quedó guardado al comprar; para pedidos viejos, el
+   que corresponde hoy según el catálogo. */
+function codigoItem(it) {
+  if (it.codigo) return it.codigo;
+  return window.CattCore.codigoArticulo(DATA, window.CattCore.productoPorId(DATA, it.id), it.color, it.talle);
+}
+const conCodigo = (it, texto) => (codigoItem(it) ? codigoItem(it) + ' · ' : '') + texto;
+
 /* Pedidos anteriores a metodoPago: envío era siempre QR y retiro según pagaEnLocal. */
 function metodoDelPedido(o) {
   if (o.metodoPago) return o.metodoPago;
@@ -884,7 +892,7 @@ function showDetail(o) {
     const r = document.createElement('div');
     r.className = 'item-line';
     const left = document.createElement('span');
-    left.textContent = `${it.nombre} · Talle ${it.talle}` + (it.color ? ` · ${it.color}` : '') + ` · x${it.qty}`;
+    left.textContent = conCodigo(it, `${it.nombre} · Talle ${it.talle}` + (it.color ? ` · ${it.color}` : '') + ` · x${it.qty}`);
     if (distintos.includes(it)) {
       const av = document.createElement('div');
       av.className = 'item-aviso';
@@ -1130,7 +1138,7 @@ function exportCSV() {
   list.forEach(o => {
     const d = o.creadoEn && o.creadoEn.toDate ? o.creadoEn.toDate() : new Date();
     const cli = o.cliente || {};
-    const items = (o.items || []).map(i => `${i.nombre} T:${i.talle}${i.color ? ' C:' + i.color : ''} x${i.qty}`).join(' | ');
+    const items = (o.items || []).map(i => conCodigo(i, `${i.nombre} T:${i.talle}${i.color ? ' C:' + i.color : ''} x${i.qty}`)).join(' | ');
     const row = [
       d.toLocaleDateString('es-AR'),
       d.toLocaleTimeString('es-AR'),
@@ -1537,7 +1545,8 @@ function addManualItem() {
 
   manualCart.push({
     id: p.id, nombre: p.nombre, categoria: cat.nombre,
-    talle, color, qty, precio
+    talle, color, qty, precio,
+    codigo: window.CattCore.codigoArticulo(DATA, p, color, talle)
   });
   renderManualItems();
 }
@@ -1552,7 +1561,7 @@ function renderManualItems() {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;justify-content:space-between;padding:4px 0;';
       const l = document.createElement('span');
-      l.textContent = `${it.nombre} · T${it.talle}${it.color ? ' · ' + it.color : ''} · x${it.qty} · $${(it.precio*it.qty).toLocaleString('es-AR')}`;
+      l.textContent = conCodigo(it, `${it.nombre} · T${it.talle}${it.color ? ' · ' + it.color : ''} · x${it.qty} · $${(it.precio*it.qty).toLocaleString('es-AR')}`);
       const del = document.createElement('button');
       del.className = 'btn-danger'; del.textContent = '×';
       del.style.cssText = 'padding:2px 8px;';

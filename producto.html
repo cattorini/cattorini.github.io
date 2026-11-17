@@ -1936,7 +1936,8 @@ async function enviarPedido() {
     items: cart.map(i => ({
       id: i.id, nombre: i.nombre, categoria: i.categoria,
       talle: i.talle, color: i.color || null, qty: i.qty, precio: i.precio,
-      recargoTalle: i.recargoTalle || 0
+      recargoTalle: i.recargoTalle || 0,
+      codigo: window.CattCore.codigoArticulo(DATA, window.CattCore.productoPorId(DATA, i.id), i.color, i.talle)
     })),
     modalidad: entrega,
     metodoPago,

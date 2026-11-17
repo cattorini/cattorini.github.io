@@ -594,7 +594,8 @@
           ],
           "fabricacion_propia": true,
           "tipo_talle": "camisas confort",
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "1101"
         },
         {
           "id": 2,
@@ -626,7 +627,8 @@
           ],
           "fabricacion_propia": true,
           "tipo_talle": "camisas confort",
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "1201"
         },
         {
           "id": 12,
@@ -672,7 +674,8 @@
           "imagenes": [
             "p13-1794229236073-97jd.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2413"
         },
         {
           "id": 14,
@@ -692,7 +695,8 @@
           "imagenes": [
             "p14-1794229686676-2gwy.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2421R"
         },
         {
           "id": 15,
@@ -713,7 +717,8 @@
           "imagenes": [
             "p15-1794230124964-fe0g.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2412"
         },
         {
           "id": 16,
@@ -733,7 +738,8 @@
           "imagenes": [
             "p16-1794230479423-89pw.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2417"
         },
         {
           "id": 17,
@@ -753,7 +759,8 @@
           "imagenes": [
             "p17-1794230711729-wb29.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2417"
         },
         {
           "id": 18,
@@ -774,7 +781,8 @@
           "imagenes": [
             "p18-1794233452722-rfoo.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2413"
         },
         {
           "id": 19,
@@ -795,7 +803,8 @@
           "imagenes": [
             "p19-1794233697064-ojoi.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2423"
         },
         {
           "id": 20,
@@ -817,7 +826,8 @@
           "imagenes": [
             "p20-1794233935678-tf5d.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2423"
         },
         {
           "id": 21,
@@ -838,7 +848,8 @@
           "imagenes": [
             "p21-1794234439125-id2j.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2433"
         },
         {
           "id": 22,
@@ -859,7 +870,8 @@
           "imagenes": [
             "p22-1794235574402-lg6i.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2447"
         },
         {
           "id": 23,
@@ -882,7 +894,8 @@
           "imagenes": [
             "p23-1794314184820-bfqm.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "3431"
         },
         {
           "id": 24,
@@ -904,7 +917,8 @@
             "p24-1794315297883-qoua.jpeg",
             "p24-1794315302972-4q51.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2481"
         },
         {
           "id": 25,
@@ -924,7 +938,8 @@
           "imagenes": [
             "p25-1794924232286-xy25.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2911"
         },
         {
           "id": 27,
@@ -945,7 +960,8 @@
           "imagenes": [
             "p27-1794924274057-4r37.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "2923"
         },
         {
           "id": 28,
@@ -967,7 +983,8 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p28-1794926950931-lb3f.jpeg"
-          ]
+          ],
+          "articulo": "2491A"
         }
       ]
     },
@@ -1181,5 +1198,62 @@
   },
   "meta": {
     "next_product_id": 30
-  }
+  },
+  "colores": [
+    {
+      "codigo": "01",
+      "nombre": "Blanco",
+      "hex": "#ffffff"
+    },
+    {
+      "codigo": "04",
+      "nombre": "Rosa claro",
+      "hex": "#f3d2e4"
+    },
+    {
+      "codigo": "05",
+      "nombre": "Rosa Dior",
+      "hex": "#ee91dd"
+    },
+    {
+      "codigo": "09",
+      "nombre": "Lila",
+      "hex": "#f0b8ff"
+    },
+    {
+      "codigo": "13",
+      "nombre": "Negro",
+      "hex": "#0b0a0a"
+    },
+    {
+      "codigo": "23",
+      "nombre": "Marino",
+      "hex": "#36237b"
+    },
+    {
+      "codigo": "24",
+      "nombre": "Gris medio",
+      "hex": "#888888"
+    },
+    {
+      "codigo": "28",
+      "nombre": "Bordo",
+      "hex": "#7d0d0d"
+    },
+    {
+      "codigo": "30",
+      "nombre": "Verde seco",
+      "hex": "#5b765b"
+    },
+    {
+      "codigo": "35",
+      "nombre": "Azul Francia",
+      "hex": "#4723fb"
+    },
+    {
+      "codigo": "41",
+      "nombre": "Celeste",
+      "hex": "#c9ecf3"
+    }
+  ]
 }

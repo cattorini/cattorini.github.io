@@ -572,6 +572,30 @@
     llamarWorker('notificar', codigo, { keepalive: true }).catch(() => {});
   }
 
+  /* ================= Código de artículo ================= */
+
+  /* AR{artículo}-{código de color} {talle}, ej. "AR1101-01 48". El artículo
+     es un campo editable del producto y el código de color sale del ABM de
+     colores (data.colores). El id interno del producto no cambia: de él
+     dependen el stock, los pedidos, los links y las estadísticas. */
+  const normColor = (s) => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+  function colorDelCatalogo(data, nombre) {
+    return ((data && data.colores) || []).find(c => normColor(c.nombre) === normColor(nombre)) || null;
+  }
+  function productoPorId(data, id) {
+    for (const cat of ((data && data.categorias) || [])) {
+      const p = (cat.productos || []).find(x => String(x.id) === String(id));
+      if (p) return p;
+    }
+    return null;
+  }
+  function codigoArticulo(data, producto, colorNombre, talle) {
+    if (!producto || !producto.articulo) return '';
+    const color = colorNombre ? colorDelCatalogo(data, colorNombre) : null;
+    return 'AR' + producto.articulo + (color ? '-' + color.codigo : '') + (talle ? ' ' + talle : '');
+  }
+
   /* ================= Stock visible al cliente ================= */
 
   /* Lo que se carga con stock 0 queda guardado para cuando se repone, pero el
@@ -716,6 +740,7 @@
     mediosDePago, metodoValido, renderMediosDePago, calcularTotales, renderTotales,
     linkDePago, avisarVenta,
     claveMes, contarEstadistica,
-    tieneStockCargado, tallesConStock, tallesVisibles, cargarStockTodo
+    tieneStockCargado, tallesConStock, tallesVisibles, cargarStockTodo,
+    normColor, colorDelCatalogo, productoPorId, codigoArticulo
   });
 })();
