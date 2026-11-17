@@ -921,7 +921,9 @@
           "disponible": true,
           "destacado": false,
           "fabricacion_propia": true,
-          "imagenes": [],
+          "imagenes": [
+            "p25-1794924232286-xy25.jpeg"
+          ],
           "fantasias": {}
         },
         {
@@ -940,7 +942,9 @@
           "disponible": true,
           "destacado": false,
           "fabricacion_propia": true,
-          "imagenes": [],
+          "imagenes": [
+            "p27-1794924274057-4r37.jpeg"
+          ],
           "fantasias": {}
         }
       ]
