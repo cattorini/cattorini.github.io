@@ -569,7 +569,7 @@
         {
           "id": 1,
           "nombre": "Camisa Cattorini de vestir con bolsillo. Confort",
-          "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\n",
+          "descripcion": "Camisa de vestir con bolsillo. Confort. Tela batista lisa. 65% polyester 35% algodon.\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 79000,
           "precio_mayorista": 30900,
           "talles_disponibles": [
@@ -601,7 +601,7 @@
         {
           "id": 2,
           "nombre": "Camisa Cattorini vestir sin bolsillo. Confort",
-          "descripcion": "Camisa de vestir confort sin bolsillo. batista lisa. 65% Pol 35% Alg",
+          "descripcion": "Camisa de vestir confort sin bolsillo. batista lisa. 65% Pol 35% Alg\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 30900,
           "talles_disponibles": [
@@ -627,12 +627,13 @@
             "p2-1788188112472-5bcr.jpeg"
           ],
           "fabricacion_propia": true,
-          "tipo_talle": "camisas confort"
+          "tipo_talle": "camisas confort",
+          "fantasias": {}
         },
         {
           "id": 12,
           "nombre": "Camisa Lawrence.",
-          "descripcion": "Camisa sport marca Lawrence, cuadros, dos bolsillos con tapa al bies. Slime fit",
+          "descripcion": "Camisa sport marca Lawrence, cuadros, dos bolsillos con tapa al bies. Slime fit\nElija su talle y vera colores disponibles.",
           "precio_minorista": 0,
           "precio_mayorista": 0,
           "tipo_talle": "camisas confort",
@@ -651,12 +652,13 @@
             "p12-1792415136405-457u.jpeg",
             "p12-1792415139376-y3sj.jpeg",
             "p12-1792415141573-x9nk.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 13,
           "nombre": "Camisa manga corta. Rayas",
-          "descripcion": "Camisa Cattorini confort manga corta. Mil rayas. Color marino. 65% poliéster 35% algodón.",
+          "descripcion": "Camisa Cattorini confort manga corta. Mil rayas. Color marino. 65% poliéster 35% algodón.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -671,12 +673,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p13-1794229236073-97jd.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 14,
           "nombre": "Camisa manga corta. Rayas",
-          "descripcion": "Camisa Cattorini confort manga corta. Rayas. Color marino\n",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas. Color marino\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -690,12 +693,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p14-1794229686676-2gwy.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 15,
           "nombre": "Camisa manga corta. Cuadros.",
-          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color celeste\n",
+          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color celeste\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -710,12 +714,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p15-1794230124964-fe0g.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 16,
           "nombre": "Camisa manga corta. Cuadros",
-          "descripcion": "Camisa Cattorini confort  manga corta cuadros. Color celeste",
+          "descripcion": "Camisa Cattorini confort  manga corta cuadros. Color celeste\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -729,12 +734,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p16-1794230479423-89pw.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 17,
           "nombre": "Camisa manga corta. Cuadros",
-          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color gris",
+          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color gris\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -748,12 +754,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p17-1794230711729-wb29.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 18,
           "nombre": "Camisa manga corta. Rayas.",
-          "descripcion": "Camisa Cattorini confort manga corta. Rayas color negro.",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color negro.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -768,12 +775,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p18-1794233452722-rfoo.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 19,
           "nombre": "Camisa manga corta. Rayas",
-          "descripcion": "Camisa Cattorini confort manga corta. Rayas color Lila.\n",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color Lila.\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -788,12 +796,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p19-1794233697064-ojoi.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 20,
           "nombre": "Camisa manga corta. Rayas",
-          "descripcion": "Camisa Cattorini confort manga corta. Rayas color azul francia.",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color azul francia.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -809,12 +818,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p20-1794233935678-tf5d.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 21,
           "nombre": "Camisa manga corta. Rayas",
-          "descripcion": "Camisa Cattorini confort manga corta. Rayas color marino",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color marino\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -829,12 +839,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p21-1794234439125-id2j.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 22,
           "nombre": "Camisa manga corta. Cuadros",
-          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color blanco",
+          "descripcion": "Camisa Cattorini confort manga corta. Cuadros color blanco\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
@@ -855,7 +866,7 @@
         {
           "id": 23,
           "nombre": "Camisa manga corta Oxford",
-          "descripcion": "Camisa Cattorini confort manga corta. Color celeste. Oxford 10.0% algodon",
+          "descripcion": "Camisa Cattorini confort manga corta. Color celeste. Oxford 10.0% algodon\nElija su talle y vera colores disponibles.",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
           "tipo_talle": "camisas confort",
@@ -872,12 +883,13 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p23-1794314184820-bfqm.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 24,
           "nombre": "Camisa manga corta Poplin",
-          "descripcion": "Camisa Cattorini confort. Manga corta. Color lila. Poplin 100% algodon.",
+          "descripcion": "Camisa Cattorini confort. Manga corta. Color lila. Poplin 100% algodon.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
           "tipo_talle": "camisas confort",
@@ -893,12 +905,13 @@
           "imagenes": [
             "p24-1794315297883-qoua.jpeg",
             "p24-1794315302972-4q51.jpeg"
-          ]
+          ],
+          "fantasias": {}
         },
         {
           "id": 25,
           "nombre": "Camisa manga corta Lino",
-          "descripcion": "Camisa Cattorini confort. Manga corta. Color rosa dior. Tela lino compuesta por lino y algodon.",
+          "descripcion": "Camisa Cattorini confort. Manga corta. Color rosa dior. Tela lino compuesta por lino y algodon.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
           "tipo_talle": "camisas confort",
@@ -916,7 +929,7 @@
         {
           "id": 27,
           "nombre": "Camisa manga corta Rayas",
-          "descripcion": "Camisa Cattorini manga corta. Rayas color verde seco. 65%pol 35%alg",
+          "descripcion": "Camisa Cattorini manga corta. Rayas color verde seco. 65%pol 35%alg\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
