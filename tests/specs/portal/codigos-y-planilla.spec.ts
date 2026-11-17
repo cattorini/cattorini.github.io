@@ -84,7 +84,7 @@ test.describe('Portal: colores, artículo y planilla @portal', () => {
   test('al agregar color al stock se elige de la lista con su código @portal', async ({ page }) => {
     await setupPage(page, { mutarCatalogo: conCodigos, firebase: { collections: { stock: STOCK } } });
     await abrirStock(page);
-    await page.locator('#stock-list .expandable-head-box', { hasText: /#1 ·/ }).click();
+    await page.locator('#stock-list [data-producto-id="1"] .expandable-head-box').click();
     const bloqueM = page.locator('#stock-list .item-row .item-row', { hasText: 'Talle M' });
     await expect(bloqueM).toContainText('01 · Blanco');
     const opciones = await bloqueM.locator('select[aria-label="Color a agregar"] option').allTextContents();
@@ -131,5 +131,20 @@ test.describe('Portal: colores, artículo y planilla @portal', () => {
     const catCamisas = page.locator('#cat-list > .item-row', { has: page.locator('.serif', { hasText: /^Camisas$/ }) });
     await catCamisas.getByRole('button', { name: '+ Producto' }).click();
     await expect(filaProducto(page, 9).locator('input[data-campo="articulo"]')).toHaveValue('2421R');
+  });
+
+  test('sin número de artículo no se crea el producto; el catálogo muestra el código @portal', async ({ page }) => {
+    await setupPage(page, { mutarCatalogo: conCodigos });
+    const portal = await entrarAlPortal(page);
+    await portal.abrirTab('catalogo');
+    await expect(page.locator('#cat-list [data-producto-id="1"] .expandable-head')).toContainText('AR1101 · ');
+    await expect(page.locator('#cat-list [data-producto-id="2"] .expandable-head')).toContainText('Sin artículo · ');
+    page.removeAllListeners('dialog');
+    page.on('dialog', d => (d.type() === 'prompt' ? d.dismiss() : d.accept()).catch(() => {}));
+    const catCamisas = page.locator('#cat-list > .item-row', { has: page.locator('.serif', { hasText: /^Camisas$/ }) });
+    await catCamisas.getByRole('button', { name: '+ Producto' }).click();
+    await expect(filaProducto(page, 9)).toHaveCount(0);
+    await page.locator('#cat-search').fill('ar1101');
+    await expect(page.locator('#cat-list [data-producto-id]')).toHaveCount(1);
   });
 });

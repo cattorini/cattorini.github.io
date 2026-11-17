@@ -16,6 +16,9 @@ test.describe('Portal — catálogo y stock @regresion @portal', () => {
     await portal.abrirTab('catalogo');
 
     /* + Producto en Camisas → nace con id 9 (meta.next_product_id del fixture) */
+    /* el portal pide el número de artículo (obligatorio) */
+    page.removeAllListeners('dialog');
+    page.on('dialog', d => (d.type() === 'prompt' ? d.accept('9999') : d.accept()).catch(() => {}));
     const catCamisas = page.locator('#cat-list > .item-row', { has: page.locator('.serif', { hasText: /^Camisas$/ }) });
     await catCamisas.getByRole('button', { name: '+ Producto' }).click();
     const fila = filaProducto(page, 9);
@@ -77,7 +80,7 @@ test.describe('Portal — catálogo y stock @regresion @portal', () => {
     const portal = await entrarAlPortal(page);
     await portal.abrirTab('stock');
     await portal.abrirSubtab('stock-editar');
-    await page.locator('#stock-list .expandable-head-box', { hasText: '#1 · Camisa Oxford Blanca' }).click();
+    await page.locator('#stock-list [data-producto-id=\"1\"] .expandable-head-box').click();
 
     const fila = page.locator('#stock-list tr', { hasText: 'Blanco' });
     const qty = fila.locator('input[type="number"]');

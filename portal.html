@@ -574,7 +574,7 @@
           <h3 class="serif text-xl">Categorías y productos</h3>
           <button class="btn-ghost" onclick="addCategoria()">+ Nueva categoría</button>
         </div>
-        <input class="inp mb-4" id="cat-search" placeholder="Buscar producto por nombre..." oninput="catSearchQuery = this.value; renderCategorias();" />
+        <input class="inp mb-4" id="cat-search" placeholder="Buscar por nombre o código de artículo..." oninput="catSearchQuery = this.value; renderCategorias();" />
         <div id="cat-list"></div>
       </div>
     </div>
@@ -591,7 +591,7 @@
       <div class="subtab-panel active" id="subtab-stock-editar">
         <div class="card">
           <h3 class="serif text-xl mb-4">Editar stock por talle y color</h3>
-          <input class="inp mb-4" id="stock-search" placeholder="Buscar producto por nombre..." oninput="stockSearchQuery = this.value; renderStockList();" />
+          <input class="inp mb-4" id="stock-search" placeholder="Buscar por nombre o código de artículo..." oninput="stockSearchQuery = this.value; renderStockList();" />
           <div id="stock-list"></div>
         </div>
       </div>
@@ -1590,7 +1590,7 @@ function renderCategorias() {
   data.categorias.forEach((cat, ci) => {
     /* Con búsqueda activa, se muestran solo los productos que matchean —
        si ninguno matchea en esta categoría, la categoría entera se oculta. */
-    const productosVisibles = (cat.productos || []).filter(p => !q || (p.nombre || '').toLowerCase().includes(q));
+    const productosVisibles = (cat.productos || []).filter(p => !q || etiquetaProducto(p).toLowerCase().includes(q));
     if (q && !productosVisibles.length) return;
 
     const catBox = document.createElement('div');
@@ -1651,8 +1651,14 @@ function renderCategorias() {
   });
 }
 
+/* Cómo se nombra un producto en el portal: con su código de artículo. */
+function etiquetaProducto(p) {
+  return `${p.articulo ? 'AR' + p.articulo : 'Sin artículo'} · ${p.nombre || '(sin nombre)'}`;
+}
+
 function renderProductRow(cat, ci, p, pi) {
   const box = document.createElement('div');
+  box.dataset.productoId = p.id;
   box.style.cssText = 'background:#FAFAFA;border:1px solid #E5E5E5;padding:16px;margin-top:12px;';
 
   const head = document.createElement('div');
@@ -1664,7 +1670,7 @@ function renderProductRow(cat, ci, p, pi) {
   chevron.className = 'chevron';
   chevron.textContent = catExpandedIds.has(p.id) ? '▾' : '▸';
   const titleTxt = document.createElement('span');
-  titleTxt.textContent = `#${p.id} · ${p.nombre || '(sin nombre)'}`;
+  titleTxt.textContent = etiquetaProducto(p);
   title.appendChild(chevron); title.appendChild(titleTxt);
   title.onclick = () => {
     if (catExpandedIds.has(p.id)) catExpandedIds.delete(p.id); else catExpandedIds.add(p.id);
@@ -1741,6 +1747,7 @@ function renderProductRow(cat, ci, p, pi) {
       p.articulo = inp.value.toUpperCase().replace(/[^0-9A-Z]/g, '');
       if (!p.articulo) delete p.articulo;
       pintar(); markDirty();
+      box.querySelector('.expandable-head span:last-child').textContent = etiquetaProducto(p);
     };
     pintar();
     w.appendChild(lb); w.appendChild(inp); w.appendChild(hint); g.appendChild(w);
@@ -1758,7 +1765,7 @@ function renderProductRow(cat, ci, p, pi) {
     inp.oninput = () => {
       p[f] = t === 'number' ? (parseFloat(inp.value) || 0) : inp.value;
       markDirty();
-      if (f === 'nombre') titleTxt.textContent = `#${p.id} · ${p.nombre}`;
+      if (f === 'nombre') titleTxt.textContent = etiquetaProducto(p);
     };
     w.appendChild(lb); w.appendChild(inp); g.appendChild(w);
   });
@@ -1948,12 +1955,19 @@ function nextProductId() {
 function addProducto(ci) {
   const cat = data.categorias[ci];
   const nextId = nextProductId();
-  const articulo = (prompt('Número de artículo del producto nuevo (ej: 1101). Se puede editar después.') || '')
-    .toUpperCase().replace(/[^0-9A-Z]/g, '');
+  /* El número de artículo es obligatorio para crear un producto. */
+  let articulo = '';
+  for (;;) {
+    const r = prompt('Número de artículo del producto nuevo (ej: 1101 o 2421R). Se puede editar después.');
+    if (r === null) return;
+    articulo = r.toUpperCase().replace(/[^0-9A-Z]/g, '');
+    if (ARTICULO_VALIDO.test(articulo)) break;
+    alert('El artículo tiene que ser un número de 3 a 6 cifras, con una letra opcional al final (ej. 1101, 2421R).');
+  }
   cat.productos = cat.productos || [];
   cat.productos.push({
     id: nextId,
-    ...(articulo ? { articulo } : {}),
+    articulo,
     nombre: 'Producto nuevo',
     descripcion: '',
     precio_minorista: 0,
@@ -2250,7 +2264,7 @@ function fileToBase64(file) {
 function flattenProductos() {
   const out = [];
   (data.categorias || []).forEach(cat => {
-    (cat.productos || []).forEach(p => out.push({ id: p.id, nombre: p.nombre, cat }));
+    (cat.productos || []).forEach(p => out.push({ id: p.id, nombre: p.nombre, articulo: p.articulo, etiqueta: etiquetaProducto(p), cat }));
   });
   return out.sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
@@ -2266,7 +2280,7 @@ function poblarSelectsStock() {
     } else {
       prods.forEach(p => {
         const opt = document.createElement('option');
-        opt.value = p.id; opt.textContent = `#${p.id} · ${p.nombre}`;
+        opt.value = p.id; opt.textContent = p.etiqueta;
         sel.appendChild(opt);
       });
       if (prev && prods.some(p => String(p.id) === prev)) sel.value = prev;
@@ -2431,16 +2445,17 @@ function renderStockList() {
   const cont = document.getElementById('stock-list');
   cont.innerHTML = '';
   const q = stockSearchQuery.trim().toLowerCase();
-  const prods = flattenProductos().filter(p => !q || p.nombre.toLowerCase().includes(q));
+  const prods = flattenProductos().filter(p => !q || p.etiqueta.toLowerCase().includes(q));
 
   if (!prods.length) {
     cont.innerHTML = '<div style="color:var(--muted);font-size:0.85rem;">' + (q ? 'Ningún producto coincide con la búsqueda.' : 'No hay productos todavía — cargalos primero en el tab Catálogo.') + '</div>';
     return;
   }
 
-  prods.forEach(({ id, nombre }) => {
+  prods.forEach(({ id, etiqueta }) => {
     const row = document.createElement('div');
     row.className = 'item-row';
+    row.dataset.productoId = id;
     row.style.marginBottom = '10px';
 
     const head = document.createElement('div');
@@ -2450,7 +2465,7 @@ function renderStockList() {
     chevron.className = 'chevron';
     chevron.textContent = stockExpandedIds.has(id) ? '▾' : '▸';
     const titleTxt = document.createElement('span');
-    titleTxt.textContent = `#${id} · ${nombre}`;
+    titleTxt.textContent = etiqueta;
     head.appendChild(chevron); head.appendChild(titleTxt);
     head.onclick = () => {
       if (stockExpandedIds.has(id)) stockExpandedIds.delete(id); else stockExpandedIds.add(id);
@@ -2504,7 +2519,8 @@ function renderFantasiasBlock(p, stockDoc, cont) {
     fila.dataset.color = color;
     const nombre = document.createElement('span');
     nombre.style.cssText = 'min-width:120px;font-size:0.85rem;';
-    nombre.textContent = color;
+    const cAbm = window.CattCore.colorDelCatalogo(data, color);
+    nombre.textContent = cAbm ? `${cAbm.codigo} · ${color}` : color;
     const sel = document.createElement('select');
     sel.className = 'inp';
     sel.style.maxWidth = '130px';

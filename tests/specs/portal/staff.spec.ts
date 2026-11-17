@@ -120,7 +120,7 @@ test.describe('Portal — stock contra el valor actual (M7) @portal @regresion',
     page.on('dialog', d => { dialogos.push(d.message()); });
     await portal.abrirTab('stock');
     await portal.abrirSubtab('stock-editar');
-    await page.locator('#stock-list .expandable-head-box', { hasText: '#1 · Camisa Oxford Blanca' }).click();
+    await page.locator('#stock-list [data-producto-id="1"] .expandable-head-box').click();
     const qty = page.locator('#stock-list tr', { hasText: 'Blanco' }).locator('input[type="number"]');
     await expect(qty).toHaveValue('3');
     /* Entra una venta mientras el admin tiene la pantalla abierta: queda 1 */

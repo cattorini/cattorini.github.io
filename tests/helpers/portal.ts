@@ -51,5 +51,5 @@ export async function entrarAPedidos(page: Page) {
 
 /** Bloque de un producto en el tab Catálogo, por id */
 export function filaProducto(page: Page, id: number) {
-  return page.locator('#cat-list > .item-row > div > div', { has: page.locator('.expandable-head', { hasText: new RegExp(`^.?\\s*#${id} ·`) }) });
+  return page.locator(`#cat-list [data-producto-id="${id}"]`);
 }

@@ -1399,7 +1399,8 @@ function renderManualProductoOptions(query) {
   const prev = sel.value;
   sel.innerHTML = '';
   const q = query.trim().toLowerCase();
-  const filtrados = manualProductosFlat.filter(({ p }) => !q || p.nombre.toLowerCase().includes(q));
+  const etiqueta = (p) => (p.articulo ? `AR${p.articulo} · ` : '') + p.nombre;
+  const filtrados = manualProductosFlat.filter(({ p }) => !q || etiqueta(p).toLowerCase().includes(q));
   if (!filtrados.length) {
     sel.innerHTML = '<option value="">(ningún producto coincide)</option>';
     return;
@@ -1415,7 +1416,7 @@ function renderManualProductoOptions(query) {
     items.forEach(p => {
       const op = document.createElement('option');
       op.value = `${cat.id}__${p.id}`;
-      op.textContent = `${p.nombre} — $${p.precio_minorista.toLocaleString('es-AR')}`;
+      op.textContent = `${etiqueta(p)} — $${p.precio_minorista.toLocaleString('es-AR')}`;
       og.appendChild(op);
     });
     sel.appendChild(og);
