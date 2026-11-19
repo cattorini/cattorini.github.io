@@ -989,7 +989,7 @@
         {
           "id": 30,
           "articulo": "2262",
-          "nombre": "camisa manga larga cuadros",
+          "nombre": "Camisa manga larga Cuadros Celeste",
           "descripcion": "Camisa Cattorino confort cuadros 100% algodon. Color celeste",
           "precio_minorista": 99000,
           "precio_mayorista": 38900,
@@ -1006,6 +1006,29 @@
           "imagenes": [
             "p30-1795100829775-m10s.jpeg",
             "p30-1795100833761-85eg.jpeg"
+          ],
+          "fantasias": {}
+        },
+        {
+          "id": 31,
+          "articulo": "2262",
+          "nombre": "Camisa manga larga cuadros azul marino",
+          "descripcion": "Camisa Cattorini confort cuadros color azul marino. 100% algodon",
+          "precio_minorista": 38900,
+          "precio_mayorista": 99000,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p31-1795101523806-q3rf.jpeg",
+            "p31-1795101528663-1p1l.jpeg"
           ],
           "fantasias": {}
         }
@@ -1220,7 +1243,7 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 31
+    "next_product_id": 32
   },
   "colores": [
     {
