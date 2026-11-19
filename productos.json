@@ -493,6 +493,36 @@
           "hasta": 80
         }
       }
+    },
+    " Strong": {
+      "unidad": "cm",
+      "medidas": [],
+      "tabla": {
+        "XS": [
+          "",
+          ""
+        ],
+        "S": [
+          "",
+          ""
+        ],
+        "M": [
+          "",
+          ""
+        ],
+        "L": [
+          "",
+          ""
+        ],
+        "XL": [
+          "",
+          ""
+        ],
+        "XXL": [
+          "",
+          ""
+        ]
+      }
     }
   },
   "horarios": {
@@ -1243,7 +1273,7 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 32
+    "next_product_id": 33
   },
   "colores": [
     {
