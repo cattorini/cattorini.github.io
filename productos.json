@@ -657,7 +657,7 @@
         },
         {
           "id": 13,
-          "nombre": "Camisa manga corta. Rayas",
+          "nombre": "Camisa manga corta. Rayas azul marino",
           "descripcion": "Camisa Cattorini confort manga corta. Mil rayas. Color marino. 65% poliéster 35% algodón.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -679,7 +679,7 @@
         },
         {
           "id": 14,
-          "nombre": "Camisa manga corta. Rayas",
+          "nombre": "Camisa manga corta. Rayas azul marino",
           "descripcion": "Camisa Cattorini confort manga corta. Rayas. Color marino\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -700,7 +700,7 @@
         },
         {
           "id": 15,
-          "nombre": "Camisa manga corta. Cuadros.",
+          "nombre": "Camisa manga corta. Cuadros celeste",
           "descripcion": "Camisa Cattorini confort manga corta. Cuadros color celeste\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -722,7 +722,7 @@
         },
         {
           "id": 16,
-          "nombre": "Camisa manga corta. Cuadros",
+          "nombre": "Camisa manga corta. Cuadros celeste",
           "descripcion": "Camisa Cattorini confort  manga corta cuadros. Color celeste\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -743,7 +743,7 @@
         },
         {
           "id": 17,
-          "nombre": "Camisa manga corta. Cuadros",
+          "nombre": "Camisa manga corta. Cuadros gris medio",
           "descripcion": "Camisa Cattorini confort manga corta. Cuadros color gris\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -764,7 +764,7 @@
         },
         {
           "id": 18,
-          "nombre": "Camisa manga corta. Rayas.",
+          "nombre": "Camisa manga corta. Rayas negras",
           "descripcion": "Camisa Cattorini confort manga corta. Rayas color negro.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -786,7 +786,7 @@
         },
         {
           "id": 19,
-          "nombre": "Camisa manga corta. Rayas",
+          "nombre": "Camisa manga corta. Rayas lila",
           "descripcion": "Camisa Cattorini confort manga corta. Rayas color Lila.\nElija su talle y vera colores disponibles.\n",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -808,7 +808,7 @@
         },
         {
           "id": 20,
-          "nombre": "Camisa manga corta. Rayas",
+          "nombre": "Camisa manga corta. Rayas azul francia",
           "descripcion": "Camisa Cattorini confort manga corta. Rayas color azul francia.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -831,7 +831,7 @@
         },
         {
           "id": 21,
-          "nombre": "Camisa manga corta. Rayas",
+          "nombre": "Camisa manga corta. Rayas azul marino",
           "descripcion": "Camisa Cattorini confort manga corta. Rayas color marino\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -853,7 +853,7 @@
         },
         {
           "id": 22,
-          "nombre": "Camisa manga corta. Cuadros",
+          "nombre": "Camisa manga corta cuadros. Color blanco",
           "descripcion": "Camisa Cattorini confort manga corta. Cuadros color blanco\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -875,7 +875,7 @@
         },
         {
           "id": 23,
-          "nombre": "Camisa manga corta Oxford",
+          "nombre": "Camisa manga corta Oxford. Azul Francia",
           "descripcion": "Camisa Cattorini confort manga corta. Color celeste. Oxford 10.0% algodon\nElija su talle y vera colores disponibles.",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
@@ -899,7 +899,7 @@
         },
         {
           "id": 24,
-          "nombre": "Camisa manga corta Poplin",
+          "nombre": "Camisa manga corta Poplin Lila",
           "descripcion": "Camisa Cattorini confort. Manga corta. Color lila. Poplin 100% algodon.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
@@ -922,7 +922,7 @@
         },
         {
           "id": 25,
-          "nombre": "Camisa manga corta Lino",
+          "nombre": "Camisa manga corta Lino. Rosa dior",
           "descripcion": "Camisa Cattorini confort. Manga corta. Color rosa dior. Tela lino compuesta por lino y algodon.\nElija su talle y vera colores disponibles.",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
@@ -943,7 +943,7 @@
         },
         {
           "id": 27,
-          "nombre": "Camisa manga corta Rayas",
+          "nombre": "Camisa manga corta Rayas. Verde seco",
           "descripcion": "Camisa Cattorini manga corta. Rayas color verde seco. 65%pol 35%alg\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
@@ -965,7 +965,7 @@
         },
         {
           "id": 28,
-          "nombre": "Camisa manga corta oxford algodon",
+          "nombre": "Camisa manga corta oxford algodon. Celeste",
           "descripcion": "Camisa Cattorini confort color celeste. tela Oxford 100% algodón.   \nElija su talle y verá colores disponibles\n",
           "precio_minorista": 92000,
           "precio_mayorista": 35900,
@@ -1012,7 +1012,7 @@
         {
           "id": 31,
           "articulo": "2262",
-          "nombre": "Camisa manga larga cuadros azul marino",
+          "nombre": "Camisa manga larga. Cuadros azul marino",
           "descripcion": "Camisa Cattorini confort cuadros color azul marino. 100% algodon",
           "precio_minorista": 38900,
           "precio_mayorista": 99000,
