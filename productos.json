@@ -1044,8 +1044,8 @@
           "articulo": "2262",
           "nombre": "Camisa manga larga. Cuadros azul marino",
           "descripcion": "Camisa Cattorini confort cuadros color azul marino. 100% algodon",
-          "precio_minorista": 38900,
-          "precio_mayorista": 99000,
+          "precio_minorista": 99000,
+          "precio_mayorista": 38900,
           "tipo_talle": "camisas confort",
           "talles_disponibles": [
             "40",
