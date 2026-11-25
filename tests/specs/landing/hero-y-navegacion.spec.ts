@@ -55,4 +55,11 @@ test.describe('Landing — hero y navegación @landing', () => {
     expect(count).toBeGreaterThan(0);
     expect(count).toBeLessThanOrEqual(8);
   });
+
+  test('el video de producción se reproduce a 1,5x @landing', async ({ page }) => {
+    await setupPage(page);
+    await page.goto('/index.html');
+    await expect.poll(() => page.locator('#video-produccion').evaluate((v: HTMLVideoElement) => v.defaultPlaybackRate)).toBe(1.5);
+    expect(await page.locator('#video-produccion').evaluate((v: HTMLVideoElement) => v.playbackRate)).toBe(1.5);
+  });
 });

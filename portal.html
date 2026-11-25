@@ -200,6 +200,8 @@
     .planilla-celda.cero { color: #999; background: #FAFAFA; }
     .planilla-vacia { color: #CCC; }
     .planilla-total { font-weight: 500; }
+    .planilla-pie td { font-weight: 600; background: #F5F5F5; }
+    .planilla-pie td:first-child { text-align: left; font-family: inherit; }
     .img-thumb .del {
       position: absolute; top: 4px; right: 4px;
       background: rgba(0,0,0,0.7); color: #FFF;
@@ -599,9 +601,10 @@
       <div class="subtab-panel" id="subtab-stock-planilla">
         <div class="card">
           <h3 class="serif text-xl mb-2">Planilla de stock</h3>
-          <p class="text-sm mb-4" style="color:var(--muted);">Una fila por artículo y color, una columna por talle. Escribí la cantidad y salí de la celda para guardarla. "·" = ese talle/color no está cargado (se agrega desde Editar).</p>
+          <p class="text-sm mb-4" style="color:var(--muted);">Una fila por artículo y color, una columna por talle. Escribí la cantidad y salí de la celda para guardarla. "·" = ese talle/color no está cargado (se agrega desde Editar). Elegí un talle para ver solo las prendas que lo tienen cargado, aunque estén en 0. La última fila suma cada talle.</p>
           <div class="flex gap-2 mb-4" style="flex-wrap:wrap;">
-            <select class="inp" id="planilla-cat" style="max-width:220px;" onchange="renderPlanillaStock()"></select>
+            <select class="inp" id="planilla-cat" style="max-width:220px;" onchange="renderPlanillaStock()" aria-label="Categoría"></select>
+            <select class="inp" id="planilla-talle" style="max-width:180px;" onchange="renderPlanillaStock()" aria-label="Talle"></select>
             <input class="inp" id="planilla-buscar" placeholder="Buscar por nombre o código..." style="max-width:260px;" oninput="renderPlanillaStock()" />
           </div>
           <div id="planilla-stock"></div>
@@ -2043,7 +2046,9 @@ async function cargarPlanillaStock() {
   const sel = document.getElementById('planilla-cat');
   if (!sel.options.length) {
     sel.innerHTML = '';
+    const todas = document.createElement('option'); todas.value = ''; todas.textContent = 'Todas las categorías'; sel.appendChild(todas);
     (data.categorias || []).forEach(c => { const o = document.createElement('option'); o.value = c.id; o.textContent = c.nombre; sel.appendChild(o); });
+    sel.value = (data.categorias || [])[0] ? data.categorias[0].id : '';
   }
   cont.textContent = 'Cargando...';
   try {
@@ -2060,33 +2065,52 @@ async function cargarPlanillaStock() {
 function renderPlanillaStock() {
   const cont = document.getElementById('planilla-stock');
   if (!planillaStock) return;
-  const cat = (data.categorias || []).find(c => c.id === document.getElementById('planilla-cat').value) || (data.categorias || [])[0];
-  if (!cat) { cont.textContent = 'No hay categorías.'; return; }
+  const catId = document.getElementById('planilla-cat').value;
+  const cats = (data.categorias || []).filter(c => !catId || c.id === catId);
+  if (!cats.length) { cont.textContent = 'No hay categorías.'; return; }
   const q = document.getElementById('planilla-buscar').value.trim().toLowerCase();
-  /* Columnas: talles de la categoría en el orden de su guía. */
+
+  /* Talles de las categorías elegidas, en el orden de su guía. */
   const talles = [];
-  (cat.productos || []).forEach(p => {
+  cats.forEach(cat => (cat.productos || []).forEach(p => {
     const guia = data.guia_talles[p.tipo_talle !== undefined ? p.tipo_talle : cat.tipo_talle];
     Object.keys((guia && guia.tabla) || {}).concat(p.talles_disponibles || []).forEach(t => { if (!talles.includes(t)) talles.push(t); });
-  });
+  }));
+
+  /* Filtro por talle: muestra las prendas que tienen ese talle CARGADO en
+     algún color, aunque esté en 0 (para cargar una tanda nueva de ese talle). */
+  const selTalle = document.getElementById('planilla-talle');
+  const elegido = selTalle.value;
+  selTalle.textContent = '';
+  const todos = document.createElement('option'); todos.value = ''; todos.textContent = 'Todos los talles'; selTalle.appendChild(todos);
+  talles.forEach(t => { const o = document.createElement('option'); o.value = t; o.textContent = 'Talle ' + t; selTalle.appendChild(o); });
+  const talle = talles.includes(elegido) ? elegido : '';
+  selTalle.value = talle;
+  const columnas = talle ? [talle] : talles;
+
   const filas = [];
-  (cat.productos || []).forEach(p => {
+  cats.forEach(cat => (cat.productos || []).forEach(p => {
     const variantes = planillaStock[String(p.id)] || {};
     const colores = [...new Set(Object.values(variantes).flatMap(t => Object.keys(t || {})))];
     colores.forEach(color => {
+      if (talle && !(variantes[talle] && variantes[talle][color])) return;
       const codigo = window.CattCore.codigoArticulo(data, p, color, '');
       const texto = `${codigo} ${p.nombre} ${color}`.toLowerCase();
       if (q && !texto.includes(q)) return;
       filas.push({ p, color, codigo, variantes });
     });
-  });
+  }));
   cont.textContent = '';
-  if (!filas.length) { cont.textContent = 'No hay stock cargado que coincida.'; return; }
+  if (!filas.length) {
+    cont.textContent = talle ? `Ninguna prenda tiene el talle ${talle} cargado con esos filtros.` : 'No hay stock cargado que coincida.';
+    return;
+  }
   const scroll = document.createElement('div'); scroll.style.overflowX = 'auto';
   const tabla = document.createElement('table'); tabla.className = 'planilla';
   const thead = document.createElement('tr');
-  ['Código', 'Prenda', 'Color', ...talles, 'Total'].forEach(h => { const th = document.createElement('th'); th.textContent = h; thead.appendChild(th); });
+  ['Código', 'Prenda', 'Color', ...columnas, 'Total'].forEach(h => { const th = document.createElement('th'); th.textContent = h; thead.appendChild(th); });
   tabla.appendChild(thead);
+  const porTalle = Object.fromEntries(columnas.map(t => [t, 0]));
   filas.forEach(({ p, color, codigo, variantes }) => {
     const tr = document.createElement('tr');
     const td = (txt) => { const c = document.createElement('td'); c.textContent = txt; tr.appendChild(c); return c; };
@@ -2094,11 +2118,12 @@ function renderPlanillaStock() {
     td(p.nombre).className = 'planilla-nombre';
     td(color);
     let total = 0;
-    talles.forEach(t => {
+    columnas.forEach(t => {
       const celda = document.createElement('td');
       const v = variantes[t] && variantes[t][color];
       if (!v) { celda.textContent = '·'; celda.className = 'planilla-vacia'; tr.appendChild(celda); return; }
       total += v.cantidad || 0;
+      porTalle[t] += v.cantidad || 0;
       const inp = document.createElement('input');
       inp.type = 'number'; inp.min = '0'; inp.step = '1'; inp.value = v.cantidad || 0;
       inp.className = 'planilla-celda' + ((v.cantidad || 0) === 0 ? ' cero' : '');
@@ -2110,6 +2135,15 @@ function renderPlanillaStock() {
     td(String(total)).className = 'planilla-total';
     tabla.appendChild(tr);
   });
+  /* Total por talle (de lo que se ve con los filtros actuales) */
+  const pie = document.createElement('tr');
+  pie.className = 'planilla-pie';
+  const etiqueta = document.createElement('td'); etiqueta.colSpan = 3; etiqueta.textContent = 'Total por talle';
+  pie.appendChild(etiqueta);
+  let general = 0;
+  columnas.forEach(t => { const c = document.createElement('td'); c.textContent = String(porTalle[t]); pie.appendChild(c); general += porTalle[t]; });
+  const cg = document.createElement('td'); cg.textContent = String(general); pie.appendChild(cg);
+  tabla.appendChild(pie);
   scroll.appendChild(tabla); cont.appendChild(scroll);
 }
 

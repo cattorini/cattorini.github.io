@@ -1119,6 +1119,12 @@ function applyWA(data) {
 function initVideoProduccion() {
   const video = document.getElementById('video-produccion');
   if (!video) return;
+  /* Velocidad acordada con el cliente: 1,5x. Se repite al cargar porque
+     algunos navegadores la reinician al cambiar el src. */
+  const VELOCIDAD = 1.5;
+  video.defaultPlaybackRate = VELOCIDAD;
+  video.playbackRate = VELOCIDAD;
+  video.addEventListener('loadedmetadata', () => { video.playbackRate = VELOCIDAD; });
   const cargar = () => { if (!video.src) video.src = video.dataset.src; };
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
     video.controls = true;

@@ -148,3 +148,62 @@ test.describe('Portal: colores, artículo y planilla @portal', () => {
     await expect(page.locator('#cat-list [data-producto-id]')).toHaveCount(1);
   });
 });
+
+test.describe('Planilla: total por talle y filtro por talle @portal', () => {
+  /* camisas: 1 (Blanco M3 L5, Negro M0) y 2 (Celeste M0, L2); pantalón 4 (Azul 40:4) */
+  const STOCK2 = {
+    1: { variantes: { M: { Blanco: { cantidad: 3, hex: '#fff' }, Negro: { cantidad: 0, hex: '#000' } }, L: { Blanco: { cantidad: 5, hex: '#fff' } } } },
+    2: { variantes: { M: { Celeste: { cantidad: 0, hex: '#ccf' } }, L: { Celeste: { cantidad: 2, hex: '#ccf' } } } },
+    4: { variantes: { '40': { Azul: { cantidad: 4, hex: '#00f' } } } }
+  };
+  const abrirPlanilla = async (page: Page) => {
+    await setupPage(page, { mutarCatalogo: conCodigos, firebase: { collections: { stock: STOCK2 } } });
+    await abrirStock(page);
+    await page.locator('.subtab-btn[data-subtab="stock-planilla"]').click();
+    await expect(page.locator('#planilla-stock table')).toBeVisible();
+  };
+  const pie = (page: Page) => page.locator('#planilla-stock tr.planilla-pie td');
+  const encabezados = (page: Page) => page.locator('#planilla-stock tr').first().locator('th');
+
+  test('la última fila suma cada talle y el total general @portal', async ({ page }) => {
+    await abrirPlanilla(page);
+    const titulos = await encabezados(page).allTextContents();
+    const iM = titulos.indexOf('M') - 2;   // el pie arranca con una celda que ocupa 3 columnas
+    const iL = titulos.indexOf('L') - 2;
+    await expect(pie(page).first()).toHaveText('Total por talle');
+    await expect(pie(page).nth(iM)).toHaveText('3');   // 3 + 0 + 0
+    await expect(pie(page).nth(iL)).toHaveText('7');   // 5 + 2
+    await expect(pie(page).last()).toHaveText('10');
+  });
+
+  test('filtrar por talle muestra las prendas con ese talle cargado, aunque esté en 0 @portal', async ({ page }) => {
+    await abrirPlanilla(page);
+    await page.locator('#planilla-talle').selectOption('M');
+    await expect(encabezados(page)).toHaveText(['Código', 'Prenda', 'Color', 'M', 'Total']);
+    const filas = page.locator('#planilla-stock tr:not(:first-child):not(.planilla-pie)');
+    await expect(filas).toHaveCount(3);                     // Blanco 3, Negro 0, Celeste 0
+    await expect(page.locator('#planilla-stock')).toContainText('Celeste');
+    await expect(pie(page).nth(1)).toHaveText('3');
+
+    // editar desde el filtro actualiza el total del talle
+    const celda = page.getByRole('spinbutton', { name: /Celeste · talle M/ });
+    await celda.fill('6');
+    await celda.press('Tab');
+    await expect.poll(async () => (await getCollection(page, 'stock'))['2'].variantes.M.Celeste.cantidad).toBe(6);
+    await expect(pie(page).nth(1)).toHaveText('9');
+    await expect(page.locator('#planilla-talle')).toHaveValue('M');
+  });
+
+  test('el filtro por talle funciona con todas las categorías y con el buscador @portal', async ({ page }) => {
+    await abrirPlanilla(page);
+    await page.locator('#planilla-cat').selectOption('');
+    await page.locator('#planilla-talle').selectOption('40');
+    await expect(page.locator('#planilla-stock')).toContainText('Azul');
+    await expect(page.locator('#planilla-stock tr:not(:first-child):not(.planilla-pie)')).toHaveCount(1);
+    await page.locator('#planilla-talle').selectOption('L');
+    await page.locator('#planilla-buscar').fill('celeste');
+    await expect(page.locator('#planilla-stock tr:not(:first-child):not(.planilla-pie)')).toHaveCount(1);
+    await page.locator('#planilla-buscar').fill('zzz');
+    await expect(page.locator('#planilla-stock')).toContainText('Ninguna prenda tiene el talle L cargado');
+  });
+});
