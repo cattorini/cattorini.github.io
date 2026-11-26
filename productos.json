@@ -1353,6 +1353,16 @@
       "codigo": "41",
       "nombre": "Celeste",
       "hex": "#c9ecf3"
+    },
+    {
+      "codigo": "15",
+      "nombre": "Verde agua",
+      "hex": "#c5f7da"
+    },
+    {
+      "codigo": "02",
+      "nombre": "Marfil",
+      "hex": "#f7fbda"
     }
   ]
 }
