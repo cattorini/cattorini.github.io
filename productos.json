@@ -1060,9 +1060,11 @@
             "XXL"
           ],
           "disponible": true,
-          "destacado": false,
+          "destacado": true,
           "fabricacion_propia": true,
-          "imagenes": [],
+          "imagenes": [
+            "p33-1795707410605-7odq.jpeg"
+          ],
           "fantasias": {}
         },
         {
@@ -1152,7 +1154,7 @@
             "48"
           ],
           "disponible": true,
-          "destacado": false,
+          "destacado": true,
           "fabricacion_propia": true,
           "imagenes": [
             "p37-1795707121364-0iqe.jpeg"
