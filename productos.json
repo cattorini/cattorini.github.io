@@ -1063,6 +1063,28 @@
             "p31-1795101528663-1p1l.jpeg"
           ],
           "fantasias": {}
+        },
+        {
+          "id": 33,
+          "articulo": "1801",
+          "nombre": "Camisa Strong",
+          "descripcion": "Camisa Strong.Slime fit (entallada). Batista lisa",
+          "precio_minorista": 79000,
+          "precio_mayorista": 30900,
+          "tipo_talle": " Strong",
+          "talles_disponibles": [
+            "L",
+            "M",
+            "S",
+            "XL",
+            "XS",
+            "XXL"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [],
+          "fantasias": {}
         }
       ]
     },
@@ -1275,7 +1297,7 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 33
+    "next_product_id": 34
   },
   "colores": [
     {
