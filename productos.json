@@ -927,7 +927,7 @@
             "p23-1794314184820-bfqm.jpeg"
           ],
           "fantasias": {},
-          "articulo": "3431"
+          "articulo": "2431"
         },
         {
           "id": 24,
@@ -1001,7 +1001,7 @@
           "id": 30,
           "articulo": "2262",
           "nombre": "Camisa manga larga Cuadros Celeste",
-          "descripcion": "Camisa Cattorino confort cuadros 100% algodon. Color celeste",
+          "descripcion": "Camisa Cattorini confort cuadros 100% algodon. Color celeste",
           "precio_minorista": 99000,
           "precio_mayorista": 38900,
           "tipo_talle": "camisas confort",
@@ -1104,7 +1104,11 @@
           "imagenes": [
             "p35-1795706326917-rf0d.jpeg"
           ],
-          "fantasias": {}
+          "fantasias": {
+            "Marino": {
+              "tipo": "raya"
+            }
+          }
         },
         {
           "id": 36,
@@ -1124,6 +1128,34 @@
           "fabricacion_propia": true,
           "imagenes": [
             "p36-1795706693407-wxrd.jpeg"
+          ],
+          "fantasias": {
+            "Gris medio": {
+              "tipo": "cuadro"
+            }
+          }
+        },
+        {
+          "id": 37,
+          "articulo": "2202",
+          "nombre": "Camisa manga larga. Cuadros color gris medio.",
+          "descripcion": "Camisa Cattorini confort manga larga cuadros. Color gris medio. 65%poliester 35% algodon",
+          "precio_minorista": 92000,
+          "precio_mayorista": 36000,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "38",
+            "40",
+            "42",
+            "44",
+            "46",
+            "48"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [
+            "p37-1795707121364-0iqe.jpeg"
           ],
           "fantasias": {
             "Gris medio": {
@@ -1342,7 +1374,7 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 37
+    "next_product_id": 38
   },
   "colores": [
     {
