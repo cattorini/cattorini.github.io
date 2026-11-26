@@ -953,27 +953,6 @@
           "articulo": "2481"
         },
         {
-          "id": 25,
-          "nombre": "Camisa manga corta Lino. Rosa dior",
-          "descripcion": "Camisa Cattorini confort. Manga corta. Color rosa dior. Tela lino compuesta por lino y algodon.\nElija su talle y vera colores disponibles.",
-          "precio_minorista": 92000,
-          "precio_mayorista": 35900,
-          "tipo_talle": "camisas confort",
-          "talles_disponibles": [
-            "40",
-            "42",
-            "44"
-          ],
-          "disponible": true,
-          "destacado": false,
-          "fabricacion_propia": true,
-          "imagenes": [
-            "p25-1794924232286-xy25.jpeg"
-          ],
-          "fantasias": {},
-          "articulo": "2911"
-        },
-        {
           "id": 27,
           "nombre": "Camisa manga corta Rayas. Verde seco",
           "descripcion": "Camisa Cattorini manga corta. Rayas color verde seco. 65%pol 35%alg\nElija su talle y vera colores disponibles.",
@@ -1079,6 +1058,26 @@
             "XL",
             "XS",
             "XXL"
+          ],
+          "disponible": true,
+          "destacado": false,
+          "fabricacion_propia": true,
+          "imagenes": [],
+          "fantasias": {}
+        },
+        {
+          "id": 34,
+          "articulo": "2911",
+          "nombre": "Camisa Lino manga corta",
+          "descripcion": "Camisa Cattorini Confort manga corta de lino compuesta por lino y algodon",
+          "precio_minorista": 95900,
+          "precio_mayorista": 32000,
+          "tipo_talle": "camisas confort",
+          "talles_disponibles": [
+            "40",
+            "42",
+            "44",
+            "46"
           ],
           "disponible": true,
           "destacado": false,
@@ -1297,7 +1296,7 @@
     "url_base": "https://cattorinioriginal.com"
   },
   "meta": {
-    "next_product_id": 34
+    "next_product_id": 35
   },
   "colores": [
     {
