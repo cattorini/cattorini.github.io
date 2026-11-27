@@ -36,8 +36,8 @@
       "iva_pct": 21
     },
     "minoristas": {
-      "bonificacion_zonas_libres": 0,
-      "mensaje_bonificacion": "En tu zona no tenemos distribuidor. Aplicamos 5% de descuento en tu compra.",
+      "bonificacion_zonas_libres": 15,
+      "mensaje_bonificacion": "En tu zona no tenemos distribuidor. Aplicamos 15% de descuento en tu compra.",
       "mensaje_zona_con_mayorista": "En tu zona contamos con un distribuidor autorizado. Te dejamos sus datos para que compres directamente con él y recibas la mejor atención."
     },
     "pago": {
