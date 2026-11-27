@@ -863,11 +863,13 @@
         {
           "id": 21,
           "nombre": "Camisa manga corta. Rayas azul marino",
-          "descripcion": "Camisa Cattorini confort manga corta. Rayas color marino\nElija su talle y vera colores disponibles.",
+          "descripcion": "Camisa Cattorini confort manga corta. Rayas color Azul marino y Azul Francia\nElija su talle y vera colores disponibles.",
           "precio_minorista": 69000,
           "precio_mayorista": 28900,
           "tipo_talle": "camisas confort",
           "talles_disponibles": [
+            "38",
+            "40",
             "42",
             "44",
             "46",
@@ -879,7 +881,14 @@
           "imagenes": [
             "p21-1794234439125-id2j.jpeg"
           ],
-          "fantasias": {},
+          "fantasias": {
+            "Marino": {
+              "tipo": "raya"
+            },
+            "Azul Francia": {
+              "tipo": "raya"
+            }
+          },
           "articulo": "2433"
         },
         {
