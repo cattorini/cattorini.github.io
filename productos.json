@@ -1223,7 +1223,10 @@
           "disponible": true,
           "destacado": false,
           "fabricacion_propia": true,
-          "imagenes": [],
+          "imagenes": [
+            "p39-1795784149639-2aft.jpeg",
+            "p39-1795784153652-vjz2.jpeg"
+          ],
           "fantasias": {}
         }
       ]
