@@ -68,6 +68,18 @@
         "whatsapp": "",
         "direccion": "Plaza 543 (CP 1752)"
       }
+    },
+    {
+      "provincia": "Entre Ríos",
+      "localidades": [
+        "Villaguay"
+      ],
+      "mayorista": {
+        "nombre": "Casa Torres SRL — Casa Torres",
+        "telefono": "",
+        "whatsapp": "3455421265",
+        "direccion": "San Martin 529 (CP 3240)"
+      }
     }
   ],
   "guia_talles": {
