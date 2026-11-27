@@ -1534,6 +1534,11 @@
       "codigo": "02",
       "nombre": "Marfil",
       "hex": "#f7fbda"
+    },
+    {
+      "codigo": "18",
+      "nombre": "Rojo",
+      "hex": "#d11010"
     }
   ]
 }
