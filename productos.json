@@ -1252,7 +1252,10 @@
           "disponible": true,
           "destacado": false,
           "fabricacion_propia": true,
-          "imagenes": [],
+          "imagenes": [
+            "p40-1795785834387-i1iw.jpeg",
+            "p40-1795785838356-txdk.jpeg"
+          ],
           "fantasias": {
             "Azul Francia": {
               "tipo": "cuadro"
