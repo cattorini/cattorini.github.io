@@ -1333,7 +1333,8 @@
             "p5-1791556895430-9fa5.jpeg"
           ],
           "fabricacion_propia": true,
-          "tipo_talle": "Pantalon vestir"
+          "tipo_talle": "Pantalon vestir",
+          "fantasias": {}
         }
       ]
     },
@@ -1545,6 +1546,11 @@
       "codigo": "18",
       "nombre": "Rojo",
       "hex": "#d11010"
+    },
+    {
+      "codigo": "21",
+      "nombre": "Gris topo",
+      "hex": "#4d4c4c"
     }
   ]
 }
