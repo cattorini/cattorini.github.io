@@ -1334,7 +1334,8 @@
           ],
           "fabricacion_propia": true,
           "tipo_talle": "Pantalon vestir",
-          "fantasias": {}
+          "fantasias": {},
+          "articulo": "5177"
         }
       ]
     },
